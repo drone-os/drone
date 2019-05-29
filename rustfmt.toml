@@ -1,0 +1,11 @@
+edition = "2018"
+format_doc_comments = true
+format_macro_matchers = true
+format_strings = true
+merge_imports = true
+newline_style = "Unix"
+overflow_delimited_expr = true
+unstable_features = true
+use_field_init_shorthand = true
+version = "Two"
+wrap_comments = true
