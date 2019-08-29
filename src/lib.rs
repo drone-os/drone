@@ -1,9 +1,8 @@
-//! Drone OS command line utility.
+//! CLI utility for Drone, an Embedded Operating System.
 
 #![feature(generator_trait)]
 #![feature(generators)]
 #![feature(todo_macro)]
-#![deny(bare_trait_objects)]
 #![deny(elided_lifetimes_in_paths)]
 #![warn(missing_docs)]
 #![warn(clippy::pedantic)]
@@ -11,6 +10,8 @@
 
 pub mod cli;
 pub mod heap;
+pub mod templates;
+pub mod utils;
 
 use cli::Cli;
 use failure::Error;
@@ -19,7 +20,7 @@ impl Cli {
     /// Runs the program.
     pub fn run(&self) -> Result<(), Error> {
         match self {
-            Cli::Heap(cmd) => cmd.run(),
+            Self::Heap(cmd) => cmd.run(),
         }
     }
 }

@@ -1,4 +1,3 @@
-#![deny(bare_trait_objects)]
 #![deny(elided_lifetimes_in_paths)]
 #![warn(clippy::pedantic)]
 

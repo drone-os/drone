@@ -134,7 +134,7 @@ fn parser<R: Read>(
 
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Self {
-        Error::Io(err)
+        Self::Io(err)
     }
 }
 
@@ -143,9 +143,9 @@ impl std::error::Error for Error {}
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::Io(err) => write!(f, "{}", err),
-            Error::InvalidHeader => write!(f, "Invalid packet header"),
-            Error::InvalidValue => write!(f, "Invalid packet value"),
+            Self::Io(err) => write!(f, "{}", err),
+            Self::InvalidHeader => write!(f, "Invalid packet header"),
+            Self::InvalidValue => write!(f, "Invalid packet value"),
         }
     }
 }

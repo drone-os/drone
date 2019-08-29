@@ -1,8 +1,8 @@
+[![Crates.io](https://img.shields.io/crates/v/drone.svg)](https://crates.io/crates/drone)
+
 # drone
 
-## [Documentation](https://docs.rs/drone)
-
-Drone OS command line utility.
+CLI utility for Drone, an Embedded Operating System.
 
 ## License
 
