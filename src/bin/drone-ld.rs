@@ -2,37 +2,48 @@
 #![deny(elided_lifetimes_in_paths)]
 #![warn(clippy::pedantic)]
 
-use drone::{templates::Registry, utils::search_rust_tool};
+use drone::{
+    templates::Registry,
+    utils::{mask_signals, run_command, search_rust_tool},
+};
 use drone_config::Config;
 use exitfailure::ExitFailure;
 use failure::Error;
-use std::{collections::HashMap, env, process::Command};
+use std::{
+    collections::HashMap,
+    env,
+    ffi::{OsStr, OsString},
+    path::Path,
+    process::Command,
+};
 
 fn main() -> Result<(), ExitFailure> {
-    let mut args = env::args().skip(1).collect::<Vec<_>>();
-    let output = args[args.iter().position(|arg| arg == "-o").unwrap() + 1].to_string();
+    let args = env::args_os().skip(1).collect::<Vec<_>>();
+    let output = args[args.iter().position(|arg| arg == "-o").unwrap() + 1].clone();
     let config = Config::read_from_current_dir()?;
-    Registry::new()?.layout_ld("tmp/layout.ld", &config)?;
-    args.push("--defsym=_section_size_unknown=0".to_string());
-    run_linker(&args)?;
-    args.pop();
-    for (name, size) in run_size(&output)? {
-        args.push(format!("--defsym=_{}_section_size={}", &name[1..], size));
-    }
-    run_linker(&args)?;
+    let script = Registry::new()?.layout_ld(&config)?;
+    mask_signals();
+    run_linker(script.as_ref(), &args, &[
+        "--defsym=_section_size_unknown=0".into(),
+    ])?;
+    let syms = run_size(&output)?
+        .into_iter()
+        .map(|(name, size)| format!("--defsym=_{}_section_size={}", name, size))
+        .collect::<Vec<_>>();
+    run_linker(script.as_ref(), &args, &syms)?;
     Ok(())
 }
 
-fn run_linker(args: &[String]) -> Result<(), Error> {
-    let mut command = Command::new(search_rust_tool("rust-lld")?);
-    command.arg("-flavor").arg("gnu");
-    command.arg("-Ttmp/layout.ld");
-    command.args(args);
-    assert!(command.status()?.success());
-    Ok(())
+fn run_linker(script: &Path, args: &[OsString], syms: &[String]) -> Result<(), Error> {
+    run_command(&search_rust_tool("rust-lld")?, |rust_lld| {
+        rust_lld.arg("-flavor").arg("gnu");
+        rust_lld.arg("-T").arg(script);
+        rust_lld.args(args);
+        rust_lld.args(syms);
+    })
 }
 
-fn run_size(output: &str) -> Result<HashMap<String, String>, Error> {
+fn run_size(output: &OsStr) -> Result<HashMap<String, u32>, Error> {
     let mut command = Command::new(search_rust_tool("llvm-size")?);
     command.arg("-A").arg(output);
     let stdout = String::from_utf8(command.output()?.stdout)?;
@@ -40,7 +51,7 @@ fn run_size(output: &str) -> Result<HashMap<String, String>, Error> {
     for line in stdout.lines() {
         if line.starts_with('.') {
             if let [name, size, ..] = line.split_whitespace().collect::<Vec<_>>().as_slice() {
-                map.insert(name.to_string(), size.to_string());
+                map.insert(name[1..].to_string(), size.parse()?);
             }
         }
     }

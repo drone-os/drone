@@ -1,5 +1,6 @@
 //! Heap trace file.
 
+use log::debug;
 use std::{
     fs::File,
     io::{self, BufReader, Read},
@@ -86,7 +87,7 @@ fn parser<R: Read>(
 ) -> impl Generator<Yield = Packet, Return = Result<(), Error>> {
     let mut header = [0; 2];
     let mut value = [0; 4];
-    let parse_value = move |bytes| {
+    let parse_u32 = move |bytes| {
         let value = if big_endian {
             u32::from_be_bytes(bytes)
         } else {
@@ -101,29 +102,30 @@ fn parser<R: Read>(
     static move || {
         loop {
             reader.read_exact(&mut header)?;
+            debug!("HEADER: 0x{:02X}{:02X}", header[0], header[1]);
             match header {
                 [0xAB, 0xCD] => {
                     reader.read_exact(&mut value)?;
-                    let size = parse_value(value)?;
+                    let size = parse_u32(value)?;
                     yield Packet::Alloc { size };
                 }
                 [0xDC, 0xBA] => {
                     reader.read_exact(&mut value)?;
-                    let size = parse_value(value)?;
+                    let size = parse_u32(value)?;
                     yield Packet::Dealloc { size };
                 }
                 [0xBC, 0xDE] => {
                     reader.read_exact(&mut value)?;
-                    let size = parse_value(value)?;
+                    let size = parse_u32(value)?;
                     reader.read_exact(&mut value)?;
-                    let new_size = parse_value(value)?;
+                    let new_size = parse_u32(value)?;
                     yield Packet::GrowInPlace { size, new_size };
                 }
                 [0xED, 0xCB] => {
                     reader.read_exact(&mut value)?;
-                    let size = parse_value(value)?;
+                    let size = parse_u32(value)?;
                     reader.read_exact(&mut value)?;
-                    let new_size = parse_value(value)?;
+                    let new_size = parse_u32(value)?;
                     yield Packet::ShrinkInPlace { size, new_size };
                 }
                 _ => break Err(Error::InvalidHeader),

@@ -1,7 +1,13 @@
 //! Utility functions.
 
 use failure::{bail, Error};
-use std::{path::PathBuf, process::Command};
+use std::{
+    env,
+    mem::MaybeUninit,
+    path::{Path, PathBuf},
+    process::Command,
+    ptr,
+};
 use walkdir::WalkDir;
 
 /// Search for the Rust tool `tool` in the sysroot.
@@ -16,4 +22,28 @@ pub fn search_rust_tool(tool: &str) -> Result<PathBuf, Error> {
         }
     }
     bail!("Couldn't find `{}`", tool);
+}
+
+/// Runs the program `program`.
+pub fn run_command(program: &Path, f: impl FnOnce(&mut Command)) -> Result<(), Error> {
+    let mut command = Command::new(program);
+    f(&mut command);
+    if !command.status()?.success() {
+        bail!("`{}` exited with error", program.display());
+    }
+    Ok(())
+}
+
+/// Returns the directory for temporary files.
+pub fn temp_dir() -> PathBuf {
+    env::var_os("XDG_RUNTIME_DIR").map_or(env::temp_dir(), Into::into)
+}
+
+/// Block all UNIX signals.
+pub fn mask_signals() {
+    unsafe {
+        let mut set = MaybeUninit::<libc::sigset_t>::uninit();
+        libc::sigfillset(set.as_mut_ptr());
+        libc::pthread_sigmask(libc::SIG_SETMASK, set.as_ptr(), ptr::null_mut());
+    }
 }

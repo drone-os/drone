@@ -3,60 +3,18 @@
 #![deny(elided_lifetimes_in_paths)]
 #![warn(missing_docs)]
 #![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
+
+mod config;
+mod format;
+
+pub use crate::{config::*, format::*};
 
 use failure::{bail, format_err, Error};
-use serde::{de, Deserialize, Deserializer, Serialize};
-use std::{env, fs::File, io::Read, path::Path, str::FromStr};
+use std::{env, fs::File, io::Read, path::Path};
 
 /// The name of the Drone configuration file.
 pub const CONFIG_NAME: &str = "Drone.toml";
-
-/// Config object.
-#[allow(missing_docs)]
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Config {
-    pub memory: Memory,
-}
-
-#[allow(missing_docs)]
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Memory {
-    pub flash: Flash,
-    pub ram: Ram,
-    pub heap: Heap,
-}
-
-#[allow(missing_docs)]
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Flash {
-    #[serde(deserialize_with = "deserialize_size")]
-    pub size: u32,
-    pub origin: u32,
-}
-
-#[allow(missing_docs)]
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Ram {
-    #[serde(deserialize_with = "deserialize_size")]
-    pub size: u32,
-    pub origin: u32,
-}
-
-#[allow(missing_docs)]
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Heap {
-    #[serde(deserialize_with = "deserialize_size")]
-    pub size: u32,
-    pub pools: Vec<Pool>,
-}
-
-#[allow(missing_docs)]
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Pool {
-    #[serde(deserialize_with = "deserialize_size")]
-    pub block: u32,
-    pub capacity: u32,
-}
 
 impl Config {
     /// Reads the configuration file from the current working directory and
@@ -76,7 +34,7 @@ impl Config {
         } else {
             Self::read(
                 env::var_os("CARGO_MANIFEST_DIR")
-                    .ok_or_else(|| format_err!("`CARGO_MANIFEST_DIR' is not set"))?
+                    .ok_or_else(|| format_err!("`CARGO_MANIFEST_DIR` is not set"))?
                     .as_ref(),
             )
         }
@@ -88,7 +46,7 @@ impl Config {
         let crate_root = crate_root.canonicalize()?;
         let path = crate_root.join(CONFIG_NAME);
         if !path.exists() {
-            bail!("`{}' not exists in `{}'", CONFIG_NAME, crate_root.display());
+            bail!("`{}` not exists in `{}", CONFIG_NAME, crate_root.display());
         }
         let mut buffer = String::new();
         let mut file = File::open(&path)?;
@@ -103,19 +61,22 @@ impl Config {
         Ok(config)
     }
 
+    /// Returns `bmp` section or an error if not defined.
+    pub fn bmp(&self) -> Result<&Bmp, Error> {
+        self.bmp
+            .as_ref()
+            .ok_or_else(|| format_err!("{}: section `bmp` is not defined", CONFIG_NAME))
+    }
+
     fn check_heap(&self) -> Result<(), Error> {
         let Self {
-            memory:
-                Memory {
-                    heap: Heap { size, pools },
-                    ..
-                },
+            heap: Heap { size, pools },
             ..
         } = self;
         let used: u32 = pools.iter().map(|pool| pool.block * pool.capacity).sum();
         if used != *size {
             bail!(
-                "{}: `memory.heap.pools' adds up to {}, but `memory.heap.size' = {}",
+                "{}: `heap.pools` adds up to {}, but `heap.size = {}",
                 CONFIG_NAME,
                 used,
                 size
@@ -123,23 +84,4 @@ impl Config {
         }
         Ok(())
     }
-}
-
-fn deserialize_size<'de, D: Deserializer<'de>>(deserializer: D) -> Result<u32, D::Error> {
-    let mut s = String::deserialize(deserializer)?;
-    let mult = if s.ends_with('G') {
-        s.pop();
-        1024 * 1024 * 1024
-    } else if s.ends_with('M') {
-        s.pop();
-        1024 * 1024
-    } else if s.ends_with('K') {
-        s.pop();
-        1024
-    } else {
-        1
-    };
-    u32::from_str(&s)
-        .map(|x| x * mult)
-        .map_err(de::Error::custom)
 }

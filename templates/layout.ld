@@ -1,7 +1,7 @@
 MEMORY
 {
-    FLASH (rx) : ORIGIN = {{addr memory.flash.origin}}, LENGTH = {{size memory.flash.size}}
-    RAM (wx) : ORIGIN = {{addr memory.ram.origin}}, LENGTH = {{size memory.ram.size}}
+    FLASH (rx) : ORIGIN = {{addr config.memory.flash.origin}}, LENGTH = {{size config.memory.flash.size}}
+    RAM (wx) : ORIGIN = {{addr config.memory.ram.origin}}, LENGTH = {{size config.memory.ram.size}}
 }
 
 ENTRY(reset);
@@ -51,7 +51,7 @@ SECTIONS
     .heap DRONE_DATA_END :
     {
         DRONE_HEAP_START = .;
-        . += {{size memory.heap.size}};
+        . += {{size config.heap.size}};
         . = ALIGN(4);
         DRONE_HEAP_END = .;
     } > RAM
