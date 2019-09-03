@@ -6,7 +6,7 @@ monitor connect_srst enable
 monitor swdp_scan
 attach 1
 set mem inaccessible-by-default off
-{{#bmp-targets "stm32f100"
+{{#bmp-devices "stm32f100"
                "stm32f101"
                "stm32f102"
                "stm32f103"
@@ -22,8 +22,8 @@ set mem inaccessible-by-default off
                "stm32l4s5"
                "stm32l4s7"
                "stm32l4s9" }}
-{{> cortex_m }}
-{{> stm32 }}
+{{> bmp/cortex_m.gdb }}
+{{> bmp/stm32.gdb }}
 set {int}$DBGMCU_CR = ({int}$DBGMCU_CR & ~$DBGMCU_CR_TRACE_MODE_MASK) | $DBGMCU_CR_TRACE_IOEN | \
     $DBGMCU_CR_DBG_STANDBY | $DBGMCU_CR_DBG_STOP | $DBGMCU_CR_DBG_SLEEP
 set {int}$TPIU_ACPR = $DEFAULT_HCLK / {{config.bmp.uart_baudrate}} - 1
@@ -38,7 +38,7 @@ set {int}$ITM_TPR = 0
 set {int}$ITM_TER0 = 0{{#each ports}} | (1 << {{this}}){{/each}}
 set {int}$DWT_CTRL = ({int}$DWT_CTRL & ~$DWT_CTRL_SYNCTAP_MASK) | $DWT_CTRL_CYCCNTENA | $DWT_CTRL_SYNCTAP_26
 set {int}$DWT_CYCCNT = 0xFFFFFFFF
-{{/bmp-targets}}
+{{/bmp-devices}}
 shell echo -n "1" > {{pipe}}
 shell cat {{pipe}} > /dev/null
 continue

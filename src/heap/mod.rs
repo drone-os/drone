@@ -1,10 +1,7 @@
-//! Heap management.
+//! Heap layout management.
 
+pub mod generate;
 pub mod trace;
-
-mod generate;
-
-pub use self::generate::{generate, generate_new};
 
 use self::trace::Packet;
 use crate::cli::{HeapCmd, HeapSubCmd};
@@ -22,7 +19,7 @@ pub struct TraceEntry {
 }
 
 impl HeapCmd {
-    /// Runs the heap command.
+    /// Runs the `heap` command.
     pub fn run(&self, shell: &mut StandardStream) -> Result<(), Error> {
         let Self {
             trace_file,
@@ -51,14 +48,7 @@ impl HeapCmd {
             writeln!(shell, ": file `{}` not exists.", trace_file.display())?;
         }
         match heap_sub_cmd {
-            Some(HeapSubCmd::Generate { pools }) => {
-                if trace.is_empty() {
-                    generate_new(*pools, size);
-                    Ok(())
-                } else {
-                    generate(&trace, *pools, size, shell)
-                }
-            }
+            Some(HeapSubCmd::Generate(cmd)) => cmd.run(&trace, size, shell),
             None => Ok(()),
         }
     }

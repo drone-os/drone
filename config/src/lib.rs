@@ -1,4 +1,4 @@
-//! Configuration file support for Drone, an Embedded Operating System.
+//! Configuration for Drone, an Embedded Operating System.
 
 #![deny(elided_lifetimes_in_paths)]
 #![warn(missing_docs)]

@@ -8,13 +8,13 @@ ENTRY(reset);
 
 SECTIONS
 {
-    DRONE_STACK_POINTER = DEFINED(_section_size_unknown)
+    STACK_POINTER = DEFINED(_section_size_unknown)
         ? ORIGIN(RAM)
         : ORIGIN(RAM) + LENGTH(RAM) - _bss_section_size - _data_section_size - _heap_section_size;
 
     .vtable ORIGIN(FLASH) :
     {
-        LONG(DRONE_STACK_POINTER);
+        LONG(STACK_POINTER);
         KEEP(*(.rodata.VTABLE));
         . = ALIGN(4);
     } > FLASH
@@ -31,29 +31,29 @@ SECTIONS
         . = ALIGN(4);
     } > FLASH
 
-    .bss DRONE_STACK_POINTER :
+    .bss STACK_POINTER (NOLOAD) :
     {
-        DRONE_BSS_START = .;
+        BSS_START = .;
         *(.bss.*);
         . = ALIGN(4);
-        DRONE_BSS_END = .;
+        BSS_END = .;
     } > RAM
 
-    .data DRONE_BSS_END :
+    .data ADDR(.bss) + SIZEOF(.bss) :
     {
-        DRONE_DATA_CONST = LOADADDR(.data);
-        DRONE_DATA_START = .;
+        DATA_CONST = LOADADDR(.data);
+        DATA_START = .;
         *(.data.*);
         . = ALIGN(4);
-        DRONE_DATA_END = .;
+        DATA_END = .;
     } > RAM AT > FLASH
 
-    .heap DRONE_DATA_END :
+    .heap ADDR(.data) + SIZEOF(.data) (NOLOAD) :
     {
-        DRONE_HEAP_START = .;
+        HEAP_START = .;
         . += {{size config.heap.size}};
         . = ALIGN(4);
-        DRONE_HEAP_END = .;
+        HEAP_END = .;
     } > RAM
 
     /DISCARD/ :

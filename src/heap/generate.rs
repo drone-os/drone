@@ -1,13 +1,38 @@
+//! Heap layout generation.
+
 use super::TraceEntry;
+use crate::cli::HeapGenerateCmd;
 use drone_config::format_size;
 use failure::Error;
-use std::{collections::BTreeMap, io::Write};
+use std::{
+    collections::BTreeMap,
+    io::{stdout, Write},
+};
 use termcolor::{ColorSpec, StandardStream, WriteColor};
 
 const WORD_SIZE: u32 = 4;
 
-/// Generates a default layout.
-pub fn generate_new(pools: u32, size: u32) {
+impl HeapGenerateCmd {
+    /// Runs the `heap generate` command.
+    pub fn run(
+        &self,
+        trace: &BTreeMap<u32, TraceEntry>,
+        size: u32,
+        shell: &mut StandardStream,
+    ) -> Result<(), Error> {
+        let Self { pools } = self;
+        if trace.is_empty() {
+            let layout = new(size, *pools);
+            display(&mut stdout(), &layout)?;
+            Ok(())
+        } else {
+            generate(&trace, size, *pools, shell)
+        }
+    }
+}
+
+/// Generates a new empty layout.
+pub fn new(size: u32, pools: u32) -> Vec<(u32, u32)> {
     let pool_min = WORD_SIZE;
     let pool_max = size / 20;
     let mut layout = Vec::with_capacity(pools as usize);
@@ -27,14 +52,34 @@ pub fn generate_new(pools: u32, size: u32) {
         layout.push((block, capacity));
     }
     add_up_to_size(&mut layout, &mut used, size);
-    display_layout(&layout);
+    layout
 }
 
-/// Generates a new layout based on a heaptrace.
-pub fn generate(
+/// Writes the layout to `w` as `heap` section for `Drone.toml`.
+pub fn display(w: &mut impl Write, layout: &[(u32, u32)]) -> Result<(), Error> {
+    let size = layout.iter().map(|(size, count)| size * count).sum::<u32>();
+    writeln!(w, "[heap]")?;
+    writeln!(w, "size = \"{}\"", format_size(size))?;
+    writeln!(w, "pools = [")?;
+    for (block, capacity) in layout {
+        if *capacity == 0 {
+            continue;
+        }
+        writeln!(
+            w,
+            "    {{ block = \"{}\", capacity = {} }},",
+            format_size(*block),
+            capacity
+        )?;
+    }
+    writeln!(w, "]")?;
+    Ok(())
+}
+
+fn generate(
     trace: &BTreeMap<u32, TraceEntry>,
-    mut pools: u32,
     size: u32,
+    mut pools: u32,
     shell: &mut StandardStream,
 ) -> Result<(), Error> {
     let mut input = Vec::<(u32, u32)>::with_capacity(trace.len());
@@ -71,26 +116,8 @@ pub fn generate(
     )?;
     shell.reset()?;
     writeln!(shell)?;
-    display_layout(&output);
+    display(&mut stdout(), &output)?;
     Ok(())
-}
-
-fn display_layout(output: &[(u32, u32)]) {
-    let size = output.iter().map(|(size, count)| size * count).sum::<u32>();
-    println!("[heap]");
-    println!("size = \"{}\"", format_size(size));
-    println!("pools = [");
-    for (block, capacity) in output {
-        if *capacity == 0 {
-            continue;
-        }
-        println!(
-            "    {{ block = \"{}\", capacity = {} }},",
-            format_size(*block),
-            capacity
-        );
-    }
-    println!("]");
 }
 
 fn shrink(input: &[(u32, u32)], output: &mut [(u32, u32)], frag: &mut u32, cutoff: u32) {

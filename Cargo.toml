@@ -5,11 +5,25 @@ members = ["config"]
 name = "drone"
 version = "0.9.0"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/drone-os/drone"
-readme = "README.md"
 edition = "2018"
 default-run = "drone"
+repository = "https://github.com/drone-os/drone"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+keywords = [
+    "async",
+    "real-time",
+    "bare-metal",
+    "rtos",
+    "framework",
+]
+categories = [
+    "embedded",
+    "asynchronous",
+    "concurrency",
+    "no-std",
+    "os",
+]
 description = """
 CLI utility for Drone, an Embedded Operating System.
 """

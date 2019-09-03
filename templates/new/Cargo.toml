@@ -1,0 +1,21 @@
+[[bin]]
+name = "{{crate_name}}"
+path = "src/main.rs"
+test = false
+doc = false
+
+[features]
+default = []
+std = ["drone-core/std", "drone-cortex-m/std", "futures-preview/std"]
+heaptrace = []
+
+[dependencies]
+core = { version = "0.9", package = "drone-async-await" }
+drone-core = { version = "0.9" }
+drone-cortex-m = { version = "0.9" }
+drone-stm32-map = { version = "0.9", features = ["{{device_ident}}"] }
+futures-preview = { version = "0.3.0-alpha", default-features = false }
+
+[profile.release]
+lto = true
+panic = "abort"

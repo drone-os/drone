@@ -16,10 +16,13 @@
 
 pub mod bmp;
 pub mod cli;
+pub mod device;
 pub mod heap;
+pub mod new;
 pub mod templates;
 pub mod utils;
 
+use crate::device::Device;
 use cli::{Cli, Cmd};
 use env_logger::Builder as LoggerBuilder;
 use failure::Error;
@@ -45,8 +48,11 @@ impl Cli {
             .filter(Some(env!("CARGO_PKG_NAME")), log_level.to_level_filter())
             .filter(None, Level::Warn.to_level_filter())
             .try_init()?;
-        let mut shell = StandardStream::stderr(color.unwrap_or(ColorChoice::Auto));
+        let color_choice = color.unwrap_or(ColorChoice::Auto);
+        let mut shell = StandardStream::stderr(color_choice);
         match cmd {
+            Cmd::SupportedDevices => Device::print_list(color_choice),
+            Cmd::New(cmd) => cmd.run(&mut shell),
             Cmd::Heap(cmd) => cmd.run(&mut shell),
             Cmd::Bmp(cmd) => cmd.run(&mut shell),
         }

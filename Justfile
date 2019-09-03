@@ -1,17 +1,17 @@
-# Install development dependencies
+# Install dependencies
 deps:
 	rustup component add clippy
 	rustup component add rustfmt
 	rustup component add rls rust-analysis rust-src
 	type cargo-readme >/dev/null || cargo +stable install cargo-readme
 
+# Reformat the source code
+fmt:
+	cargo fmt
+
 # Check for mistakes
 lint:
 	cargo clippy
-
-# Reformat the code
-fmt:
-	cargo fmt
 
 # Generate the docs
 doc:
@@ -21,14 +21,19 @@ doc:
 doc-open: doc
 	cargo doc --open
 
-# Update README.md
-readme:
-	cargo readme -o README.md
-
 # Run the tests
 test:
 	cargo test
 
-# Install the crate from this local repo
+# Update README.md
+readme:
+	cargo readme -o README.md
+
+# Install the binaries
 install:
 	cargo install --path . --debug --force
+
+# Publish to crates.io
+publish:
+	cd config && cargo publish
+	cargo publish

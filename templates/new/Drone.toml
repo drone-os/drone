@@ -1,0 +1,16 @@
+[memory.flash]
+size = "{{size device_flash_size}}"
+origin = {{addr device_flash_origin}}
+
+[memory.ram]
+size = "{{size device_ram_size}}"
+origin = {{addr device_ram_origin}}
+
+{{{generated_heap}}}
+
+[bmp]
+device = "{{device_ident}}"
+gdb_command = "gdb-multiarch"
+gdb_endpoint = "/dev/ttyACM0"
+uart_endpoint = "/dev/ttyACM1"
+uart_baudrate = 115200

@@ -47,7 +47,7 @@ pub struct Pool {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Bmp {
-    pub target: Target,
+    pub device: Device,
     pub gdb_command: String,
     pub gdb_endpoint: String,
     pub uart_endpoint: String,
@@ -55,7 +55,7 @@ pub struct Bmp {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum Target {
+pub enum Device {
     #[serde(rename = "stm32f100")]
     Stm32F100,
     #[serde(rename = "stm32f101")]

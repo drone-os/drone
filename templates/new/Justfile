@@ -1,0 +1,69 @@
+build_target := '{{device_target}}'
+bin_name := `basename $(pwd)`
+release_bin := "target/" + build_target + "/release/" + bin_name
+features := ''
+
+# Install dependencies
+deps:
+	rustup target add \{{build_target}}
+	rustup component add rustfmt
+	rustup component add clippy
+	rustup component add llvm-tools-preview
+	type cargo-objdump >/dev/null || cargo +stable install cargo-binutils
+	type itmsink >/dev/null || cargo install itmsink
+	type drone >/dev/null || cargo install drone
+
+# Reformat the source code
+fmt:
+	cargo fmt
+
+# Check for mistakes
+lint:
+	cargo clippy --target \{{build_target}} --features "\{{features}}"
+
+# Build the firmware
+build:
+	cargo build --target \{{build_target}} --features "\{{features}}" --release
+
+# Generate the docs
+doc:
+	cargo doc --target \{{build_target}} --features "\{{features}}"
+
+# Open the docs in a browser
+doc-open: doc
+	cargo doc --target \{{build_target}} --features "\{{features}}" --open
+
+# Run the tests
+test:
+	cargo test --features "std \{{features}}"
+
+# Display information from the compiled firmware
+dump: build
+	cargo objdump --target \{{build_target}} --features "\{{features}}" --release --bin \{{bin_name}} -- \
+		--disassemble --demangle --full-contents -all-headers --syms | \
+	pager
+
+# Display section sizes inside the compiled firmware
+size +args='': build
+	cargo size --target \{{build_target}} --features "\{{features}}" --release --bin \{{bin_name}} -- \{{args}}
+
+# Force a pulse on the reset line of the attached device
+reset:
+	drone bmp reset
+
+# Flash the firmware to the attached device
+flash: build
+	drone bmp flash \{{release_bin}}
+
+# Run a GDB session for the attached device
+gdb:
+	drone bmp gdb \{{release_bin}} --reset
+
+# Display ITM output from the attached device
+itm:
+	drone bmp itm --reset 0,1 -- 0,1
+
+# Record `heaptrace` file from the attached device (should be compiled with `heaptrace` feature)
+heaptrace:
+	truncate -s0 heaptrace
+	drone bmp itm --reset 0,1,31 -- 0,1 31:heaptrace

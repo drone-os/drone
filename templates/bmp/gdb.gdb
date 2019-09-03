@@ -6,7 +6,7 @@ monitor connect_srst enable
 monitor swdp_scan
 attach 1
 set mem inaccessible-by-default off
-{{#bmp-targets "stm32f100"
+{{#bmp-devices "stm32f100"
                "stm32f101"
                "stm32f102"
                "stm32f103"
@@ -22,6 +22,6 @@ set mem inaccessible-by-default off
                "stm32l4s5"
                "stm32l4s7"
                "stm32l4s9" }}
-{{> stm32 }}
+{{> bmp/stm32.gdb }}
 set {int}$DBGMCU_CR = {int}$DBGMCU_CR | $DBGMCU_CR_DBG_STANDBY | $DBGMCU_CR_DBG_STOP | $DBGMCU_CR_DBG_SLEEP
-{{/bmp-targets}}
+{{/bmp-devices}}
