@@ -24,8 +24,7 @@ impl Registry {
         let mut handlebars = Handlebars::new();
         macro_rules! template {
             ($path:expr) => {
-                handlebars
-                    .register_template_string($path, include_str!(concat!("../templates/", $path)))
+                handlebars.register_template_string($path, include_str!(concat!($path, ".hbs")))
             };
         }
 
