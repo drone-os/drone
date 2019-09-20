@@ -1,9 +1,9 @@
 //! The threads.
 
-pub mod trunk;
+pub use drone_cortex_m::thr::init;
+pub use drone_stm32_map::thr::*;
 
 use drone_cortex_m::thr;
-use drone_stm32_map::thr::*;
 
 thr::vtable! {
     use Thr;

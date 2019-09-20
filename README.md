@@ -1,8 +1,34 @@
-[![Crates.io](https://img.shields.io/crates/v/drone.svg)](https://crates.io/crates/drone)
+[![crates.io](https://img.shields.io/crates/v/drone.svg)](https://crates.io/crates/drone)
+![maintenance](https://img.shields.io/badge/maintenance-actively--developed-brightgreen.svg)
 
 # drone
 
 CLI utility for Drone, an Embedded Operating System.
+
+## Documentation
+
+Refer to the [Drone Book](https://book.drone-os.com/) for documentation.
+
+## Usage
+
+The program requires Nightly channel of Rust. Make sure you have it
+installed:
+
+```shell
+$ rustup toolchain install nightly
+```
+
+Install the latest version from crates.io:
+
+```shell
+$ cargo +nightly install drone
+```
+
+Check the built-in help:
+
+```shell
+$ drone help
+```
 
 ## License
 

@@ -5,7 +5,8 @@
 use drone_core::{future, mem, token::Token};
 use drone_cortex_m::processor;
 use {{crate_name}}::{
-    thr::{trunk, Handlers, Thr, Vtable},
+    tasks,
+    thr::{Handlers, Thr, Vtable},
     Regs,
 };
 
@@ -17,9 +18,10 @@ pub static VTABLE: Vtable = Vtable::new(Handlers { reset });
 #[no_mangle]
 #[naked]
 pub unsafe extern "C" fn reset() -> ! {
-    mem::init!();
+    mem::bss_init();
+    mem::data_init();
     future::init::<Thr>();
-    trunk::handler(Regs::take());
+    tasks::root(Regs::take());
     loop {
         processor::wait_for_int();
     }

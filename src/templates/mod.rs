@@ -29,10 +29,11 @@ impl Registry {
         }
 
         template!("layout.ld")?;
-        template!("new/src/main.rs")?;
+        template!("new/src/bin.rs")?;
         template!("new/src/lib.rs")?;
-        template!("new/src/thr/mod.rs")?;
-        template!("new/src/thr/trunk.rs")?;
+        template!("new/src/thr.rs")?;
+        template!("new/src/tasks/mod.rs")?;
+        template!("new/src/tasks/root.rs")?;
         template!("new/Cargo.toml")?;
         template!("new/Drone.toml")?;
         template!("new/Justfile")?;
@@ -57,25 +58,34 @@ impl Registry {
         with_temp_file(|file| self.0.render_to_write("layout.ld", &data, file))
     }
 
-    pub fn new_src_main_rs(&self, crate_name: &str) -> Result<String, Error> {
+    pub fn new_src_bin_rs(&self, crate_name: &str) -> Result<String, Error> {
         let data = json!({ "crate_name": crate_name });
-        Ok(self.0.render("new/src/main.rs", &data)?)
+        Ok(self.0.render("new/src/bin.rs", &data)?)
     }
 
     pub fn new_src_lib_rs(&self) -> Result<String, Error> {
         Ok(self.0.render("new/src/lib.rs", &())?)
     }
 
-    pub fn new_src_thr_mod_rs(&self) -> Result<String, Error> {
-        Ok(self.0.render("new/src/thr/mod.rs", &())?)
+    pub fn new_src_thr_rs(&self) -> Result<String, Error> {
+        Ok(self.0.render("new/src/thr.rs", &())?)
     }
 
-    pub fn new_src_thr_trunk_rs(&self) -> Result<String, Error> {
-        Ok(self.0.render("new/src/thr/trunk.rs", &())?)
+    pub fn new_src_tasks_mod_rs(&self) -> Result<String, Error> {
+        Ok(self.0.render("new/src/tasks/mod.rs", &())?)
+    }
+
+    pub fn new_src_tasks_root_rs(&self) -> Result<String, Error> {
+        Ok(self.0.render("new/src/tasks/root.rs", &())?)
     }
 
     pub fn new_cargo_toml(&self, device: &Device, crate_name: &str) -> Result<String, Error> {
-        let data = json!({ "device_ident": device.ident(), "crate_name": crate_name });
+        let mut drone_stm32_map_features = vec![device.ident()];
+        drone_stm32_map_features.extend_from_slice(device.drone_stm32_map_features());
+        let data = json!({
+            "crate_name": crate_name,
+            "drone-stm32-map-features": drone_stm32_map_features,
+        });
         Ok(self.0.render("new/Cargo.toml", &data)?)
     }
 
@@ -105,8 +115,9 @@ impl Registry {
         Ok(self.0.render("new/Justfile", &data)?)
     }
 
-    pub fn new_rust_toolchain(&self) -> Result<String, Error> {
-        Ok(self.0.render("new/rust-toolchain", &())?)
+    pub fn new_rust_toolchain(&self, toolchain: &str) -> Result<String, Error> {
+        let data = json!({ "toolchain": toolchain });
+        Ok(self.0.render("new/rust-toolchain", &data)?)
     }
 
     pub fn new_cargo_config(&self) -> Result<String, Error> {

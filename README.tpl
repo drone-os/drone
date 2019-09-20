@@ -1,4 +1,5 @@
-[![Crates.io](https://img.shields.io/crates/v/{{crate}}.svg)](https://crates.io/crates/{{crate}})
+[![crates.io](https://img.shields.io/crates/v/{{crate}}.svg)](https://crates.io/crates/{{crate}})
+![maintenance](https://img.shields.io/badge/maintenance-actively--developed-brightgreen.svg)
 
 # {{crate}}
 

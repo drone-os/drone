@@ -52,6 +52,9 @@ pub struct NewCmd {
     /// Set the resulting package name, defaults to the directory name
     #[structopt(long)]
     pub name: Option<String>,
+    /// Toolchain name, such as 'nightly' or 'nightly-2019-09-05'
+    #[structopt(long, default_value = "nightly")]
+    pub toolchain: String,
 }
 
 #[derive(Debug, StructOpt)]

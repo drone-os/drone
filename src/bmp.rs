@@ -6,7 +6,7 @@ use crate::{
     utils::{mask_signals, run_command, temp_dir},
 };
 use drone_config as config;
-use failure::Error;
+use failure::{format_err, Error};
 use std::{
     ffi::CString,
     fs::OpenOptions,
@@ -101,11 +101,14 @@ impl BmpItmCmd {
         let dir = tempdir_in(temp_dir())?;
         let pipe = make_fifo(&dir)?;
         let script = registry.bmp_itm(&config, ports, *reset, &pipe)?;
-        let mut gdb = Command::new(&config.bmp()?.gdb_command);
+        let gdb_command = &config.bmp()?.gdb_command;
+        let mut gdb = Command::new(gdb_command);
         gdb.arg("--nx");
         gdb.arg("--batch");
         gdb.arg("--command").arg(script.path());
-        let mut gdb = gdb.spawn()?;
+        let mut gdb = gdb
+            .spawn()
+            .map_err(|err| format_err!("`{}` command failed to start: {}", gdb_command, err))?;
 
         let mut packet = [0];
         OpenOptions::new()
@@ -117,7 +120,9 @@ impl BmpItmCmd {
         let mut itmsink = Command::new("itmsink");
         itmsink.arg("--input").arg(&config.bmp()?.uart_endpoint);
         itmsink.args(itmsink_args);
-        let mut itmsink = itmsink.spawn()?;
+        let mut itmsink = itmsink
+            .spawn()
+            .map_err(|err| format_err!("`itmsink` command failed to start: {}", err))?;
 
         shell.set_color(ColorSpec::new().set_bold(true).set_fg(Some(Color::Cyan)))?;
         writeln!(shell)?;

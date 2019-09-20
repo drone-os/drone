@@ -1,12 +1,12 @@
 #![feature(allocator_api)]
 #![feature(const_fn)]
-#![feature(generators)]
 #![feature(prelude_import)]
 #![feature(proc_macro_hygiene)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
 
+pub mod tasks;
 pub mod thr;
 
 #[prelude_import]

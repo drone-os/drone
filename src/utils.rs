@@ -1,6 +1,6 @@
 //! Utility functions.
 
-use failure::{bail, Error};
+use failure::{bail, format_err, Error};
 use std::{
     env,
     mem::MaybeUninit,
@@ -28,10 +28,15 @@ pub fn search_rust_tool(tool: &str) -> Result<PathBuf, Error> {
 pub fn run_command(program: &Path, f: impl FnOnce(&mut Command)) -> Result<(), Error> {
     let mut command = Command::new(program);
     f(&mut command);
-    if !command.status()?.success() {
-        bail!("`{}` exited with error", program.display());
+    match command.status() {
+        Ok(status) if status.success() => Ok(()),
+        Ok(_) => Err(format_err!("`{}` exited with error", program.display())),
+        Err(err) => Err(format_err!(
+            "`{}` command failed to start: {}",
+            program.display(),
+            err
+        )),
     }
-    Ok(())
 }
 
 /// Returns the directory for temporary files.

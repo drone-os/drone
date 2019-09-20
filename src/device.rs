@@ -215,4 +215,26 @@ impl Device {
             | Self::Stm32L4S9 => 0x2000_0000,
         }
     }
+
+    /// Returns a list of features for the `drone-stm32-map` dependency.
+    pub fn drone_stm32_map_features(&self) -> &[&str] {
+        match self {
+            Self::Stm32F100
+            | Self::Stm32F101
+            | Self::Stm32F102
+            | Self::Stm32F103
+            | Self::Stm32F107 => &[],
+            Self::Stm32L4X1
+            | Self::Stm32L4X2
+            | Self::Stm32L4X3
+            | Self::Stm32L4X5
+            | Self::Stm32L4X6
+            | Self::Stm32L4R5
+            | Self::Stm32L4R7
+            | Self::Stm32L4R9
+            | Self::Stm32L4S5
+            | Self::Stm32L4S7
+            | Self::Stm32L4S9 => &["fpu"],
+        }
+    }
 }

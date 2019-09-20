@@ -1,4 +1,29 @@
 //! CLI utility for Drone, an Embedded Operating System.
+//!
+//! # Documentation
+//!
+//! Refer to the [Drone Book](https://book.drone-os.com/) for documentation.
+//!
+//! # Usage
+//!
+//! The program requires Nightly channel of Rust. Make sure you have it
+//! installed:
+//!
+//! ```shell
+//! $ rustup toolchain install nightly
+//! ```
+//!
+//! Install the latest version from crates.io:
+//!
+//! ```shell
+//! $ cargo +nightly install drone
+//! ```
+//!
+//! Check the built-in help:
+//!
+//! ```shell
+//! $ drone help
+//! ```
 
 #![feature(generator_trait)]
 #![feature(generators)]
@@ -10,7 +35,6 @@
     clippy::cast_possible_truncation,
     clippy::cast_precision_loss,
     clippy::cast_sign_loss,
-    clippy::module_name_repetitions,
     clippy::similar_names
 )]
 

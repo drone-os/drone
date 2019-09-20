@@ -8,7 +8,7 @@ use crate::{
 };
 use failure::{bail, format_err, Error};
 use std::{
-    fs::{create_dir, read_to_string, File, OpenOptions},
+    fs::{create_dir, read_to_string, remove_file, File, OpenOptions},
     io::Write,
     path::Path,
 };
@@ -23,6 +23,7 @@ impl NewCmd {
             flash_size,
             ram_size,
             name,
+            toolchain,
         } = self;
         let registry = Registry::new()?;
         let name = name.as_ref().map(String::as_str).map_or_else(
@@ -49,15 +50,17 @@ impl NewCmd {
             .collect::<String>();
         mask_signals();
 
-        cargo_new(path)?;
-        src_main_rs(path, &underscore_name, &registry, shell)?;
+        cargo_new(path, &toolchain)?;
+        src_main_rs(path, shell)?;
+        src_bin_rs(path, &underscore_name, &registry, shell)?;
         src_lib_rs(path, &registry, shell)?;
-        src_thr_mod_rs(path, &registry, shell)?;
-        src_thr_trunk_rs(path, &registry, shell)?;
+        src_thr_rs(path, &registry, shell)?;
+        src_tasks_mod_rs(path, &registry, shell)?;
+        src_tasks_root_rs(path, &registry, shell)?;
         cargo_toml(path, &name, &device, &registry, shell)?;
         drone_toml(path, &device, *flash_size, *ram_size, &registry, shell)?;
         justfile(path, &device, &registry, shell)?;
-        rust_toolchain(path, &registry, shell)?;
+        rust_toolchain(path, &toolchain, &registry, shell)?;
         cargo_config(path, &registry, shell)?;
         gitignore(path, &registry, shell)?;
 
@@ -65,22 +68,29 @@ impl NewCmd {
     }
 }
 
-fn cargo_new(path: &Path) -> Result<(), Error> {
-    run_command(Path::new("cargo"), |cargo| {
-        cargo.arg("+nightly").arg("new").arg("--bin").arg(path);
+fn cargo_new(path: &Path, toolchain: &str) -> Result<(), Error> {
+    run_command(Path::new("rustup"), |rustup| {
+        rustup.arg("run").arg(toolchain);
+        rustup.arg("cargo").arg("new").arg("--bin").arg(path);
     })
 }
 
-fn src_main_rs(
+fn src_main_rs(path: &Path, shell: &mut StandardStream) -> Result<(), Error> {
+    let path = path.join("src/main.rs");
+    remove_file(path)?;
+    print_removed(shell, "src/main.rs")
+}
+
+fn src_bin_rs(
     path: &Path,
     name: &str,
     registry: &Registry,
     shell: &mut StandardStream,
 ) -> Result<(), Error> {
-    let path = path.join("src/main.rs");
+    let path = path.join("src/bin.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_main_rs(name)?.as_bytes())?;
-    print_patched(shell, "src/main.rs")
+    file.write_all(registry.new_src_bin_rs(name)?.as_bytes())?;
+    print_created(shell, "src/bin.rs")
 }
 
 fn src_lib_rs(path: &Path, registry: &Registry, shell: &mut StandardStream) -> Result<(), Error> {
@@ -90,28 +100,35 @@ fn src_lib_rs(path: &Path, registry: &Registry, shell: &mut StandardStream) -> R
     print_created(shell, "src/lib.rs")
 }
 
-fn src_thr_mod_rs(
+fn src_thr_rs(path: &Path, registry: &Registry, shell: &mut StandardStream) -> Result<(), Error> {
+    let path = path.join("src/thr.rs");
+    let mut file = File::create(&path)?;
+    file.write_all(registry.new_src_thr_rs()?.as_bytes())?;
+    print_created(shell, "src/thr.rs")
+}
+
+fn src_tasks_mod_rs(
     path: &Path,
     registry: &Registry,
     shell: &mut StandardStream,
 ) -> Result<(), Error> {
-    let path = path.join("src/thr");
+    let path = path.join("src/tasks");
     create_dir(&path)?;
     let path = path.join("mod.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_thr_mod_rs()?.as_bytes())?;
-    print_created(shell, "src/thr/mod.rs")
+    file.write_all(registry.new_src_tasks_mod_rs()?.as_bytes())?;
+    print_created(shell, "src/tasks/mod.rs")
 }
 
-fn src_thr_trunk_rs(
+fn src_tasks_root_rs(
     path: &Path,
     registry: &Registry,
     shell: &mut StandardStream,
 ) -> Result<(), Error> {
-    let path = path.join("src/thr/trunk.rs");
+    let path = path.join("src/tasks/root.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_thr_trunk_rs()?.as_bytes())?;
-    print_created(shell, "src/thr/trunk.rs")
+    file.write_all(registry.new_src_tasks_root_rs()?.as_bytes())?;
+    print_created(shell, "src/tasks/root.rs")
 }
 
 fn cargo_toml(
@@ -166,12 +183,13 @@ fn justfile(
 
 fn rust_toolchain(
     path: &Path,
+    toolchain: &str,
     registry: &Registry,
     shell: &mut StandardStream,
 ) -> Result<(), Error> {
     let path = path.join("rust-toolchain");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_rust_toolchain()?.as_bytes())?;
+    file.write_all(registry.new_rust_toolchain(toolchain)?.as_bytes())?;
     print_created(shell, "rust-toolchain")
 }
 
@@ -202,6 +220,14 @@ fn print_created(shell: &mut StandardStream, message: &str) -> Result<(), Error>
 fn print_patched(shell: &mut StandardStream, message: &str) -> Result<(), Error> {
     shell.set_color(ColorSpec::new().set_bold(true).set_fg(Some(Color::Green)))?;
     write!(shell, "     Patched")?;
+    shell.reset()?;
+    writeln!(shell, " {}", message)?;
+    Ok(())
+}
+
+fn print_removed(shell: &mut StandardStream, message: &str) -> Result<(), Error> {
+    shell.set_color(ColorSpec::new().set_bold(true).set_fg(Some(Color::Green)))?;
+    write!(shell, "     Removed")?;
     shell.reset()?;
     writeln!(shell, " {}", message)?;
     Ok(())

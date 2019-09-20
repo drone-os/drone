@@ -25,15 +25,23 @@ doc-open: doc
 test:
 	cargo test
 
-# Update README.md
-readme:
-	cargo readme -o README.md
-
 # Install the binaries
 install:
 	cargo install --path . --debug --force
 
+# Update README.md
+readme:
+	cargo readme -o README.md
+
+# Bump crate versions
+version-bump version:
+	sed -i '/\[.*\]/h;/version = ".*"/{x;s/\[package\]/version = "{{version}}"/;t;x}' \
+		Cargo.toml config/Cargo.toml
+	sed -i '/\[.*\]/h;/version = "=.*"/{x;s/\[.*drone-.*\]/version = "={{version}}"/;t;x}' \
+		Cargo.toml
+
 # Publish to crates.io
 publish:
 	cd config && cargo publish
+	sleep 5
 	cargo publish

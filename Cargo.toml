@@ -3,11 +3,12 @@ members = ["config"]
 
 [package]
 name = "drone"
-version = "0.9.0"
+version = "0.10.0"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 edition = "2018"
 default-run = "drone"
 repository = "https://github.com/drone-os/drone"
+homepage = "https://www.drone-os.com/"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 keywords = [
@@ -32,7 +33,7 @@ CLI utility for Drone, an Embedded Operating System.
 maintenance = { status = "actively-developed" }
 
 [dependencies.drone-config]
-version = "=0.9.0"
+version = "=0.10.0"
 path = "config"
 
 [dependencies]

@@ -41,7 +41,7 @@ SECTIONS
 
     .data ADDR(.bss) + SIZEOF(.bss) :
     {
-        DATA_CONST = LOADADDR(.data);
+        DATA_LOAD = LOADADDR(.data);
         DATA_START = .;
         *(.data.*);
         . = ALIGN(4);
