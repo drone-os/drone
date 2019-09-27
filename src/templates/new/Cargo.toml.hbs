@@ -12,8 +12,8 @@ heaptrace = []
 [dependencies]
 core = { version = "0.10.0", package = "libcore-drone" }
 drone-core = { version = "0.10.0" }
-drone-cortex-m = { version = "0.10.0" }
-drone-stm32-map = { version = "0.10.0", features = [{{#each drone-stm32-map-features}}"{{this}}"{{#unless @last}}, {{/unless}}{{/each}}] }
+drone-cortex-m = { version = "0.10.0"{{#each drone-cortex-m-features}}{{#if @first}}, features = [{{/if}}"{{this}}"{{#if @last}}]{{else}}, {{/if}}{{/each}} }
+drone-stm32-map = { version = "0.10.0"{{#each drone-stm32-map-features}}{{#if @first}}, features = [{{/if}}"{{this}}"{{#if @last}}]{{else}}, {{/if}}{{/each}} }
 futures-preview = { version = "0.3.0-alpha", default-features = false }
 
 [profile.release]

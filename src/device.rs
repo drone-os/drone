@@ -216,8 +216,8 @@ impl Device {
         }
     }
 
-    /// Returns a list of features for the `drone-stm32-map` dependency.
-    pub fn drone_stm32_map_features(&self) -> &[&str] {
+    /// Returns a list of features for the `drone-cortex-m` dependency.
+    pub fn drone_cortex_m_features(&self) -> &[&str] {
         match self {
             Self::Stm32F100
             | Self::Stm32F101

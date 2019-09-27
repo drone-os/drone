@@ -122,9 +122,9 @@ dependencies = [
 
 [[package]]
 name = "drone"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
- "drone-config 0.10.0",
+ "drone-config 0.10.1",
  "env_logger 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "exitfailure 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -140,7 +140,7 @@ dependencies = [
 
 [[package]]
 name = "drone-config"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.101 (registry+https://github.com/rust-lang/crates.io-index)",

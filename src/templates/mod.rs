@@ -80,10 +80,12 @@ impl Registry {
     }
 
     pub fn new_cargo_toml(&self, device: &Device, crate_name: &str) -> Result<String, Error> {
-        let mut drone_stm32_map_features = vec![device.ident()];
-        drone_stm32_map_features.extend_from_slice(device.drone_stm32_map_features());
+        let mut drone_cortex_m_features = vec![];
+        let drone_stm32_map_features = vec![device.ident()];
+        drone_cortex_m_features.extend_from_slice(device.drone_cortex_m_features());
         let data = json!({
             "crate_name": crate_name,
+            "drone-cortex-m-features": drone_cortex_m_features,
             "drone-stm32-map-features": drone_stm32_map_features,
         });
         Ok(self.0.render("new/Cargo.toml", &data)?)
