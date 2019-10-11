@@ -13,6 +13,8 @@ Possible log types:
 
 ### Unreleased
 
+- [added] Add STM32F4 family support
+
 ### v0.10.1 (2019-09-27)
 
 - [fixed] Fix incorrect Cargo.toml generation for devices with FPU

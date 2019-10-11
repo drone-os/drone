@@ -8,6 +8,19 @@ set $DBGMCU_CR_DBG_SLEEP       = 0b00000001
 set $ITM_LAR = 0xE0000FB0
 set $ITM_LAR_CODE = 0xC5ACCE55
 
+{{#bmp-devices "stm32f401"
+               "stm32f405"
+               "stm32f407"
+               "stm32f410"
+               "stm32f411"
+               "stm32f412"
+               "stm32f413"
+               "stm32f427"
+               "stm32f429"
+               "stm32f446"
+               "stm32f469" }}
+set $DEFAULT_HCLK = 16000000
+{{/bmp-devices}}
 {{#bmp-devices "stm32f100"
                "stm32f101"
                "stm32f102"

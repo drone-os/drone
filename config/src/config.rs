@@ -66,6 +66,28 @@ pub enum Device {
     Stm32F103,
     #[serde(rename = "stm32f107")]
     Stm32F107,
+    #[serde(rename = "stm32f401")]
+    Stm32F401,
+    #[serde(rename = "stm32f405")]
+    Stm32F405,
+    #[serde(rename = "stm32f407")]
+    Stm32F407,
+    #[serde(rename = "stm32f410")]
+    Stm32F410,
+    #[serde(rename = "stm32f411")]
+    Stm32F411,
+    #[serde(rename = "stm32f412")]
+    Stm32F412,
+    #[serde(rename = "stm32f413")]
+    Stm32F413,
+    #[serde(rename = "stm32f427")]
+    Stm32F427,
+    #[serde(rename = "stm32f429")]
+    Stm32F429,
+    #[serde(rename = "stm32f446")]
+    Stm32F446,
+    #[serde(rename = "stm32f469")]
+    Stm32F469,
     #[serde(rename = "stm32l4x1")]
     Stm32L4X1,
     #[serde(rename = "stm32l4x2")]

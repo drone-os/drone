@@ -13,6 +13,17 @@ pub enum Device {
     Stm32F102,
     Stm32F103,
     Stm32F107,
+    Stm32F401,
+    Stm32F405,
+    Stm32F407,
+    Stm32F410,
+    Stm32F411,
+    Stm32F412,
+    Stm32F413,
+    Stm32F427,
+    Stm32F429,
+    Stm32F446,
+    Stm32F469,
     Stm32L4X1,
     Stm32L4X2,
     Stm32L4X3,
@@ -43,6 +54,17 @@ impl Device {
         item!(Self::Stm32F102);
         item!(Self::Stm32F103);
         item!(Self::Stm32F107);
+        item!(Self::Stm32F401);
+        item!(Self::Stm32F405);
+        item!(Self::Stm32F407);
+        item!(Self::Stm32F410);
+        item!(Self::Stm32F411);
+        item!(Self::Stm32F412);
+        item!(Self::Stm32F413);
+        item!(Self::Stm32F427);
+        item!(Self::Stm32F429);
+        item!(Self::Stm32F446);
+        item!(Self::Stm32F469);
         item!(Self::Stm32L4X1);
         item!(Self::Stm32L4X2);
         item!(Self::Stm32L4X3);
@@ -65,6 +87,17 @@ impl Device {
             "stm32f102" => Self::Stm32F102,
             "stm32f103" => Self::Stm32F103,
             "stm32f107" => Self::Stm32F107,
+            "stm32f401" => Self::Stm32F401,
+            "stm32f405" => Self::Stm32F405,
+            "stm32f407" => Self::Stm32F407,
+            "stm32f410" => Self::Stm32F410,
+            "stm32f411" => Self::Stm32F411,
+            "stm32f412" => Self::Stm32F412,
+            "stm32f413" => Self::Stm32F413,
+            "stm32f427" => Self::Stm32F427,
+            "stm32f429" => Self::Stm32F429,
+            "stm32f446" => Self::Stm32F446,
+            "stm32f469" => Self::Stm32F469,
             "stm32l4x1" => Self::Stm32L4X1,
             "stm32l4x2" => Self::Stm32L4X2,
             "stm32l4x3" => Self::Stm32L4X3,
@@ -92,6 +125,17 @@ impl Device {
             Self::Stm32F102 => "stm32f102",
             Self::Stm32F103 => "stm32f103",
             Self::Stm32F107 => "stm32f107",
+            Self::Stm32F401 => "stm32f401",
+            Self::Stm32F405 => "stm32f405",
+            Self::Stm32F407 => "stm32f407",
+            Self::Stm32F410 => "stm32f410",
+            Self::Stm32F411 => "stm32f411",
+            Self::Stm32F412 => "stm32f412",
+            Self::Stm32F413 => "stm32f413",
+            Self::Stm32F427 => "stm32f427",
+            Self::Stm32F429 => "stm32f429",
+            Self::Stm32F446 => "stm32f446",
+            Self::Stm32F469 => "stm32f469",
             Self::Stm32L4X1 => "stm32l4x1",
             Self::Stm32L4X2 => "stm32l4x2",
             Self::Stm32L4X3 => "stm32l4x3",
@@ -114,6 +158,17 @@ impl Device {
             Self::Stm32F102 => "STM32F102",
             Self::Stm32F103 => "STM32F103",
             Self::Stm32F107 => "STM32F107",
+            Self::Stm32F401 => "STM32F401",
+            Self::Stm32F405 => "STM32F405",
+            Self::Stm32F407 => "STM32F407",
+            Self::Stm32F410 => "STM32F410",
+            Self::Stm32F411 => "STM32F411",
+            Self::Stm32F412 => "STM32F412",
+            Self::Stm32F413 => "STM32F413",
+            Self::Stm32F427 => "STM32F427",
+            Self::Stm32F429 => "STM32F429",
+            Self::Stm32F446 => "STM32F446",
+            Self::Stm32F469 => "STM32F469",
             Self::Stm32L4X1 => "STM32L4x1",
             Self::Stm32L4X2 => "STM32L4x2",
             Self::Stm32L4X3 => "STM32L4x3",
@@ -136,6 +191,17 @@ impl Device {
             | Self::Stm32F102
             | Self::Stm32F103
             | Self::Stm32F107 => "STM32F1 Mainstream",
+            Self::Stm32F401
+            | Self::Stm32F405
+            | Self::Stm32F407
+            | Self::Stm32F410
+            | Self::Stm32F411
+            | Self::Stm32F412
+            | Self::Stm32F413
+            | Self::Stm32F427
+            | Self::Stm32F429
+            | Self::Stm32F446
+            | Self::Stm32F469 => "STM32F4 High Performance",
             Self::Stm32L4X1
             | Self::Stm32L4X2
             | Self::Stm32L4X3
@@ -158,7 +224,18 @@ impl Device {
             | Self::Stm32F102
             | Self::Stm32F103
             | Self::Stm32F107 => "thumbv7m-none-eabi",
-            Self::Stm32L4X1
+            Self::Stm32F401
+            | Self::Stm32F405
+            | Self::Stm32F407
+            | Self::Stm32F410
+            | Self::Stm32F411
+            | Self::Stm32F412
+            | Self::Stm32F413
+            | Self::Stm32F427
+            | Self::Stm32F429
+            | Self::Stm32F446
+            | Self::Stm32F469
+            | Self::Stm32L4X1
             | Self::Stm32L4X2
             | Self::Stm32L4X3
             | Self::Stm32L4X5
@@ -180,6 +257,17 @@ impl Device {
             | Self::Stm32F102
             | Self::Stm32F103
             | Self::Stm32F107
+            | Self::Stm32F401
+            | Self::Stm32F405
+            | Self::Stm32F407
+            | Self::Stm32F410
+            | Self::Stm32F411
+            | Self::Stm32F412
+            | Self::Stm32F413
+            | Self::Stm32F427
+            | Self::Stm32F429
+            | Self::Stm32F446
+            | Self::Stm32F469
             | Self::Stm32L4X1
             | Self::Stm32L4X2
             | Self::Stm32L4X3
@@ -202,6 +290,17 @@ impl Device {
             | Self::Stm32F102
             | Self::Stm32F103
             | Self::Stm32F107
+            | Self::Stm32F401
+            | Self::Stm32F405
+            | Self::Stm32F407
+            | Self::Stm32F410
+            | Self::Stm32F411
+            | Self::Stm32F412
+            | Self::Stm32F413
+            | Self::Stm32F427
+            | Self::Stm32F429
+            | Self::Stm32F446
+            | Self::Stm32F469
             | Self::Stm32L4X1
             | Self::Stm32L4X2
             | Self::Stm32L4X3
@@ -224,7 +323,18 @@ impl Device {
             | Self::Stm32F102
             | Self::Stm32F103
             | Self::Stm32F107 => &[],
-            Self::Stm32L4X1
+            Self::Stm32F401
+            | Self::Stm32F405
+            | Self::Stm32F407
+            | Self::Stm32F410
+            | Self::Stm32F411
+            | Self::Stm32F412
+            | Self::Stm32F413
+            | Self::Stm32F427
+            | Self::Stm32F429
+            | Self::Stm32F446
+            | Self::Stm32F469
+            | Self::Stm32L4X1
             | Self::Stm32L4X2
             | Self::Stm32L4X3
             | Self::Stm32L4X5

@@ -1,6 +1,6 @@
 [package]
 name = "drone-config"
-version = "0.10.1"
+version = "0.10.2"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/drone-os/drone"
@@ -14,4 +14,4 @@ Configuration for Drone, an Embedded Operating System.
 [dependencies]
 failure = { version = "0.1" }
 serde = { version = "1", features = ["derive"] }
-toml = "0.4"
+toml = "0.5"

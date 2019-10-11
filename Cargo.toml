@@ -3,7 +3,7 @@ members = ["config"]
 
 [package]
 name = "drone"
-version = "0.10.1"
+version = "0.10.2"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 edition = "2018"
 default-run = "drone"
@@ -33,11 +33,11 @@ CLI utility for Drone, an Embedded Operating System.
 maintenance = { status = "actively-developed" }
 
 [dependencies.drone-config]
-version = "=0.10.1"
+version = "=0.10.2"
 path = "config"
 
 [dependencies]
-env_logger = "0.6"
+env_logger = "0.7"
 exitfailure = "0.5"
 failure = { version = "0.1", features = ["derive"] }
 handlebars = "2"
