@@ -15,6 +15,10 @@ use {{crate_name}}::{
 pub static VTABLE: Vtable = Vtable::new(Handlers { reset });
 
 /// The entry point.
+///
+/// # Safety
+///
+/// This function should not be called by software.
 #[no_mangle]
 #[naked]
 pub unsafe extern "C" fn reset() -> ! {

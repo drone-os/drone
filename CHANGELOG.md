@@ -13,6 +13,7 @@ Possible log types:
 
 ### Unreleased
 
+- [fixed] Fix `clippy::missing_safety_doc` lint for generated projects
 - [added] Add STM32F4 family support
 
 ### v0.10.1 (2019-09-27)
