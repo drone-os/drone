@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub memory: Memory,
     pub heap: Heap,
+    pub linker: Option<Linker>,
     pub bmp: Option<Bmp>,
 }
 
@@ -36,6 +37,12 @@ pub struct Heap {
     #[serde(deserialize_with = "deserialize_size")]
     pub size: u32,
     pub pools: Vec<Pool>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Linker {
+    #[serde(default)]
+    pub include: Vec<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -13,6 +13,7 @@ Possible log types:
 
 ### Unreleased
 
+- [added] Add `linker.include` section to Drone.toml
 - [fixed] Fix `clippy::missing_safety_doc` lint for generated projects
 - [added] Add STM32F4 family support
 
