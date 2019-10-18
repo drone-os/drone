@@ -2,6 +2,7 @@
 
 use crate::{
     cli::NewCmd,
+    crates,
     device::Device,
     templates::Registry,
     utils::{mask_signals, run_command},
@@ -52,11 +53,15 @@ impl NewCmd {
 
         cargo_new(path, &toolchain)?;
         src_main_rs(path, shell)?;
-        src_bin_rs(path, &underscore_name, &registry, shell)?;
-        src_lib_rs(path, &registry, shell)?;
-        src_thr_rs(path, &registry, shell)?;
-        src_tasks_mod_rs(path, &registry, shell)?;
-        src_tasks_root_rs(path, &registry, shell)?;
+        match device.platform_crate().0 {
+            crates::Platform::CortexM => {
+                src_cortex_m_bin_rs(path, &underscore_name, &registry, shell)?;
+                src_cortex_m_lib_rs(path, &device, &registry, shell)?;
+                src_cortex_m_thr_rs(path, &device, &registry, shell)?;
+                src_cortex_m_tasks_mod_rs(path, &registry, shell)?;
+                src_cortex_m_tasks_root_rs(path, &registry, shell)?;
+            }
+        }
         cargo_toml(path, &name, &device, &registry, shell)?;
         drone_toml(path, &device, *flash_size, *ram_size, &registry, shell)?;
         justfile(path, &device, &registry, shell)?;
@@ -81,7 +86,7 @@ fn src_main_rs(path: &Path, shell: &mut StandardStream) -> Result<(), Error> {
     print_removed(shell, "src/main.rs")
 }
 
-fn src_bin_rs(
+fn src_cortex_m_bin_rs(
     path: &Path,
     name: &str,
     registry: &Registry,
@@ -89,25 +94,35 @@ fn src_bin_rs(
 ) -> Result<(), Error> {
     let path = path.join("src/bin.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_bin_rs(name)?.as_bytes())?;
+    file.write_all(registry.new_src_cortex_m_bin_rs(name)?.as_bytes())?;
     print_created(shell, "src/bin.rs")
 }
 
-fn src_lib_rs(path: &Path, registry: &Registry, shell: &mut StandardStream) -> Result<(), Error> {
+fn src_cortex_m_lib_rs(
+    path: &Path,
+    device: &Device,
+    registry: &Registry,
+    shell: &mut StandardStream,
+) -> Result<(), Error> {
     let path = path.join("src/lib.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_lib_rs()?.as_bytes())?;
+    file.write_all(registry.new_src_cortex_m_lib_rs(device)?.as_bytes())?;
     print_created(shell, "src/lib.rs")
 }
 
-fn src_thr_rs(path: &Path, registry: &Registry, shell: &mut StandardStream) -> Result<(), Error> {
+fn src_cortex_m_thr_rs(
+    path: &Path,
+    device: &Device,
+    registry: &Registry,
+    shell: &mut StandardStream,
+) -> Result<(), Error> {
     let path = path.join("src/thr.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_thr_rs()?.as_bytes())?;
+    file.write_all(registry.new_src_cortex_m_thr_rs(device)?.as_bytes())?;
     print_created(shell, "src/thr.rs")
 }
 
-fn src_tasks_mod_rs(
+fn src_cortex_m_tasks_mod_rs(
     path: &Path,
     registry: &Registry,
     shell: &mut StandardStream,
@@ -116,18 +131,18 @@ fn src_tasks_mod_rs(
     create_dir(&path)?;
     let path = path.join("mod.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_tasks_mod_rs()?.as_bytes())?;
+    file.write_all(registry.new_src_cortex_m_tasks_mod_rs()?.as_bytes())?;
     print_created(shell, "src/tasks/mod.rs")
 }
 
-fn src_tasks_root_rs(
+fn src_cortex_m_tasks_root_rs(
     path: &Path,
     registry: &Registry,
     shell: &mut StandardStream,
 ) -> Result<(), Error> {
     let path = path.join("src/tasks/root.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_tasks_root_rs()?.as_bytes())?;
+    file.write_all(registry.new_src_cortex_m_tasks_root_rs()?.as_bytes())?;
     print_created(shell, "src/tasks/root.rs")
 }
 

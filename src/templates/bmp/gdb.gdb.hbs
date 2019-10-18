@@ -1,38 +1,13 @@
+{{> bmp/target.gdb }}
 target extended-remote {{config.bmp.gdb_endpoint}}
 monitor version
 {{#if reset}}
-monitor connect_srst enable
+drone_connect_srst
 {{/if}}
 monitor swdp_scan
 attach 1
 set mem inaccessible-by-default off
-{{#bmp-devices "stm32f100"
-               "stm32f101"
-               "stm32f102"
-               "stm32f103"
-               "stm32f107"
-               "stm32f401"
-               "stm32f405"
-               "stm32f407"
-               "stm32f410"
-               "stm32f411"
-               "stm32f412"
-               "stm32f413"
-               "stm32f427"
-               "stm32f429"
-               "stm32f446"
-               "stm32f469"
-               "stm32l4x1"
-               "stm32l4x2"
-               "stm32l4x3"
-               "stm32l4x5"
-               "stm32l4x6"
-               "stm32l4r5"
-               "stm32l4r7"
-               "stm32l4r9"
-               "stm32l4s5"
-               "stm32l4s7"
-               "stm32l4s9" }}
-{{> bmp/stm32.gdb }}
-set {int}$DBGMCU_CR = {int}$DBGMCU_CR | $DBGMCU_CR_DBG_STANDBY | $DBGMCU_CR_DBG_STOP | $DBGMCU_CR_DBG_SLEEP
-{{/bmp-devices}}
+{{#if reset}}
+drone_break_reset
+{{/if}}
+drone_gdb

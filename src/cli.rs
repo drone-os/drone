@@ -134,6 +134,9 @@ pub struct BmpItmCmd {
     /// A comma-separated list of ITM ports to enable
     #[structopt(default_value = "0,1", parse(try_from_str = parse_ports))]
     pub ports: BTreeSet<u32>,
+    /// Path to the compiled firmware file
+    #[structopt(parse(from_os_str))]
+    pub firmware: Option<PathBuf>,
     /// Reset the attached device
     #[structopt(short, long)]
     pub reset: bool,

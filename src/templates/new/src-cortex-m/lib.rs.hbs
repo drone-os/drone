@@ -14,9 +14,9 @@ pub mod thr;
 use drone_cortex_m::prelude::*;
 
 use drone_core::heap;
-use drone_stm32_map::stm32_reg_tokens;
+use drone_{{bindings_name}}_map::{{bindings_name}}_reg_tokens;
 
-stm32_reg_tokens! {
+{{bindings_name}}_reg_tokens! {
     /// A set of tokens for all memory-mapped registers.
     pub struct Regs;
 }

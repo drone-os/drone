@@ -87,6 +87,7 @@ impl BmpItmCmd {
     ) -> Result<(), Error> {
         let Self {
             ports,
+            firmware,
             reset,
             itmsink_args,
         } = self;
@@ -103,6 +104,9 @@ impl BmpItmCmd {
         let script = registry.bmp_itm(&config, ports, *reset, &pipe)?;
         let gdb_command = &config.bmp()?.gdb_command;
         let mut gdb = Command::new(gdb_command);
+        if let Some(firmware) = firmware {
+            gdb.arg(firmware);
+        }
         gdb.arg("--nx");
         gdb.arg("--batch");
         gdb.arg("--command").arg(script.path());

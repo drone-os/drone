@@ -29,11 +29,11 @@ impl Registry {
         }
 
         template!("layout.ld")?;
-        template!("new/src/bin.rs")?;
-        template!("new/src/lib.rs")?;
-        template!("new/src/thr.rs")?;
-        template!("new/src/tasks/mod.rs")?;
-        template!("new/src/tasks/root.rs")?;
+        template!("new/src-cortex-m/bin.rs")?;
+        template!("new/src-cortex-m/lib.rs")?;
+        template!("new/src-cortex-m/thr.rs")?;
+        template!("new/src-cortex-m/tasks/mod.rs")?;
+        template!("new/src-cortex-m/tasks/root.rs")?;
         template!("new/Cargo.toml")?;
         template!("new/Drone.toml")?;
         template!("new/Justfile")?;
@@ -44,8 +44,10 @@ impl Registry {
         template!("bmp/flash.gdb")?;
         template!("bmp/gdb.gdb")?;
         template!("bmp/itm.gdb")?;
-        template!("bmp/cortex_m.gdb")?;
-        template!("bmp/stm32.gdb")?;
+        template!("bmp/target.gdb")?;
+        template!("bmp/target/cortex_m.gdb")?;
+        template!("bmp/target/nrf.gdb")?;
+        template!("bmp/target/stm32.gdb")?;
 
         handlebars.register_helper("addr", Box::new(addr));
         handlebars.register_helper("size", Box::new(size));
@@ -58,35 +60,40 @@ impl Registry {
         with_temp_file(|file| self.0.render_to_write("layout.ld", &data, file))
     }
 
-    pub fn new_src_bin_rs(&self, crate_name: &str) -> Result<String, Error> {
+    pub fn new_src_cortex_m_bin_rs(&self, crate_name: &str) -> Result<String, Error> {
         let data = json!({ "crate_name": crate_name });
-        Ok(self.0.render("new/src/bin.rs", &data)?)
+        Ok(self.0.render("new/src-cortex-m/bin.rs", &data)?)
     }
 
-    pub fn new_src_lib_rs(&self) -> Result<String, Error> {
-        Ok(self.0.render("new/src/lib.rs", &())?)
+    pub fn new_src_cortex_m_lib_rs(&self, device: &Device) -> Result<String, Error> {
+        let (bindings, _) = device.bindings_crate();
+        let data = json!({ "bindings_name": bindings.underscore_name() });
+        Ok(self.0.render("new/src-cortex-m/lib.rs", &data)?)
     }
 
-    pub fn new_src_thr_rs(&self) -> Result<String, Error> {
-        Ok(self.0.render("new/src/thr.rs", &())?)
+    pub fn new_src_cortex_m_thr_rs(&self, device: &Device) -> Result<String, Error> {
+        let (bindings, _) = device.bindings_crate();
+        let data = json!({ "bindings_name": bindings.underscore_name() });
+        Ok(self.0.render("new/src-cortex-m/thr.rs", &data)?)
     }
 
-    pub fn new_src_tasks_mod_rs(&self) -> Result<String, Error> {
-        Ok(self.0.render("new/src/tasks/mod.rs", &())?)
+    pub fn new_src_cortex_m_tasks_mod_rs(&self) -> Result<String, Error> {
+        Ok(self.0.render("new/src-cortex-m/tasks/mod.rs", &())?)
     }
 
-    pub fn new_src_tasks_root_rs(&self) -> Result<String, Error> {
-        Ok(self.0.render("new/src/tasks/root.rs", &())?)
+    pub fn new_src_cortex_m_tasks_root_rs(&self) -> Result<String, Error> {
+        Ok(self.0.render("new/src-cortex-m/tasks/root.rs", &())?)
     }
 
     pub fn new_cargo_toml(&self, device: &Device, crate_name: &str) -> Result<String, Error> {
-        let mut drone_cortex_m_features = vec![];
-        let drone_stm32_map_features = vec![device.ident()];
-        drone_cortex_m_features.extend_from_slice(device.drone_cortex_m_features());
+        let (platform, platform_features) = device.platform_crate();
+        let (bindings, bindings_features) = device.bindings_crate();
         let data = json!({
             "crate_name": crate_name,
-            "drone-cortex-m-features": drone_cortex_m_features,
-            "drone-stm32-map-features": drone_stm32_map_features,
+            "platform_name": platform.kebab_name(),
+            "bindings_name": bindings.kebab_name(),
+            "platform_features": platform_features,
+            "bindings_features": bindings_features,
         });
         Ok(self.0.render("new/Cargo.toml", &data)?)
     }

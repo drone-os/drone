@@ -1,0 +1,22 @@
+{{> bmp/target/cortex_m.gdb }}
+
+define drone_connect_srst
+end
+
+define drone_break_reset
+    drone_break_reset_cortex_m
+end
+
+define drone_gdb
+end
+
+define drone_itm
+    drone_itm_cortex_m
+end
+
+{{#bmp-devices "nrf52810"
+               "nrf52811"
+               "nrf52832"
+               "nrf52840" }}
+set $INITIAL_ITM_FREQ = 32000000
+{{/bmp-devices}}

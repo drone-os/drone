@@ -62,7 +62,7 @@ gdb:
 
 # Display ITM output from the attached device
 itm:
-	drone bmp itm --reset 0,1 -- 0,1
+	drone bmp itm 0,1 \{{release_bin}} --reset -- 0,1
 
 # Record `heaptrace` file from the attached device (should be compiled with `heaptrace` feature)
 heaptrace:

@@ -40,6 +40,7 @@
 
 pub mod bmp;
 pub mod cli;
+pub mod crates;
 pub mod device;
 pub mod heap;
 pub mod new;

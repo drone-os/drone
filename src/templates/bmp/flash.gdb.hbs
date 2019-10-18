@@ -1,6 +1,7 @@
+{{> bmp/target.gdb }}
 target extended-remote {{config.bmp.gdb_endpoint}}
 monitor version
-monitor connect_srst enable
+drone_connect_srst
 monitor swdp_scan
 attach 1
 load
