@@ -6,6 +6,7 @@ drone_connect_srst
 {{/if}}
 monitor swdp_scan
 attach 1
+drone_target_info
 set mem inaccessible-by-default off
 drone_itm
 {{#if reset}}

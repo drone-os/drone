@@ -1,7 +1,7 @@
 //! Supported devices.
 
 use crate::crates;
-use failure::{bail, Error};
+use anyhow::{bail, Result};
 use std::io::Write;
 use termcolor::{ColorChoice, ColorSpec, StandardStream, WriteColor};
 
@@ -44,8 +44,8 @@ pub enum Device {
 
 impl Device {
     /// Prints the list of supported devices.
-    pub fn print_list(color_choice: ColorChoice) -> Result<(), Error> {
-        let mut shell = StandardStream::stdout(color_choice);
+    pub fn print_list(color: ColorChoice) -> Result<()> {
+        let mut shell = StandardStream::stdout(color);
         macro_rules! item {
             ($item:expr) => {{
                 shell.set_color(ColorSpec::new().set_bold(true))?;
@@ -89,7 +89,7 @@ impl Device {
     }
 
     /// Returns a device variant from the provided string.
-    pub fn parse(src: &str) -> Result<Self, Error> {
+    pub fn parse(src: &str) -> Result<Self> {
         Ok(match src {
             "nrf52810" => Self::Nrf52810,
             "nrf52811" => Self::Nrf52811,
@@ -241,13 +241,13 @@ impl Device {
     }
 
     /// Return the target triple for the device.
-    pub fn target(&self) -> &str {
+    pub fn target(&self) -> (&str, &str) {
         match self {
             Self::Stm32F100
             | Self::Stm32F101
             | Self::Stm32F102
             | Self::Stm32F103
-            | Self::Stm32F107 => "thumbv7m-none-eabi",
+            | Self::Stm32F107 => ("thumbv7m-none-eabi", "THUMBV7M_NONE_EABI"),
             Self::Nrf52810
             | Self::Nrf52811
             | Self::Nrf52832
@@ -273,7 +273,7 @@ impl Device {
             | Self::Stm32L4R9
             | Self::Stm32L4S5
             | Self::Stm32L4S7
-            | Self::Stm32L4S9 => "thumbv7em-none-eabihf",
+            | Self::Stm32L4S9 => ("thumbv7em-none-eabihf", "THUMBV7EM_NONE_EABIHF"),
         }
     }
 
@@ -349,13 +349,13 @@ impl Device {
     }
 
     /// Returns a drone platform crate dependency.
-    pub fn platform_crate(&self) -> (crates::Platform, &[&str]) {
+    pub fn platform_crate(&self) -> (crates::Platform, &str, &[&str]) {
         match self {
             Self::Stm32F100
             | Self::Stm32F101
             | Self::Stm32F102
             | Self::Stm32F103
-            | Self::Stm32F107 => (crates::Platform::CortexM, &[]),
+            | Self::Stm32F107 => (crates::Platform::CortexM, "cortex_m3_r1p1", &[]),
             Self::Nrf52810
             | Self::Nrf52811
             | Self::Nrf52832
@@ -381,44 +381,76 @@ impl Device {
             | Self::Stm32L4R9
             | Self::Stm32L4S5
             | Self::Stm32L4S7
-            | Self::Stm32L4S9 => (crates::Platform::CortexM, &["fpu"]),
+            | Self::Stm32L4S9 => (crates::Platform::CortexM, "cortex_m4f_r0p1", &["fpu"]),
         }
     }
 
     /// Returns a drone bindings map crate dependency.
-    pub fn bindings_crate(&self) -> (crates::Bindings, &[&str]) {
+    pub fn bindings_crate(&self) -> (crates::Bindings, &str, &[&str]) {
         match self {
-            Self::Nrf52810 => (crates::Bindings::Nrf, &["nrf52810"]),
-            Self::Nrf52811 => (crates::Bindings::Nrf, &["nrf52811"]),
-            Self::Nrf52832 => (crates::Bindings::Nrf, &["nrf52832"]),
-            Self::Nrf52840 => (crates::Bindings::Nrf, &["nrf52840"]),
-            Self::Stm32F100 => (crates::Bindings::Stm32, &["stm32f100"]),
-            Self::Stm32F101 => (crates::Bindings::Stm32, &["stm32f101"]),
-            Self::Stm32F102 => (crates::Bindings::Stm32, &["stm32f102"]),
-            Self::Stm32F103 => (crates::Bindings::Stm32, &["stm32f103"]),
-            Self::Stm32F107 => (crates::Bindings::Stm32, &["stm32f107"]),
-            Self::Stm32F401 => (crates::Bindings::Stm32, &["stm32f401"]),
-            Self::Stm32F405 => (crates::Bindings::Stm32, &["stm32f405"]),
-            Self::Stm32F407 => (crates::Bindings::Stm32, &["stm32f407"]),
-            Self::Stm32F410 => (crates::Bindings::Stm32, &["stm32f410"]),
-            Self::Stm32F411 => (crates::Bindings::Stm32, &["stm32f411"]),
-            Self::Stm32F412 => (crates::Bindings::Stm32, &["stm32f412"]),
-            Self::Stm32F413 => (crates::Bindings::Stm32, &["stm32f413"]),
-            Self::Stm32F427 => (crates::Bindings::Stm32, &["stm32f427"]),
-            Self::Stm32F429 => (crates::Bindings::Stm32, &["stm32f429"]),
-            Self::Stm32F446 => (crates::Bindings::Stm32, &["stm32f446"]),
-            Self::Stm32F469 => (crates::Bindings::Stm32, &["stm32f469"]),
-            Self::Stm32L4X1 => (crates::Bindings::Stm32, &["stm32l4x1"]),
-            Self::Stm32L4X2 => (crates::Bindings::Stm32, &["stm32l4x2"]),
-            Self::Stm32L4X3 => (crates::Bindings::Stm32, &["stm32l4x3"]),
-            Self::Stm32L4X5 => (crates::Bindings::Stm32, &["stm32l4x5"]),
-            Self::Stm32L4X6 => (crates::Bindings::Stm32, &["stm32l4x6"]),
-            Self::Stm32L4R5 => (crates::Bindings::Stm32, &["stm32l4r5"]),
-            Self::Stm32L4R7 => (crates::Bindings::Stm32, &["stm32l4r7"]),
-            Self::Stm32L4R9 => (crates::Bindings::Stm32, &["stm32l4r9"]),
-            Self::Stm32L4S5 => (crates::Bindings::Stm32, &["stm32l4s5"]),
-            Self::Stm32L4S7 => (crates::Bindings::Stm32, &["stm32l4s7"]),
-            Self::Stm32L4S9 => (crates::Bindings::Stm32, &["stm32l4s9"]),
+            Self::Nrf52810 => (crates::Bindings::Nrf, "nrf52810", &[]),
+            Self::Nrf52811 => (crates::Bindings::Nrf, "nrf52811", &[]),
+            Self::Nrf52832 => (crates::Bindings::Nrf, "nrf52832", &[]),
+            Self::Nrf52840 => (crates::Bindings::Nrf, "nrf52840", &[]),
+            Self::Stm32F100 => (crates::Bindings::Stm32, "stm32f100", &[
+                "dma", "gpio", "spi", "tim",
+            ]),
+            Self::Stm32F101 => (crates::Bindings::Stm32, "stm32f101", &[
+                "dma", "gpio", "spi", "tim",
+            ]),
+            Self::Stm32F102 => (crates::Bindings::Stm32, "stm32f102", &[
+                "dma", "gpio", "spi", "tim",
+            ]),
+            Self::Stm32F103 => (crates::Bindings::Stm32, "stm32f103", &[
+                "dma", "gpio", "spi", "tim",
+            ]),
+            Self::Stm32F107 => (crates::Bindings::Stm32, "stm32f107", &[
+                "dma", "gpio", "spi", "tim",
+            ]),
+            Self::Stm32F401 => (crates::Bindings::Stm32, "stm32f401", &[]),
+            Self::Stm32F405 => (crates::Bindings::Stm32, "stm32f405", &[]),
+            Self::Stm32F407 => (crates::Bindings::Stm32, "stm32f407", &[]),
+            Self::Stm32F410 => (crates::Bindings::Stm32, "stm32f410", &[]),
+            Self::Stm32F411 => (crates::Bindings::Stm32, "stm32f411", &[]),
+            Self::Stm32F412 => (crates::Bindings::Stm32, "stm32f412", &[]),
+            Self::Stm32F413 => (crates::Bindings::Stm32, "stm32f413", &[]),
+            Self::Stm32F427 => (crates::Bindings::Stm32, "stm32f427", &[]),
+            Self::Stm32F429 => (crates::Bindings::Stm32, "stm32f429", &[]),
+            Self::Stm32F446 => (crates::Bindings::Stm32, "stm32f446", &[]),
+            Self::Stm32F469 => (crates::Bindings::Stm32, "stm32f469", &[]),
+            Self::Stm32L4X1 => (crates::Bindings::Stm32, "stm32l4x1", &[
+                "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart",
+            ]),
+            Self::Stm32L4X2 => (crates::Bindings::Stm32, "stm32l4x2", &[
+                "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart",
+            ]),
+            Self::Stm32L4X3 => (crates::Bindings::Stm32, "stm32l4x3", &[
+                "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart",
+            ]),
+            Self::Stm32L4X5 => (crates::Bindings::Stm32, "stm32l4x5", &[
+                "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart",
+            ]),
+            Self::Stm32L4X6 => (crates::Bindings::Stm32, "stm32l4x6", &[
+                "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart",
+            ]),
+            Self::Stm32L4R5 => (crates::Bindings::Stm32, "stm32l4r5", &[
+                "adc", "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart",
+            ]),
+            Self::Stm32L4R7 => (crates::Bindings::Stm32, "stm32l4r7", &[
+                "adc", "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart",
+            ]),
+            Self::Stm32L4R9 => (crates::Bindings::Stm32, "stm32l4r9", &[
+                "adc", "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart",
+            ]),
+            Self::Stm32L4S5 => (crates::Bindings::Stm32, "stm32l4s5", &[
+                "adc", "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart",
+            ]),
+            Self::Stm32L4S7 => (crates::Bindings::Stm32, "stm32l4s7", &[
+                "adc", "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart",
+            ]),
+            Self::Stm32L4S9 => (crates::Bindings::Stm32, "stm32l4s9", &[
+                "adc", "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart",
+            ]),
         }
     }
 }

@@ -2,8 +2,8 @@
 
 use super::TraceEntry;
 use crate::cli::HeapGenerateCmd;
+use anyhow::Result;
 use drone_config::format_size;
-use failure::Error;
 use std::{
     collections::BTreeMap,
     io::{stdout, Write},
@@ -19,7 +19,7 @@ impl HeapGenerateCmd {
         trace: &BTreeMap<u32, TraceEntry>,
         size: u32,
         shell: &mut StandardStream,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let Self { pools } = self;
         if trace.is_empty() {
             let layout = new(size, *pools);
@@ -56,7 +56,7 @@ pub fn new(size: u32, pools: u32) -> Vec<(u32, u32)> {
 }
 
 /// Writes the layout to `w` as `heap` section for `Drone.toml`.
-pub fn display(w: &mut impl Write, layout: &[(u32, u32)]) -> Result<(), Error> {
+pub fn display(w: &mut impl Write, layout: &[(u32, u32)]) -> Result<()> {
     let size = layout.iter().map(|(size, count)| size * count).sum::<u32>();
     writeln!(w, "[heap]")?;
     writeln!(w, "size = \"{}\"", format_size(size))?;
@@ -81,7 +81,7 @@ fn generate(
     size: u32,
     mut pools: u32,
     shell: &mut StandardStream,
-) -> Result<(), Error> {
+) -> Result<()> {
     let mut input = Vec::<(u32, u32)>::with_capacity(trace.len());
     let mut used = 0;
     let mut prev_size = 0;

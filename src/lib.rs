@@ -27,7 +27,6 @@
 
 #![feature(generator_trait)]
 #![feature(generators)]
-#![feature(todo_macro)]
 #![deny(elided_lifetimes_in_paths)]
 #![warn(missing_docs)]
 #![warn(clippy::pedantic)]
@@ -35,6 +34,8 @@
     clippy::cast_possible_truncation,
     clippy::cast_precision_loss,
     clippy::cast_sign_loss,
+    clippy::module_name_repetitions,
+    clippy::must_use_candidate,
     clippy::similar_names
 )]
 
@@ -48,15 +49,15 @@ pub mod templates;
 pub mod utils;
 
 use crate::device::Device;
+use anyhow::Result;
 use cli::{Cli, Cmd};
 use env_logger::Builder as LoggerBuilder;
-use failure::Error;
 use log::Level;
-use termcolor::{ColorChoice, StandardStream};
+use termcolor::StandardStream;
 
 impl Cli {
     /// Runs the program.
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run(self) -> Result<()> {
         let Self {
             cmd,
             color,
@@ -73,10 +74,9 @@ impl Cli {
             .filter(Some(env!("CARGO_PKG_NAME")), log_level.to_level_filter())
             .filter(None, Level::Warn.to_level_filter())
             .try_init()?;
-        let color_choice = color.unwrap_or(ColorChoice::Auto);
-        let mut shell = StandardStream::stderr(color_choice);
+        let mut shell = StandardStream::stderr(color);
         match cmd {
-            Cmd::SupportedDevices => Device::print_list(color_choice),
+            Cmd::SupportedDevices => Device::print_list(color),
             Cmd::New(cmd) => cmd.run(&mut shell),
             Cmd::Heap(cmd) => cmd.run(&mut shell),
             Cmd::Bmp(cmd) => cmd.run(&mut shell),

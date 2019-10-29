@@ -1,7 +1,11 @@
+features := ''
 build_target := '{{device_target}}'
+{{platform_flag_name}} := '{{platform_flag}}'
+{{bindings_flag_name}} := '{{bindings_flag}}'
 bin_name := `basename $(pwd)`
 release_bin := "target/" + build_target + "/release/" + bin_name
-features := ''
+
+export CARGO_TARGET_{{device_target_var}}_RUSTFLAGS := '--cfg cortex_m_core="' + cortex_m_core + '" ' + '--cfg {{bindings_flag_name}}="' + {{bindings_flag_name}} + '"'
 
 # Install dependencies
 deps:

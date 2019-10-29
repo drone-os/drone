@@ -10,10 +10,10 @@ std = ["drone-core/std", "drone-{{platform_name}}/std", "futures-preview/std"]
 heaptrace = []
 
 [dependencies]
-core = { version = "0.10.0", package = "libcore-drone" }
-drone-core = { version = "0.10.0" }
-drone-{{platform_name}} = { version = "0.10.0"{{#each platform_features}}{{#if @first}}, features = [{{/if}}"{{this}}"{{#if @last}}]{{else}}, {{/if}}{{/each}} }
-drone-{{bindings_name}}-map = { version = "0.10.0"{{#each bindings_features}}{{#if @first}}, features = [{{/if}}"{{this}}"{{#if @last}}]{{else}}, {{/if}}{{/each}} }
+core = { version = "0.11.0", package = "libcore-drone" }
+drone-core = { version = "0.11.0" }
+drone-{{platform_name}} = { version = "0.11.0"{{#each platform_features}}{{#if @first}}, features = [{{/if}}"{{this}}"{{#if @last}}]{{else}}, {{/if}}{{/each}} }
+drone-{{bindings_name}}-map = { version = "0.11.0"{{#each bindings_features}}{{#if @first}}, features = [{{/if}}"{{this}}"{{#if @last}}]{{else}}, {{/if}}{{/each}} }
 futures-preview = { version = "0.3.0-alpha", default-features = false }
 
 [profile.release]

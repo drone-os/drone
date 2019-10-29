@@ -3,14 +3,14 @@
 #![deny(elided_lifetimes_in_paths)]
 #![warn(missing_docs)]
 #![warn(clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::module_name_repetitions, clippy::must_use_candidate)]
 
 mod config;
 mod format;
 
 pub use crate::{config::*, format::*};
 
-use failure::{bail, format_err, Error};
+use anyhow::{anyhow, bail, Result};
 use std::{env, fs::File, io::Read, path::Path};
 
 /// The name of the Drone configuration file.
@@ -19,7 +19,7 @@ pub const CONFIG_NAME: &str = "Drone.toml";
 impl Config {
     /// Reads the configuration file from the current working directory and
     /// returns a parsed object.
-    pub fn read_from_current_dir() -> Result<Self, Error> {
+    pub fn read_from_current_dir() -> Result<Self> {
         Self::read(Path::new("."))
     }
 
@@ -28,13 +28,13 @@ impl Config {
     ///
     /// If `CARGO_MANIFEST_DIR_OVERRIDE` environment variable is set, the
     /// function will parse its value directly.
-    pub fn read_from_cargo_manifest_dir() -> Result<Self, Error> {
+    pub fn read_from_cargo_manifest_dir() -> Result<Self> {
         if let Ok(string) = env::var("CARGO_MANIFEST_DIR_OVERRIDE") {
             Self::parse(&string)
         } else {
             Self::read(
                 env::var_os("CARGO_MANIFEST_DIR")
-                    .ok_or_else(|| format_err!("`CARGO_MANIFEST_DIR` is not set"))?
+                    .ok_or_else(|| anyhow!("`CARGO_MANIFEST_DIR` is not set"))?
                     .as_ref(),
             )
         }
@@ -42,7 +42,7 @@ impl Config {
 
     /// Reads the configuration file at `crate_root` and returns a parsed
     /// object.
-    pub fn read(crate_root: &Path) -> Result<Self, Error> {
+    pub fn read(crate_root: &Path) -> Result<Self> {
         let crate_root = crate_root.canonicalize()?;
         let path = crate_root.join(CONFIG_NAME);
         if !path.exists() {
@@ -55,20 +55,20 @@ impl Config {
     }
 
     /// Parses config from the `string`.
-    pub fn parse(string: &str) -> Result<Self, Error> {
+    pub fn parse(string: &str) -> Result<Self> {
         let config = toml::from_str::<Self>(&string)?;
         config.check_heap()?;
         Ok(config)
     }
 
     /// Returns `bmp` section or an error if not defined.
-    pub fn bmp(&self) -> Result<&Bmp, Error> {
+    pub fn bmp(&self) -> Result<&Bmp> {
         self.bmp
             .as_ref()
-            .ok_or_else(|| format_err!("{}: section `bmp` is not defined", CONFIG_NAME))
+            .ok_or_else(|| anyhow!("{}: section `bmp` is not defined", CONFIG_NAME))
     }
 
-    fn check_heap(&self) -> Result<(), Error> {
+    fn check_heap(&self) -> Result<()> {
         let Self {
             heap: Heap { size, pools },
             ..

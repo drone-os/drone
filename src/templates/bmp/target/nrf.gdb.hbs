@@ -1,5 +1,12 @@
 {{> bmp/target/cortex_m.gdb }}
 
+define drone_target_info
+    monitor read hwid
+    monitor read fwid
+    monitor read deviceid
+    monitor read deviceaddr
+end
+
 define drone_connect_srst
 end
 

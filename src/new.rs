@@ -1,23 +1,18 @@
 //! Drone project scaffolding.
 
-use crate::{
-    cli::NewCmd,
-    crates,
-    device::Device,
-    templates::Registry,
-    utils::{mask_signals, run_command},
-};
-use failure::{bail, format_err, Error};
+use crate::{cli::NewCmd, crates, device::Device, templates::Registry, utils::run_command};
+use anyhow::{anyhow, bail, Result};
 use std::{
     fs::{create_dir, read_to_string, remove_file, File, OpenOptions},
     io::Write,
     path::Path,
+    process::Command,
 };
 use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 
 impl NewCmd {
     /// Runs the `new` command.
-    pub fn run(&self, shell: &mut StandardStream) -> Result<(), Error> {
+    pub fn run(&self, shell: &mut StandardStream) -> Result<()> {
         let Self {
             path,
             device,
@@ -31,7 +26,7 @@ impl NewCmd {
             || {
                 path.file_name()
                     .ok_or_else(|| {
-                        format_err!(
+                        anyhow!(
                             "cannot auto-detect package name from path {:?} ; use --name to \
                              override",
                             path.as_os_str()
@@ -39,7 +34,7 @@ impl NewCmd {
                     })
                     .and_then(|name| {
                         name.to_str().ok_or_else(|| {
-                            format_err!("cannot create package with a non-unicode name: {:?}", name)
+                            anyhow!("cannot create package with a non-unicode name: {:?}", name)
                         })
                     })
             },
@@ -49,7 +44,6 @@ impl NewCmd {
             .chars()
             .map(|c| if c == '-' { '_' } else { c })
             .collect::<String>();
-        mask_signals();
 
         cargo_new(path, &toolchain)?;
         src_main_rs(path, shell)?;
@@ -73,14 +67,14 @@ impl NewCmd {
     }
 }
 
-fn cargo_new(path: &Path, toolchain: &str) -> Result<(), Error> {
-    run_command(Path::new("rustup"), |rustup| {
-        rustup.arg("run").arg(toolchain);
-        rustup.arg("cargo").arg("new").arg("--bin").arg(path);
-    })
+fn cargo_new(path: &Path, toolchain: &str) -> Result<()> {
+    let mut rustup = Command::new("rustup");
+    rustup.arg("run").arg(toolchain);
+    rustup.arg("cargo").arg("new").arg("--bin").arg(path);
+    run_command(rustup)
 }
 
-fn src_main_rs(path: &Path, shell: &mut StandardStream) -> Result<(), Error> {
+fn src_main_rs(path: &Path, shell: &mut StandardStream) -> Result<()> {
     let path = path.join("src/main.rs");
     remove_file(path)?;
     print_removed(shell, "src/main.rs")
@@ -91,7 +85,7 @@ fn src_cortex_m_bin_rs(
     name: &str,
     registry: &Registry,
     shell: &mut StandardStream,
-) -> Result<(), Error> {
+) -> Result<()> {
     let path = path.join("src/bin.rs");
     let mut file = File::create(&path)?;
     file.write_all(registry.new_src_cortex_m_bin_rs(name)?.as_bytes())?;
@@ -103,7 +97,7 @@ fn src_cortex_m_lib_rs(
     device: &Device,
     registry: &Registry,
     shell: &mut StandardStream,
-) -> Result<(), Error> {
+) -> Result<()> {
     let path = path.join("src/lib.rs");
     let mut file = File::create(&path)?;
     file.write_all(registry.new_src_cortex_m_lib_rs(device)?.as_bytes())?;
@@ -115,7 +109,7 @@ fn src_cortex_m_thr_rs(
     device: &Device,
     registry: &Registry,
     shell: &mut StandardStream,
-) -> Result<(), Error> {
+) -> Result<()> {
     let path = path.join("src/thr.rs");
     let mut file = File::create(&path)?;
     file.write_all(registry.new_src_cortex_m_thr_rs(device)?.as_bytes())?;
@@ -126,7 +120,7 @@ fn src_cortex_m_tasks_mod_rs(
     path: &Path,
     registry: &Registry,
     shell: &mut StandardStream,
-) -> Result<(), Error> {
+) -> Result<()> {
     let path = path.join("src/tasks");
     create_dir(&path)?;
     let path = path.join("mod.rs");
@@ -139,7 +133,7 @@ fn src_cortex_m_tasks_root_rs(
     path: &Path,
     registry: &Registry,
     shell: &mut StandardStream,
-) -> Result<(), Error> {
+) -> Result<()> {
     let path = path.join("src/tasks/root.rs");
     let mut file = File::create(&path)?;
     file.write_all(registry.new_src_cortex_m_tasks_root_rs()?.as_bytes())?;
@@ -152,7 +146,7 @@ fn cargo_toml(
     device: &Device,
     registry: &Registry,
     shell: &mut StandardStream,
-) -> Result<(), Error> {
+) -> Result<()> {
     const TAIL: &str = "[dependencies]\n";
     let path = path.join("Cargo.toml");
     let text = read_to_string(&path)?;
@@ -173,7 +167,7 @@ fn drone_toml(
     ram_size: u32,
     registry: &Registry,
     shell: &mut StandardStream,
-) -> Result<(), Error> {
+) -> Result<()> {
     let path = path.join("Drone.toml");
     let mut file = File::create(&path)?;
     file.write_all(
@@ -189,7 +183,7 @@ fn justfile(
     device: &Device,
     registry: &Registry,
     shell: &mut StandardStream,
-) -> Result<(), Error> {
+) -> Result<()> {
     let path = path.join("Justfile");
     let mut file = File::create(&path)?;
     file.write_all(registry.new_justfile(device)?.as_bytes())?;
@@ -201,14 +195,14 @@ fn rust_toolchain(
     toolchain: &str,
     registry: &Registry,
     shell: &mut StandardStream,
-) -> Result<(), Error> {
+) -> Result<()> {
     let path = path.join("rust-toolchain");
     let mut file = File::create(&path)?;
     file.write_all(registry.new_rust_toolchain(toolchain)?.as_bytes())?;
     print_created(shell, "rust-toolchain")
 }
 
-fn cargo_config(path: &Path, registry: &Registry, shell: &mut StandardStream) -> Result<(), Error> {
+fn cargo_config(path: &Path, registry: &Registry, shell: &mut StandardStream) -> Result<()> {
     let path = path.join(".cargo");
     create_dir(&path)?;
     let path = path.join("config");
@@ -217,14 +211,14 @@ fn cargo_config(path: &Path, registry: &Registry, shell: &mut StandardStream) ->
     print_created(shell, ".cargo/config")
 }
 
-fn gitignore(path: &Path, registry: &Registry, shell: &mut StandardStream) -> Result<(), Error> {
+fn gitignore(path: &Path, registry: &Registry, shell: &mut StandardStream) -> Result<()> {
     let path = path.join(".gitignore");
     let mut file = OpenOptions::new().append(true).open(&path)?;
     file.write_all(registry.new_gitignore()?.as_bytes())?;
     print_patched(shell, ".gitignore")
 }
 
-fn print_created(shell: &mut StandardStream, message: &str) -> Result<(), Error> {
+fn print_created(shell: &mut StandardStream, message: &str) -> Result<()> {
     shell.set_color(ColorSpec::new().set_bold(true).set_fg(Some(Color::Green)))?;
     write!(shell, "     Created")?;
     shell.reset()?;
@@ -232,7 +226,7 @@ fn print_created(shell: &mut StandardStream, message: &str) -> Result<(), Error>
     Ok(())
 }
 
-fn print_patched(shell: &mut StandardStream, message: &str) -> Result<(), Error> {
+fn print_patched(shell: &mut StandardStream, message: &str) -> Result<()> {
     shell.set_color(ColorSpec::new().set_bold(true).set_fg(Some(Color::Green)))?;
     write!(shell, "     Patched")?;
     shell.reset()?;
@@ -240,7 +234,7 @@ fn print_patched(shell: &mut StandardStream, message: &str) -> Result<(), Error>
     Ok(())
 }
 
-fn print_removed(shell: &mut StandardStream, message: &str) -> Result<(), Error> {
+fn print_removed(shell: &mut StandardStream, message: &str) -> Result<()> {
     shell.set_color(ColorSpec::new().set_bold(true).set_fg(Some(Color::Green)))?;
     write!(shell, "     Removed")?;
     shell.reset()?;

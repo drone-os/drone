@@ -1,12 +1,10 @@
 #![deny(elided_lifetimes_in_paths)]
 #![warn(clippy::pedantic)]
 
-use drone::cli::Cli;
-use exitfailure::ExitFailure;
+use drone::{cli::Cli, utils::check_root_result};
 use structopt::StructOpt;
 
-fn main() -> Result<(), ExitFailure> {
+fn main() {
     let args = Cli::from_args();
-    args.run()?;
-    Ok(())
+    check_root_result(args.color, || args.run());
 }

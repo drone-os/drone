@@ -3,8 +3,8 @@
 #![allow(missing_docs)]
 
 use crate::device::Device;
+use anyhow::{bail, Error};
 use drone_config::parse_size;
-use failure::{bail, Error};
 use std::{collections::BTreeSet, ffi::OsString, num::ParseIntError, path::PathBuf};
 use structopt::StructOpt;
 use termcolor::ColorChoice;
@@ -16,8 +16,8 @@ pub struct Cli {
     #[structopt(long, short, parse(from_occurrences))]
     pub verbosity: u64,
     /// Coloring: auto, always, never
-    #[structopt(long, name = "when", parse(try_from_str = parse_color))]
-    pub color: Option<ColorChoice>,
+    #[structopt(long, name = "when", default_value = "auto", parse(try_from_str = parse_color))]
+    pub color: ColorChoice,
     #[structopt(subcommand)]
     pub cmd: Cmd,
 }

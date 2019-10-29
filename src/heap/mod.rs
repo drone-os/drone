@@ -5,8 +5,8 @@ pub mod trace;
 
 use self::trace::Packet;
 use crate::cli::{HeapCmd, HeapSubCmd};
+use anyhow::{bail, Result};
 use drone_config::{self as config, format_size};
-use failure::{bail, Error};
 use std::{collections::BTreeMap, fs::File, io::Write};
 use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 
@@ -20,7 +20,7 @@ pub struct TraceEntry {
 
 impl HeapCmd {
     /// Runs the `heap` command.
-    pub fn run(&self, shell: &mut StandardStream) -> Result<(), Error> {
+    pub fn run(&self, shell: &mut StandardStream) -> Result<()> {
         let Self {
             trace_file,
             size,
@@ -58,7 +58,7 @@ fn print_stats(
     trace: &BTreeMap<u32, TraceEntry>,
     size: u32,
     shell: &mut StandardStream,
-) -> Result<(), Error> {
+) -> Result<()> {
     shell.set_color(ColorSpec::new().set_bold(true))?;
     writeln!(shell, "{:-^80}", " HEAP USAGE ")?;
     writeln!(shell, " <size> <max count> <allocations>")?;
@@ -91,7 +91,7 @@ fn read_trace(
     trace_file: File,
     max_size: u32,
     big_endian: bool,
-) -> Result<(), Error> {
+) -> Result<()> {
     let parser = trace::Parser::new(trace_file, big_endian)?;
     for packet in parser {
         let packet = packet?;
@@ -111,7 +111,7 @@ fn read_trace(
     Ok(())
 }
 
-fn alloc(trace: &mut BTreeMap<u32, TraceEntry>, size: u32, max_size: u32) -> Result<(), Error> {
+fn alloc(trace: &mut BTreeMap<u32, TraceEntry>, size: u32, max_size: u32) -> Result<()> {
     if size > max_size {
         bail!("Trace file is corrupted");
     }
@@ -124,7 +124,7 @@ fn alloc(trace: &mut BTreeMap<u32, TraceEntry>, size: u32, max_size: u32) -> Res
     Ok(())
 }
 
-fn dealloc(trace: &mut BTreeMap<u32, TraceEntry>, size: u32) -> Result<(), Error> {
+fn dealloc(trace: &mut BTreeMap<u32, TraceEntry>, size: u32) -> Result<()> {
     let entry = trace.entry(size).or_default();
     if entry.cur == 0 {
         bail!("Trace file is corrupted");

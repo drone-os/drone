@@ -29,6 +29,13 @@ impl Platform {
             Self::CortexM => "cortex_m",
         }
     }
+
+    /// Returns the name of the configuration flag.
+    pub fn flag_name(&self) -> &str {
+        match self {
+            Self::CortexM => "cortex_m_core",
+        }
+    }
 }
 
 impl Bindings {
@@ -45,6 +52,14 @@ impl Bindings {
         match self {
             Self::Nrf => "nrf",
             Self::Stm32 => "stm32",
+        }
+    }
+
+    /// Returns the name of the configuration flag.
+    pub fn flag_name(&self) -> &str {
+        match self {
+            Self::Nrf => "nrf_mcu",
+            Self::Stm32 => "stm32_mcu",
         }
     }
 }
