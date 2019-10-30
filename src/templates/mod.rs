@@ -1,14 +1,11 @@
 //! Templates registry.
 
-#![allow(missing_docs)]
+pub mod helpers;
 
 use crate::{device::Device, heap, utils::temp_dir};
 use anyhow::Result;
-use drone_config::{format_size, Config};
-use handlebars::{
-    handlebars_helper, Context, Handlebars, Helper, HelperDef, HelperResult, Output, PathAndJson,
-    RenderContext, Renderable,
-};
+use drone_config::Config;
+use handlebars::Handlebars;
 use serde_json::json;
 use std::{collections::BTreeSet, error::Error, fs::File, path::Path};
 use tempfile::NamedTempFile;
@@ -46,45 +43,60 @@ impl Registry {
         template!("bmp/itm.gdb")?;
         template!("bmp/target.gdb")?;
         template!("bmp/target/cortex_m.gdb")?;
-        template!("bmp/target/nrf.gdb")?;
         template!("bmp/target/stm32.gdb")?;
+        template!("openocd/reset.openocd")?;
+        template!("openocd/flash.openocd")?;
+        template!("openocd/gdb.gdb")?;
+        template!("openocd/gdb.openocd")?;
+        template!("openocd/itm.openocd")?;
 
-        handlebars.register_helper("addr", Box::new(addr));
-        handlebars.register_helper("size", Box::new(size));
-        handlebars.register_helper("bmp-devices", Box::new(BmpDevices));
+        helpers::register(&mut handlebars);
         Ok(Self(handlebars))
     }
 
+    /// Renders linker script.
     pub fn layout_ld(&self, config: &Config) -> Result<NamedTempFile> {
         let data = json!({ "config": config });
-        with_temp_file(|file| self.0.render_to_write("layout.ld", &data, file))
+        helpers::clear_vars();
+        named_temp_file(|file| self.0.render_to_write("layout.ld", &data, file))
     }
 
+    /// Renders cortex-m `src/bin.rs`.
     pub fn new_src_cortex_m_bin_rs(&self, crate_name: &str) -> Result<String> {
         let data = json!({ "crate_name": crate_name });
+        helpers::clear_vars();
         Ok(self.0.render("new/src-cortex-m/bin.rs", &data)?)
     }
 
+    /// Renders cortex-m `src/lib.rs`.
     pub fn new_src_cortex_m_lib_rs(&self, device: &Device) -> Result<String> {
         let (bindings, _, _) = device.bindings_crate();
         let data = json!({ "bindings_name": bindings.underscore_name() });
+        helpers::clear_vars();
         Ok(self.0.render("new/src-cortex-m/lib.rs", &data)?)
     }
 
+    /// Renders cortex-m `src/thr.rs`.
     pub fn new_src_cortex_m_thr_rs(&self, device: &Device) -> Result<String> {
         let (bindings, _, _) = device.bindings_crate();
         let data = json!({ "bindings_name": bindings.underscore_name() });
+        helpers::clear_vars();
         Ok(self.0.render("new/src-cortex-m/thr.rs", &data)?)
     }
 
+    /// Renders cortex-m `src/tasks/mod.rs`.
     pub fn new_src_cortex_m_tasks_mod_rs(&self) -> Result<String> {
+        helpers::clear_vars();
         Ok(self.0.render("new/src-cortex-m/tasks/mod.rs", &())?)
     }
 
+    /// Renders cortex-m `src/tasks/root.rs`.
     pub fn new_src_cortex_m_tasks_root_rs(&self) -> Result<String> {
+        helpers::clear_vars();
         Ok(self.0.render("new/src-cortex-m/tasks/root.rs", &())?)
     }
 
+    /// Renders `Cargo.toml`.
     pub fn new_cargo_toml(&self, device: &Device, crate_name: &str) -> Result<String> {
         let (platform, _, platform_features) = device.platform_crate();
         let (bindings, _, bindings_features) = device.bindings_crate();
@@ -95,9 +107,11 @@ impl Registry {
             "platform_features": platform_features,
             "bindings_features": bindings_features,
         });
+        helpers::clear_vars();
         Ok(self.0.render("new/Cargo.toml", &data)?)
     }
 
+    /// Renders `Drone.toml`.
     pub fn new_drone_toml(
         &self,
         device: &Device,
@@ -114,11 +128,14 @@ impl Registry {
             "device_ram_origin": device.ram_origin(),
             "device_flash_size": flash_size,
             "device_ram_size": ram_size,
+            "device_itm_reset_freq": device.itm_reset_freq(),
             "generated_heap": heap.trim(),
         });
+        helpers::clear_vars();
         Ok(self.0.render("new/Drone.toml", &data)?)
     }
 
+    /// Renders `Justfile`.
     pub fn new_justfile(&self, device: &Device) -> Result<String> {
         let (device_target, device_target_var) = device.target();
         let (platform, platform_flag, _) = device.platform_crate();
@@ -131,37 +148,51 @@ impl Registry {
             "platform_flag": platform_flag,
             "bindings_flag": bindings_flag,
         });
+        helpers::clear_vars();
         Ok(self.0.render("new/Justfile", &data)?)
     }
 
+    /// Renders `rust-toolchain`.
     pub fn new_rust_toolchain(&self, toolchain: &str) -> Result<String> {
         let data = json!({ "toolchain": toolchain });
+        helpers::clear_vars();
         Ok(self.0.render("new/rust-toolchain", &data)?)
     }
 
+    /// Renders `.cargo/config`.
     pub fn new_cargo_config(&self) -> Result<String> {
+        helpers::clear_vars();
         Ok(self.0.render("new/_cargo/config", &())?)
     }
 
+    /// Renders `.gitignore`.
     pub fn new_gitignore(&self) -> Result<String> {
+        helpers::clear_vars();
         Ok(self.0.render("new/_gitignore", &())?)
     }
 
+    /// Renders BMP `reset` command script.
     pub fn bmp_reset(&self, config: &Config) -> Result<NamedTempFile> {
         let data = json!({ "config": config });
-        with_temp_file(|file| self.0.render_to_write("bmp/reset.gdb", &data, file))
+        helpers::clear_vars();
+        named_temp_file(|file| self.0.render_to_write("bmp/reset.gdb", &data, file))
     }
 
+    /// Renders BMP `flash` command script.
     pub fn bmp_flash(&self, config: &Config) -> Result<NamedTempFile> {
         let data = json!({ "config": config });
-        with_temp_file(|file| self.0.render_to_write("bmp/flash.gdb", &data, file))
+        helpers::clear_vars();
+        named_temp_file(|file| self.0.render_to_write("bmp/flash.gdb", &data, file))
     }
 
+    /// Renders BMP `gdb` command script.
     pub fn bmp_gdb(&self, config: &Config, reset: bool) -> Result<NamedTempFile> {
         let data = json!({ "config": config, "reset": reset });
-        with_temp_file(|file| self.0.render_to_write("bmp/gdb.gdb", &data, file))
+        helpers::clear_vars();
+        named_temp_file(|file| self.0.render_to_write("bmp/gdb.gdb", &data, file))
     }
 
+    /// Renders BMP `itm` command script.
     pub fn bmp_itm(
         &self,
         config: &Config,
@@ -169,12 +200,63 @@ impl Registry {
         reset: bool,
         pipe: &Path,
     ) -> Result<NamedTempFile> {
-        let data = json!({ "config": config, "ports": ports, "reset": reset, "pipe": pipe });
-        with_temp_file(|file| self.0.render_to_write("bmp/itm.gdb", &data, file))
+        let data = json!({
+            "config": config,
+            "ports": ports,
+            "reset": reset,
+            "pipe": pipe,
+        });
+        helpers::clear_vars();
+        named_temp_file(|file| self.0.render_to_write("bmp/itm.gdb", &data, file))
+    }
+
+    /// Renders OpenOCD `reset` command script.
+    pub fn openocd_reset(&self) -> Result<String> {
+        helpers::clear_vars();
+        Ok(self.0.render("openocd/reset.openocd", &())?)
+    }
+
+    /// Renders OpenOCD `flash` command script.
+    pub fn openocd_flash(&self, firmware: &Path) -> Result<String> {
+        let data = json!({ "firmware": firmware });
+        helpers::clear_vars();
+        Ok(self.0.render("openocd/flash.openocd", &data)?)
+    }
+
+    /// Renders OpenOCD `gdb` command GDB script.
+    pub fn openocd_gdb_gdb(&self, config: &Config, reset: bool) -> Result<NamedTempFile> {
+        let data = json!({ "config": config, "reset": reset });
+        helpers::clear_vars();
+        named_temp_file(|file| self.0.render_to_write("openocd/gdb.gdb", &data, file))
+    }
+
+    /// Renders OpenOCD `gdb` command OpenOCD script.
+    pub fn openocd_gdb_openocd(&self, config: &Config) -> Result<String> {
+        let data = json!({ "config": config });
+        helpers::clear_vars();
+        Ok(self.0.render("openocd/gdb.openocd", &data)?)
+    }
+
+    /// Renders OpenOCD `itm` command script.
+    pub fn openocd_itm(
+        &self,
+        config: &Config,
+        ports: &BTreeSet<u32>,
+        reset: bool,
+        pipe: Option<&Path>,
+    ) -> Result<String> {
+        let data = json!({
+            "config": config,
+            "ports": ports,
+            "reset": reset,
+            "pipe": pipe,
+        });
+        helpers::clear_vars();
+        Ok(self.0.render("openocd/itm.openocd", &data)?)
     }
 }
 
-fn with_temp_file<F, E>(f: F) -> Result<NamedTempFile>
+fn named_temp_file<F, E>(f: F) -> Result<NamedTempFile>
 where
     F: FnOnce(&File) -> Result<(), E>,
     E: Error + Send + Sync + 'static,
@@ -182,31 +264,4 @@ where
     let temp_file = NamedTempFile::new_in(temp_dir())?;
     f(temp_file.as_file())?;
     Ok(temp_file)
-}
-
-handlebars_helper!(addr: |x: u64| format!("0x{:08x}", x));
-handlebars_helper!(size: |x: u64| format_size(x as u32));
-
-pub struct BmpDevices;
-impl HelperDef for BmpDevices {
-    fn call<'reg: 'rc, 'rc>(
-        &self,
-        h: &Helper<'reg, 'rc>,
-        r: &'reg Handlebars,
-        ctx: &'rc Context,
-        rc: &mut RenderContext<'reg>,
-        out: &mut dyn Output,
-    ) -> HelperResult {
-        let device = ctx.data().pointer("/config/bmp/device").unwrap().clone();
-        let device = serde_json::from_value::<String>(device).unwrap();
-        let value = h
-            .params()
-            .iter()
-            .map(PathAndJson::render)
-            .any(|param| param == device);
-        match if value { h.template() } else { h.inverse() } {
-            Some(t) => t.render(r, ctx, rc, out),
-            None => Ok(()),
-        }
-    }
 }

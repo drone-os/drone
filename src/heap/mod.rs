@@ -19,7 +19,7 @@ pub struct TraceEntry {
 }
 
 impl HeapCmd {
-    /// Runs the `heap` command.
+    /// Runs the `drone heap` command.
     pub fn run(&self, shell: &mut StandardStream) -> Result<()> {
         let Self {
             trace_file,

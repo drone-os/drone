@@ -30,8 +30,8 @@ pub enum Cmd {
     New(NewCmd),
     /// Analyze or modify the heap layout
     Heap(HeapCmd),
-    /// Black Magic Probe interface
-    Bmp(BmpCmd),
+    /// Debug probe interface
+    Probe(ProbeCmd),
 }
 
 #[derive(Debug, StructOpt)]
@@ -92,35 +92,35 @@ pub struct HeapGenerateCmd {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct BmpCmd {
+pub struct ProbeCmd {
     #[structopt(subcommand)]
-    pub bmp_sub_cmd: BmpSubCmd,
+    pub probe_sub_cmd: ProbeSubCmd,
 }
 
 #[derive(Debug, StructOpt)]
-pub enum BmpSubCmd {
+pub enum ProbeSubCmd {
     /// Reset the attached device
-    Reset(BmpResetCmd),
+    Reset(ProbeResetCmd),
     /// Flash the firmware to the attached device
-    Flash(BmpFlashCmd),
+    Flash(ProbeFlashCmd),
     /// Run a GDB session for the attached device
-    Gdb(BmpGdbCmd),
+    Gdb(ProbeGdbCmd),
     /// Display ITM output from the attached device
-    Itm(BmpItmCmd),
+    Itm(ProbeItmCmd),
 }
 
 #[derive(Debug, StructOpt)]
-pub struct BmpResetCmd {}
+pub struct ProbeResetCmd {}
 
 #[derive(Debug, StructOpt)]
-pub struct BmpFlashCmd {
+pub struct ProbeFlashCmd {
     /// Path to the compiled firmware file
     #[structopt(parse(from_os_str))]
     pub firmware: PathBuf,
 }
 
 #[derive(Debug, StructOpt)]
-pub struct BmpGdbCmd {
+pub struct ProbeGdbCmd {
     /// Path to the compiled firmware file
     #[structopt(parse(from_os_str))]
     pub firmware: Option<PathBuf>,
@@ -130,13 +130,10 @@ pub struct BmpGdbCmd {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct BmpItmCmd {
+pub struct ProbeItmCmd {
     /// A comma-separated list of ITM ports to enable
     #[structopt(default_value = "0,1", parse(try_from_str = parse_ports))]
     pub ports: BTreeSet<u32>,
-    /// Path to the compiled firmware file
-    #[structopt(parse(from_os_str))]
-    pub firmware: Option<PathBuf>,
     /// Reset the attached device
     #[structopt(short, long)]
     pub reset: bool,

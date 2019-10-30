@@ -1,0 +1,4 @@
+target remote :{{config.probe.openocd.port}}
+{{#if reset}}
+monitor reset halt
+{{/if}}

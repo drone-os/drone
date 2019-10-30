@@ -348,6 +348,40 @@ impl Device {
         }
     }
 
+    /// Returns frequency of ITM output at reset.
+    pub fn itm_reset_freq(&self) -> Option<u32> {
+        match self {
+            Self::Nrf52810 | Self::Nrf52811 | Self::Nrf52832 | Self::Nrf52840 => Some(32_000_000),
+            Self::Stm32F100
+            | Self::Stm32F101
+            | Self::Stm32F102
+            | Self::Stm32F103
+            | Self::Stm32F107 => Some(8_000_000),
+            Self::Stm32F401
+            | Self::Stm32F405
+            | Self::Stm32F407
+            | Self::Stm32F410
+            | Self::Stm32F411
+            | Self::Stm32F412
+            | Self::Stm32F413
+            | Self::Stm32F427
+            | Self::Stm32F429
+            | Self::Stm32F446
+            | Self::Stm32F469 => Some(16_000_000),
+            Self::Stm32L4X1
+            | Self::Stm32L4X2
+            | Self::Stm32L4X3
+            | Self::Stm32L4X5
+            | Self::Stm32L4X6
+            | Self::Stm32L4R5
+            | Self::Stm32L4R7
+            | Self::Stm32L4R9
+            | Self::Stm32L4S5
+            | Self::Stm32L4S7
+            | Self::Stm32L4S9 => Some(4_000_000),
+        }
+    }
+
     /// Returns a drone platform crate dependency.
     pub fn platform_crate(&self) -> (crates::Platform, &str, &[&str]) {
         match self {

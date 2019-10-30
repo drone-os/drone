@@ -29,14 +29,14 @@ fn main() {
         let linker = linker_command(script.as_ref(), &args, &[
             "--defsym=_section_size_unknown=0".into(),
         ])?;
-        block_with_signals(&signals, || run_command(linker))?;
+        block_with_signals(&signals, true, || run_command(linker))?;
         let size = size_command(&output)?;
-        let syms = block_with_signals(&signals, || run_size(size))?
+        let syms = block_with_signals(&signals, true, || run_size(size))?
             .into_iter()
             .map(|(name, size)| format!("--defsym=_{}_section_size={}", name, size))
             .collect::<Vec<_>>();
         let linker = linker_command(script.as_ref(), &args, &syms)?;
-        block_with_signals(&signals, || run_command(linker))?;
+        block_with_signals(&signals, true, || run_command(linker))?;
         Ok(())
     });
 }

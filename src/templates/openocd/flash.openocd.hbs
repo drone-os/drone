@@ -1,0 +1,6 @@
+init
+reset halt
+flash write_image erase {{firmware}} 0 elf
+verify_image {{firmware}} 0 elf
+reset run
+shutdown

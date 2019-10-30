@@ -34,17 +34,18 @@
     clippy::cast_possible_truncation,
     clippy::cast_precision_loss,
     clippy::cast_sign_loss,
+    clippy::doc_markdown,
     clippy::module_name_repetitions,
     clippy::must_use_candidate,
     clippy::similar_names
 )]
 
-pub mod bmp;
 pub mod cli;
 pub mod crates;
 pub mod device;
 pub mod heap;
 pub mod new;
+pub mod probe;
 pub mod templates;
 pub mod utils;
 
@@ -79,7 +80,7 @@ impl Cli {
             Cmd::SupportedDevices => Device::print_list(color),
             Cmd::New(cmd) => cmd.run(&mut shell),
             Cmd::Heap(cmd) => cmd.run(&mut shell),
-            Cmd::Bmp(cmd) => cmd.run(&mut shell),
+            Cmd::Probe(cmd) => cmd.run(&mut shell),
         }
     }
 }

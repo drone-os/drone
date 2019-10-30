@@ -8,9 +8,15 @@ origin = {{addr device_ram_origin}}
 
 {{{generated_heap}}}
 
-[bmp]
+[probe]
+gdb-client = "gdb-multiarch"
+
+[probe.itm]
+reset-freq = {{device_itm_reset_freq}}
+baud-rate = 115200
+encoding = "nrz"
+uart-endpoint = "/dev/ttyBmpTarg"
+
+[probe.bmp]
 device = "{{device_ident}}"
-gdb_command = "gdb-multiarch"
-gdb_endpoint = "/dev/ttyBmpGdb"
-uart_endpoint = "/dev/ttyBmpTarg"
-uart_baudrate = 115200
+gdb-endpoint = "/dev/ttyBmpGdb"

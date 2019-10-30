@@ -1,36 +1,42 @@
-{{#bmp-devices "nrf52810"
-               "nrf52811"
-               "nrf52832"
-               "nrf52840" }}
-{{> bmp/target/nrf.gdb }}
-{{/bmp-devices}}
+{{#set "target_unsupported"}}
+    echo ERROR: set `probe.bmp.device` to a supported value to correctly initialize debug\n
+    echo registers\n
+{{/set}}
 
-{{#bmp-devices "stm32f100"
-               "stm32f101"
-               "stm32f102"
-               "stm32f103"
-               "stm32f107"
-               "stm32f401"
-               "stm32f405"
-               "stm32f407"
-               "stm32f410"
-               "stm32f411"
-               "stm32f412"
-               "stm32f413"
-               "stm32f427"
-               "stm32f429"
-               "stm32f446"
-               "stm32f469"
-               "stm32l4x1"
-               "stm32l4x2"
-               "stm32l4x3"
-               "stm32l4x5"
-               "stm32l4x6"
-               "stm32l4r5"
-               "stm32l4r7"
-               "stm32l4r9"
-               "stm32l4s5"
-               "stm32l4s7"
-               "stm32l4s9" }}
+{{#set "target_gdb"}}
+    {{get "target_unsupported"}}
+{{/set}}
+
+{{#set "target_itm"}}
+    {{get "target_unsupported"}}
+{{/set}}
+
+{{#if-bmp-device "stm32f100"
+                 "stm32f101"
+                 "stm32f102"
+                 "stm32f103"
+                 "stm32f107"
+                 "stm32f401"
+                 "stm32f405"
+                 "stm32f407"
+                 "stm32f410"
+                 "stm32f411"
+                 "stm32f412"
+                 "stm32f413"
+                 "stm32f427"
+                 "stm32f429"
+                 "stm32f446"
+                 "stm32f469"
+                 "stm32l4x1"
+                 "stm32l4x2"
+                 "stm32l4x3"
+                 "stm32l4x5"
+                 "stm32l4x6"
+                 "stm32l4r5"
+                 "stm32l4r7"
+                 "stm32l4r9"
+                 "stm32l4s5"
+                 "stm32l4s7"
+                 "stm32l4s9"}}
 {{> bmp/target/stm32.gdb }}
-{{/bmp-devices}}
+{{/if-bmp-device}}

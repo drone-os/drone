@@ -3,14 +3,19 @@
 use anyhow::{bail, Result};
 use signal_hook::{iterator::Signals, SIGINT, SIGQUIT, SIGTERM};
 use std::{
-    env, error, fmt,
-    io::Write,
+    env, error,
+    ffi::CString,
+    fmt,
+    fs::OpenOptions,
+    io::{ErrorKind, Read, Write},
+    os::unix::{ffi::OsStrExt, io::AsRawFd, process::CommandExt},
     path::PathBuf,
-    process::{Child, Command},
+    process::{exit, Child, Command},
     sync::mpsc::{channel, RecvTimeoutError},
     thread,
     time::Duration,
 };
+use tempfile::TempDir;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use walkdir::WalkDir;
 
@@ -58,7 +63,7 @@ pub fn register_signals() -> Result<Signals> {
 
 /// Run the closure in a different thread, periodically checking the signals.
 #[allow(clippy::never_loop)]
-pub fn block_with_signals<F, R>(signals: &Signals, f: F) -> Result<R>
+pub fn block_with_signals<F, R>(signals: &Signals, ignore_sigint: bool, f: F) -> Result<R>
 where
     F: Send + 'static + FnOnce() -> Result<R>,
     R: Send + 'static,
@@ -72,8 +77,14 @@ where
             Ok(value) => return Ok(value?),
             Err(RecvTimeoutError::Disconnected) => bail!("channel is broken"),
             Err(RecvTimeoutError::Timeout) => {
-                for _ in signals.pending() {
-                    bail!(SignalError);
+                for signal in signals.pending() {
+                    if signal == SIGINT {
+                        if !ignore_sigint {
+                            bail!(SignalError);
+                        }
+                    } else {
+                        bail!(SignalError);
+                    }
                 }
             }
         }
@@ -96,16 +107,56 @@ pub fn temp_dir() -> PathBuf {
     env::var_os("XDG_RUNTIME_DIR").map_or(env::temp_dir(), Into::into)
 }
 
+/// Creates a new fifo.
+pub fn make_fifo(dir: &TempDir) -> Result<PathBuf> {
+    let pipe = dir.path().join("pipe");
+    let c_pipe = CString::new(pipe.as_os_str().as_bytes())?;
+    if unsafe { libc::mkfifo(c_pipe.as_ptr(), 0o644) } == -1 {
+        return Err(std::io::Error::last_os_error().into());
+    }
+    Ok(pipe)
+}
+
+/// Consumes all remaining data in the fifo.
+pub fn exhaust_fifo(path: &str) -> Result<()> {
+    let mut fifo = OpenOptions::new().read(true).open(path)?;
+    unsafe { libc::fcntl(fifo.as_raw_fd(), libc::F_SETFL, libc::O_NONBLOCK) };
+    let mut bytes = [0_u8; 1024];
+    loop {
+        match fifo.read(&mut bytes) {
+            Ok(_) => continue,
+            Err(ref err) if err.kind() == ErrorKind::Interrupted => continue,
+            Err(ref err) if err.kind() == ErrorKind::WouldBlock => break Ok(()),
+            Err(err) => break Err(err.into()),
+        }
+    }
+}
+
+/// Moves the process to a new process group.
+pub fn detach_pgid(openocd: &mut Command) {
+    unsafe {
+        openocd.pre_exec(|| {
+            libc::setpgid(0, 0);
+            Ok(())
+        });
+    }
+}
+
 /// Runs the closure and prints the resulting error if any.
 pub fn check_root_result(color_choice: ColorChoice, f: impl FnOnce() -> Result<()>) {
     match f() {
-        Ok(()) => {}
-        Err(err) if err.is::<SignalError>() => {}
+        Ok(()) => {
+            exit(0);
+        }
+        Err(err) if err.is::<SignalError>() => {
+            exit(1);
+        }
         Err(err) => {
             let mut shell = StandardStream::stderr(color_choice);
             drop(shell.set_color(ColorSpec::new().set_bold(true).set_fg(Some(Color::Red))));
             drop(writeln!(shell, "Error: {:?}", err));
             drop(shell.reset());
+            exit(1);
         }
     }
 }

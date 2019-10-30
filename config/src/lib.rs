@@ -61,13 +61,6 @@ impl Config {
         Ok(config)
     }
 
-    /// Returns `bmp` section or an error if not defined.
-    pub fn bmp(&self) -> Result<&Bmp> {
-        self.bmp
-            .as_ref()
-            .ok_or_else(|| anyhow!("{}: section `bmp` is not defined", CONFIG_NAME))
-    }
-
     fn check_heap(&self) -> Result<()> {
         let Self {
             heap: Heap { size, pools },

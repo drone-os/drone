@@ -11,7 +11,7 @@ use std::{
 use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 
 impl NewCmd {
-    /// Runs the `new` command.
+    /// Runs the `drone new` command.
     pub fn run(&self, shell: &mut StandardStream) -> Result<()> {
         let Self {
             path,

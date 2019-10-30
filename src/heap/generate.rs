@@ -13,7 +13,7 @@ use termcolor::{ColorSpec, StandardStream, WriteColor};
 const WORD_SIZE: u32 = 4;
 
 impl HeapGenerateCmd {
-    /// Runs the `heap generate` command.
+    /// Runs the `drone heap generate` command.
     pub fn run(
         &self,
         trace: &BTreeMap<u32, TraceEntry>,

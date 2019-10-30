@@ -1,0 +1,18 @@
+init
+
+{{#if reset}}
+
+reset halt
+
+{{#unless (lookup ports 0)}}
+itm port 0 off
+{{/unless}}
+{{#each ports}}
+itm port {{this}} on
+{{/each}}
+
+tpiu config {{#if pipe}}internal {{pipe}}{{else}}external{{/if}} {{#if (eq config.probe.itm.encoding "nrz")}}uart{{else}}manchester{{/if}} off {{config.probe.itm.reset-freq}} {{config.probe.itm.baud-rate}}
+
+reset run
+
+{{/if}}
