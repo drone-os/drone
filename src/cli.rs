@@ -2,7 +2,11 @@
 
 #![allow(missing_docs)]
 
-use crate::device::Device;
+use crate::{
+    device::Device,
+    probe::{Probe, ProbeItm},
+    utils::de_from_str,
+};
 use anyhow::{bail, Error};
 use drone_config::parse_size;
 use std::{collections::BTreeSet, ffi::OsString, num::ParseIntError, path::PathBuf};
@@ -24,8 +28,8 @@ pub struct Cli {
 
 #[derive(Debug, StructOpt)]
 pub enum Cmd {
-    /// Print a list of supported devices
-    SupportedDevices,
+    /// Print the list of supported devices and debug probes
+    Support,
     /// Create a new Drone project
     New(NewCmd),
     /// Analyze or modify the heap layout
@@ -39,9 +43,9 @@ pub struct NewCmd {
     /// Where to create a new cargo package
     #[structopt(parse(from_os_str))]
     pub path: PathBuf,
-    /// Device that will run the project (run `drone supported-devices` for the
-    /// list of available options)
-    #[structopt(short, long, parse(try_from_str = Device::parse))]
+    /// The target device for the project (run `drone support` for the list of
+    /// available options)
+    #[structopt(short, long, parse(try_from_str = de_from_str))]
     pub device: Device,
     /// Flash memory size
     #[structopt(short, long, parse(try_from_str = parse_size))]
@@ -49,6 +53,13 @@ pub struct NewCmd {
     /// RAM size
     #[structopt(short, long, parse(try_from_str = parse_size))]
     pub ram_size: u32,
+    /// The debug probe connected to the target device (run `drone support` for
+    /// the list of available options)
+    #[structopt(short, long, parse(try_from_str = de_from_str))]
+    pub probe: Option<Probe>,
+    /// ITM handling mode: auto, internal, external
+    #[structopt(long, default_value = "auto", parse(try_from_str = de_from_str))]
+    pub probe_itm: ProbeItm,
     /// Set the resulting package name, defaults to the directory name
     #[structopt(long)]
     pub name: Option<String>,

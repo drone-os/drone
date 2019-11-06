@@ -54,21 +54,21 @@ size +args='': build
 
 # Force a pulse on the reset line of the attached device
 reset:
-	drone bmp reset
+	drone probe reset
 
 # Flash the firmware to the attached device
 flash: build
-	drone bmp flash \{{release_bin}}
+	drone probe flash \{{release_bin}}
 
 # Run a GDB session for the attached device
 gdb:
-	drone bmp gdb \{{release_bin}} --reset
+	drone probe gdb \{{release_bin}} --reset
 
 # Display ITM output from the attached device
 itm:
-	drone bmp itm 0,1 \{{release_bin}} --reset -- 0,1
+	drone probe itm --reset 0,1 -- 0,1
 
 # Record `heaptrace` file from the attached device (should be compiled with `heaptrace` feature)
 heaptrace:
 	truncate -s0 heaptrace
-	drone bmp itm --reset 0,1,31 -- 0,1 31:heaptrace
+	drone probe itm --reset 0,1,31 -- 0,1 31:heaptrace

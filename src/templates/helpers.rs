@@ -66,9 +66,9 @@ impl HelperDef for Get {
     }
 }
 
-pub struct IfBmpDevice;
+pub struct IfIncludes;
 
-impl HelperDef for IfBmpDevice {
+impl HelperDef for IfIncludes {
     fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,
@@ -77,18 +77,17 @@ impl HelperDef for IfBmpDevice {
         rc: &mut RenderContext<'reg>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        let device = ctx
-            .data()
-            .pointer("/config/probe/bmp/device")
-            .unwrap()
-            .clone();
-        let device = serde_json::from_value::<String>(device).unwrap();
         let value = h
+            .param(0)
+            .ok_or_else(|| RenderError::new("missing parameter"))?
+            .render();
+        let result = h
             .params()
             .iter()
+            .skip(1)
             .map(PathAndJson::render)
-            .any(|param| param == device);
-        match if value { h.template() } else { h.inverse() } {
+            .any(|param| param == value);
+        match if result { h.template() } else { h.inverse() } {
             Some(t) => t.render(r, ctx, rc, out),
             None => Ok(()),
         }
@@ -101,7 +100,7 @@ pub fn register(handlebars: &mut Handlebars) {
     handlebars.register_helper("get", Box::new(Get));
     handlebars.register_helper("addr", Box::new(addr));
     handlebars.register_helper("size", Box::new(size));
-    handlebars.register_helper("if-bmp-device", Box::new(IfBmpDevice));
+    handlebars.register_helper("if-includes", Box::new(IfIncludes));
 }
 
 /// Clears all variables.

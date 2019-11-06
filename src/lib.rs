@@ -77,7 +77,7 @@ impl Cli {
             .try_init()?;
         let mut shell = StandardStream::stderr(color);
         match cmd {
-            Cmd::SupportedDevices => Device::print_list(color),
+            Cmd::Support => Device::support(color),
             Cmd::New(cmd) => cmd.run(&mut shell),
             Cmd::Heap(cmd) => cmd.run(&mut shell),
             Cmd::Probe(cmd) => cmd.run(&mut shell),

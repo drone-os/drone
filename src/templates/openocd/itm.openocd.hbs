@@ -1,9 +1,5 @@
 init
 
-{{#if reset}}
-
-reset halt
-
 {{#unless (lookup ports 0)}}
 itm port 0 off
 {{/unless}}
@@ -13,6 +9,6 @@ itm port {{this}} on
 
 tpiu config {{#if pipe}}internal {{pipe}}{{else}}external{{/if}} {{#if (eq config.probe.itm.encoding "nrz")}}uart{{else}}manchester{{/if}} off {{config.probe.itm.reset-freq}} {{config.probe.itm.baud-rate}}
 
+{{#if reset}}
 reset run
-
 {{/if}}

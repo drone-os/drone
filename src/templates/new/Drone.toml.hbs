@@ -15,8 +15,17 @@ gdb-client = "gdb-multiarch"
 reset-freq = {{device_itm_reset_freq}}
 baud-rate = 115200
 encoding = "nrz"
-uart-endpoint = "/dev/ttyBmpTarg"
+{{~#if (eq probe_itm "external")}}
+uart-endpoint = "{{probe_itm_endpoint}}"
+{{~/if}}
 
+{{#if (eq probe_ident "bmp") ~}}
 [probe.bmp]
 device = "{{device_ident}}"
 gdb-endpoint = "/dev/ttyBmpGdb"
+{{~/if}}{{#if (eq probe_ident "openocd") ~}}
+[probe.openocd]
+command = "openocd"
+port = 3333
+config = ["interface/stlink.cfg"{{#each probe_openocd_config}}, "{{this}}"{{/each}}]
+{{~/if}}

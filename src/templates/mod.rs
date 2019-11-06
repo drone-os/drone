@@ -2,7 +2,12 @@
 
 pub mod helpers;
 
-use crate::{device::Device, heap, utils::temp_dir};
+use crate::{
+    device::Device,
+    heap,
+    probe::{Probe, ProbeItm},
+    utils::{ser_to_string, temp_dir},
+};
 use anyhow::Result;
 use drone_config::Config;
 use handlebars::Handlebars;
@@ -117,18 +122,29 @@ impl Registry {
         device: &Device,
         flash_size: u32,
         ram_size: u32,
+        probe: &Probe,
+        probe_itm: &ProbeItm,
     ) -> Result<String> {
         let mut heap = Vec::new();
         let layout = heap::generate::new(ram_size / 2, HEAP_POOLS);
         heap::generate::display(&mut heap, &layout)?;
         let heap = String::from_utf8(heap)?;
+        let probe_itm = match probe_itm {
+            ProbeItm::Auto => probe.itm_default(),
+            ProbeItm::Internal | ProbeItm::External => probe_itm,
+        };
+        let probe_itm_endpoint = probe.itm_external_endpoint();
         let data = json!({
-            "device_ident": device.ident(),
+            "device_ident": ser_to_string(device),
             "device_flash_origin": device.flash_origin(),
             "device_ram_origin": device.ram_origin(),
             "device_flash_size": flash_size,
             "device_ram_size": ram_size,
             "device_itm_reset_freq": device.itm_reset_freq(),
+            "probe_itm": ser_to_string(probe_itm),
+            "probe_itm_endpoint": probe_itm_endpoint,
+            "probe_ident": ser_to_string(probe),
+            "probe_openocd_config": device.openocd_config(),
             "generated_heap": heap.trim(),
         });
         helpers::clear_vars();

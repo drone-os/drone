@@ -1,6 +1,7 @@
 //! Utility functions.
 
 use anyhow::{bail, Result};
+use serde::{de, ser};
 use signal_hook::{iterator::Signals, SIGINT, SIGQUIT, SIGTERM};
 use std::{
     env, error,
@@ -159,6 +160,20 @@ pub fn check_root_result(color_choice: ColorChoice, f: impl FnOnce() -> Result<(
             exit(1);
         }
     }
+}
+
+/// Serialize the value to a string.
+pub fn ser_to_string<T: ser::Serialize>(value: T) -> String {
+    serde_json::to_value(value)
+        .unwrap()
+        .as_str()
+        .unwrap()
+        .to_string()
+}
+
+/// Deserialize a value from the string.
+pub fn de_from_str<T: de::DeserializeOwned>(s: &str) -> Result<T> {
+    serde_json::from_value(serde_json::Value::String(s.to_string())).map_err(Into::into)
 }
 
 #[derive(Debug)]

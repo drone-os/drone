@@ -35,6 +35,7 @@ SECTIONS
     {
         BSS_START = .;
         *(.bss.*);
+        *(COMMON);
         . = ALIGN(4);
         BSS_END = .;
     } > RAM

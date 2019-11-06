@@ -1,6 +1,13 @@
 //! Drone project scaffolding.
 
-use crate::{cli::NewCmd, crates, device::Device, templates::Registry, utils::run_command};
+use crate::{
+    cli::NewCmd,
+    crates,
+    device::Device,
+    probe::{Probe, ProbeItm},
+    templates::Registry,
+    utils::run_command,
+};
 use anyhow::{anyhow, bail, Result};
 use std::{
     fs::{create_dir, read_to_string, remove_file, File, OpenOptions},
@@ -18,6 +25,8 @@ impl NewCmd {
             device,
             flash_size,
             ram_size,
+            probe,
+            probe_itm,
             name,
             toolchain,
         } = self;
@@ -57,7 +66,16 @@ impl NewCmd {
             }
         }
         cargo_toml(path, &name, &device, &registry, shell)?;
-        drone_toml(path, &device, *flash_size, *ram_size, &registry, shell)?;
+        drone_toml(
+            path,
+            &device,
+            *flash_size,
+            *ram_size,
+            &probe,
+            &probe_itm,
+            &registry,
+            shell,
+        )?;
         justfile(path, &device, &registry, shell)?;
         rust_toolchain(path, &toolchain, &registry, shell)?;
         cargo_config(path, &registry, shell)?;
@@ -160,19 +178,25 @@ fn cargo_toml(
     print_patched(shell, "Cargo.toml")
 }
 
+#[allow(clippy::too_many_arguments)]
 fn drone_toml(
     path: &Path,
     device: &Device,
     flash_size: u32,
     ram_size: u32,
+    probe: &Option<Probe>,
+    probe_itm: &ProbeItm,
     registry: &Registry,
     shell: &mut StandardStream,
 ) -> Result<()> {
     let path = path.join("Drone.toml");
     let mut file = File::create(&path)?;
+    let probe = probe
+        .as_ref()
+        .unwrap_or_else(|| device.probes().first().unwrap());
     file.write_all(
         registry
-            .new_drone_toml(device, flash_size, ram_size)?
+            .new_drone_toml(device, flash_size, ram_size, probe, probe_itm)?
             .as_bytes(),
     )?;
     print_created(shell, "Drone.toml")

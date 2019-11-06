@@ -10,9 +10,49 @@ use crate::{
 };
 use anyhow::{anyhow, bail, Result};
 use drone_config as config;
+use serde::{Deserialize, Serialize};
 use signal_hook::iterator::Signals;
 use std::process::Command;
 use termcolor::StandardStream;
+
+/// An `enum` of all supported debug probes.
+#[allow(missing_docs)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Probe {
+    Bmp,
+    Openocd,
+}
+
+/// ITM handling mode.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ProbeItm {
+    /// Use default mode for the debug probe.
+    Auto,
+    /// SWO pin is connected to the debug probe.
+    Internal,
+    /// SWO pin is connected to an external USB-UART converter.
+    External,
+}
+
+impl Probe {
+    /// Returns default mode for the given debug probe.
+    pub fn itm_default(&self) -> &ProbeItm {
+        match self {
+            Self::Bmp => &ProbeItm::External,
+            Self::Openocd => &ProbeItm::Internal,
+        }
+    }
+
+    /// Returns default UART endpoint value for the given debug probe.
+    pub fn itm_external_endpoint(&self) -> &str {
+        match self {
+            Self::Bmp => "/dev/ttyBmpTarg",
+            Self::Openocd => "/dev/ttyUSB0",
+        }
+    }
+}
 
 impl ProbeCmd {
     /// Runs the `drone probe` command.
