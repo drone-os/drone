@@ -114,13 +114,13 @@ impl Device {
     }
 
     /// Return the target triple for the device.
-    pub fn target(&self) -> (&str, &str) {
+    pub fn target(&self) -> &str {
         match self {
             Self::Stm32F100
             | Self::Stm32F101
             | Self::Stm32F102
             | Self::Stm32F103
-            | Self::Stm32F107 => ("thumbv7m-none-eabi", "THUMBV7M_NONE_EABI"),
+            | Self::Stm32F107 => "thumbv7m-none-eabi",
             Self::Nrf52810
             | Self::Nrf52811
             | Self::Nrf52832
@@ -146,7 +146,7 @@ impl Device {
             | Self::Stm32L4R9
             | Self::Stm32L4S5
             | Self::Stm32L4S7
-            | Self::Stm32L4S9 => ("thumbv7em-none-eabihf", "THUMBV7EM_NONE_EABIHF"),
+            | Self::Stm32L4S9 => "thumbv7em-none-eabihf",
         }
     }
 

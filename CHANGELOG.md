@@ -13,6 +13,9 @@ Possible log types:
 
 ### Unreleased
 
+### v0.11.0 (2019-11-06)
+
+- [added] Add `drone env` command
 - [added] Add OpenOCD debug probe interface
 - [added] Add Nordic's nRFx family support
 - [added] Add STM32F4 family support

@@ -153,12 +153,11 @@ impl Registry {
 
     /// Renders `Justfile`.
     pub fn new_justfile(&self, device: &Device) -> Result<String> {
-        let (device_target, device_target_var) = device.target();
+        let device_target = device.target();
         let (platform, platform_flag, _) = device.platform_crate();
         let (bindings, bindings_flag, _) = device.bindings_crate();
         let data = json!({
             "device_target": device_target,
-            "device_target_var": device_target_var,
             "platform_flag_name": platform.flag_name(),
             "bindings_flag_name": bindings.flag_name(),
             "platform_flag": platform_flag,

@@ -28,14 +28,25 @@ pub struct Cli {
 
 #[derive(Debug, StructOpt)]
 pub enum Cmd {
-    /// Print the list of supported devices and debug probes
-    Support,
+    /// Run cargo in a cross-compile environment
+    Env(EnvCmd),
     /// Create a new Drone project
     New(NewCmd),
     /// Analyze or modify the heap layout
     Heap(HeapCmd),
     /// Debug probe interface
     Probe(ProbeCmd),
+    /// Print the list of supported devices and debug probes
+    Support,
+}
+
+#[derive(Debug, StructOpt)]
+pub struct EnvCmd {
+    /// Target triple for which the code is compiled
+    pub target: Option<String>,
+    /// Cargo command
+    #[structopt(parse(from_os_str), last(true))]
+    pub command: Vec<OsString>,
 }
 
 #[derive(Debug, StructOpt)]

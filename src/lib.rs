@@ -43,6 +43,7 @@
 pub mod cli;
 pub mod crates;
 pub mod device;
+pub mod env;
 pub mod heap;
 pub mod new;
 pub mod probe;
@@ -77,10 +78,11 @@ impl Cli {
             .try_init()?;
         let mut shell = StandardStream::stderr(color);
         match cmd {
-            Cmd::Support => Device::support(color),
+            Cmd::Env(cmd) => cmd.run(),
             Cmd::New(cmd) => cmd.run(&mut shell),
             Cmd::Heap(cmd) => cmd.run(&mut shell),
             Cmd::Probe(cmd) => cmd.run(&mut shell),
+            Cmd::Support => Device::support(color),
         }
     }
 }

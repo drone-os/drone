@@ -1,15 +1,12 @@
+export DRONE_RUSTFLAGS := '--cfg {{platform_flag_name}}="{{platform_flag}}" --cfg {{bindings_flag_name}}="{{bindings_flag}}"'
+target := '{{device_target}}'
 features := ''
-build_target := '{{device_target}}'
-{{platform_flag_name}} := '{{platform_flag}}'
-{{bindings_flag_name}} := '{{bindings_flag}}'
-bin_name := `basename $(pwd)`
-release_bin := "target/" + build_target + "/release/" + bin_name
-
-export CARGO_TARGET_{{device_target_var}}_RUSTFLAGS := '--cfg cortex_m_core="' + cortex_m_core + '" ' + '--cfg {{bindings_flag_name}}="' + {{bindings_flag_name}} + '"'
+name := `basename $(pwd)`
+release_bin := "target/" + target + "/release/" + name
 
 # Install dependencies
 deps:
-	rustup target add \{{build_target}}
+	rustup target add \{{target}}
 	rustup component add rust-src
 	rustup component add rustfmt
 	rustup component add clippy
@@ -24,33 +21,36 @@ fmt:
 
 # Check for mistakes
 lint:
-	cargo clippy --target \{{build_target}} --features "\{{features}}"
+	drone env \{{target}} -- cargo clippy --features "\{{features}}"
 
 # Build the firmware
 build:
-	cargo build --target \{{build_target}} --features "\{{features}}" --release
+	drone env \{{target}} -- cargo build --features "\{{features}}" --release
 
 # Generate the docs
 doc:
-	cargo doc --target \{{build_target}} --features "\{{features}}"
+	drone env \{{target}} -- cargo doc --features "\{{features}}"
 
 # Open the docs in a browser
 doc-open: doc
-	cargo doc --target \{{build_target}} --features "\{{features}}" --open
+	drone env \{{target}} -- cargo doc --features "\{{features}}" --open
 
 # Run the tests
 test:
-	cargo test --features "std \{{features}}"
+	drone env -- cargo test --features "std \{{features}}"
 
 # Display information from the compiled firmware
 dump: build
-	cargo objdump --target \{{build_target}} --features "\{{features}}" --release --bin \{{bin_name}} -- \
-		--disassemble --demangle --full-contents -all-headers --syms | \
+	drone env \{{target}} -- \
+		cargo objdump --features "\{{features}}" --release --bin \{{name}} -- \
+			--disassemble --demangle --full-contents -all-headers --syms | \
 	pager
 
 # Display section sizes inside the compiled firmware
 size +args='': build
-	cargo size --target \{{build_target}} --features "\{{features}}" --release --bin \{{bin_name}} -- \{{args}}
+	drone env \{{target}} -- \
+		cargo size --features "\{{features}}" --release --bin \{{name}} -- \
+			\{{args}}
 
 # Force a pulse on the reset line of the attached device
 reset:
