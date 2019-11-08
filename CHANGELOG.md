@@ -15,6 +15,7 @@ Possible log types:
 
 - [changed] Using the newly released `futures` 0.3 instead of `futures-preview`
   0.3-alpha
+- [fixed] Fix broken `dupm` and `size` tasks in generated `Justfile`s
 
 ### v0.11.0 (2019-11-06)
 

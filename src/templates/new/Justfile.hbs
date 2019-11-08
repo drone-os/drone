@@ -41,16 +41,14 @@ test:
 
 # Display information from the compiled firmware
 dump: build
-	drone env \{{target}} -- \
-		cargo objdump --features "\{{features}}" --release --bin \{{name}} -- \
-			--disassemble --demangle --full-contents -all-headers --syms | \
-	pager
+	drone env \{{target}} -- cargo objdump --target \{{target}} \
+		--features "\{{features}}" --release --bin \{{name}} -- \
+		--disassemble --demangle --full-contents -all-headers --syms | pager
 
 # Display section sizes inside the compiled firmware
 size +args='': build
-	drone env \{{target}} -- \
-		cargo size --features "\{{features}}" --release --bin \{{name}} -- \
-			\{{args}}
+	drone env \{{target}} -- cargo size --target \{{target}} \
+		--features "\{{features}}" --release --bin \{{name}} -- \{{args}}
 
 # Force a pulse on the reset line of the attached device
 reset:
