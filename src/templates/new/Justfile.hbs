@@ -50,6 +50,11 @@ size +args='': build
 	drone env \{{target}} -- cargo size --target \{{target}} \
 		--features "\{{features}}" --release --bin \{{name}} -- \{{args}}
 
+# Display result of macro expansion
+expand:
+	drone env \{{target}} -- cargo rustc --target \{{target}} \
+		--features "\{{features}}" --lib -- -Z unstable-options --pretty=expanded
+
 # Force a pulse on the reset line of the attached device
 reset:
 	drone probe reset

@@ -13,6 +13,7 @@ Possible log types:
 
 ### Unreleased
 
+- [added] New `expand` task for generated `Justfile`s
 - [changed] Using the newly released `futures` 0.3 instead of `futures-preview`
   0.3-alpha
 - [fixed] Fix broken `dupm` and `size` tasks in generated `Justfile`s
