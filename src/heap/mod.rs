@@ -21,12 +21,7 @@ pub struct TraceEntry {
 impl HeapCmd {
     /// Runs the `drone heap` command.
     pub fn run(&self, shell: &mut StandardStream) -> Result<()> {
-        let Self {
-            trace_file,
-            size,
-            big_endian,
-            heap_sub_cmd,
-        } = self;
+        let Self { trace_file, size, big_endian, heap_sub_cmd } = self;
         let size = size.map(Ok).unwrap_or_else(|| {
             config::Config::read_from_current_dir().map(|config| config.heap.size)
         })?;
@@ -65,23 +60,12 @@ fn print_stats(
     shell.reset()?;
     let mut used = 0;
     for (size, entry) in trace {
-        writeln!(
-            shell,
-            " {: >6} {:11} {:13}",
-            format_size(*size),
-            entry.max,
-            entry.total
-        )?;
+        writeln!(shell, " {: >6} {:11} {:13}", format_size(*size), entry.max, entry.total)?;
         used += size * entry.max;
     }
     write!(shell, "Maximum memory usage: ")?;
     shell.set_color(ColorSpec::new().set_bold(true))?;
-    writeln!(
-        shell,
-        "{} / {:.2}%",
-        used,
-        f64::from(used) / f64::from(size) * 100.0
-    )?;
+    writeln!(shell, "{} / {:.2}%", used, f64::from(used) / f64::from(size) * 100.0)?;
     shell.reset()?;
     Ok(())
 }

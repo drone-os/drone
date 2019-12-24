@@ -60,11 +60,7 @@ use termcolor::StandardStream;
 impl Cli {
     /// Runs the program.
     pub fn run(self) -> Result<()> {
-        let Self {
-            cmd,
-            color,
-            verbosity,
-        } = self;
+        let Self { cmd, color, verbosity } = self;
         let log_level = match verbosity {
             0 => Level::Error,
             1 => Level::Warn,

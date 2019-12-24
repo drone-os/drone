@@ -27,12 +27,7 @@ pub struct ResetCmd<'a> {
 impl ResetCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
-        let Self {
-            cmd,
-            signals,
-            registry,
-            config_probe_openocd,
-        } = self;
+        let Self { cmd, signals, registry, config_probe_openocd } = self;
         let ProbeResetCmd {} = cmd;
         let commands = registry.openocd_reset()?;
         let mut openocd = Command::new(&config_probe_openocd.command);
@@ -54,12 +49,7 @@ pub struct FlashCmd<'a> {
 impl FlashCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
-        let Self {
-            cmd,
-            signals,
-            registry,
-            config_probe_openocd,
-        } = self;
+        let Self { cmd, signals, registry, config_probe_openocd } = self;
         let ProbeFlashCmd { firmware } = cmd;
         let commands = registry.openocd_flash(firmware)?;
         let mut openocd = Command::new(&config_probe_openocd.command);
@@ -83,14 +73,7 @@ pub struct GdbCmd<'a> {
 impl GdbCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
-        let Self {
-            cmd,
-            signals,
-            registry,
-            config,
-            config_probe,
-            config_probe_openocd,
-        } = self;
+        let Self { cmd, signals, registry, config, config_probe, config_probe_openocd } = self;
         let ProbeGdbCmd { firmware, reset } = cmd;
 
         let commands = registry.openocd_gdb_openocd(config)?;
@@ -125,19 +108,8 @@ pub struct ItmCmd<'a> {
 impl ItmCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
-        let Self {
-            cmd,
-            signals,
-            registry,
-            config,
-            config_probe_itm,
-            config_probe_openocd,
-        } = self;
-        let ProbeItmCmd {
-            ports,
-            reset,
-            itmsink_args,
-        } = cmd;
+        let Self { cmd, signals, registry, config, config_probe_itm, config_probe_openocd } = self;
+        let ProbeItmCmd { ports, reset, itmsink_args } = cmd;
 
         let mut _pipe_dir = None;
         let mut itmsink = Command::new("itmsink");

@@ -164,11 +164,7 @@ pub fn check_root_result(color_choice: ColorChoice, f: impl FnOnce() -> Result<(
 
 /// Serialize the value to a string.
 pub fn ser_to_string<T: ser::Serialize>(value: T) -> String {
-    serde_json::to_value(value)
-        .unwrap()
-        .as_str()
-        .unwrap()
-        .to_string()
+    serde_json::to_value(value).unwrap().as_str().unwrap().to_string()
 }
 
 /// Deserialize a value from the string.

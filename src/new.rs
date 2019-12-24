@@ -20,16 +20,7 @@ use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 impl NewCmd {
     /// Runs the `drone new` command.
     pub fn run(&self, shell: &mut StandardStream) -> Result<()> {
-        let Self {
-            path,
-            device,
-            flash_size,
-            ram_size,
-            probe,
-            probe_itm,
-            name,
-            toolchain,
-        } = self;
+        let Self { path, device, flash_size, ram_size, probe, probe_itm, name, toolchain } = self;
         let registry = Registry::new()?;
         let name = name.as_ref().map(String::as_str).map_or_else(
             || {
@@ -49,10 +40,8 @@ impl NewCmd {
             },
             Ok,
         )?;
-        let underscore_name = name
-            .chars()
-            .map(|c| if c == '-' { '_' } else { c })
-            .collect::<String>();
+        let underscore_name =
+            name.chars().map(|c| if c == '-' { '_' } else { c }).collect::<String>();
 
         cargo_new(path, &toolchain)?;
         src_main_rs(path, shell)?;
@@ -66,16 +55,7 @@ impl NewCmd {
             }
         }
         cargo_toml(path, &name, &device, &registry, shell)?;
-        drone_toml(
-            path,
-            &device,
-            *flash_size,
-            *ram_size,
-            &probe,
-            &probe_itm,
-            &registry,
-            shell,
-        )?;
+        drone_toml(path, &device, *flash_size, *ram_size, &probe, &probe_itm, &registry, shell)?;
         justfile(path, &device, &registry, shell)?;
         rust_toolchain(path, &toolchain, &registry, shell)?;
         cargo_config(path, &registry, shell)?;
@@ -191,13 +171,9 @@ fn drone_toml(
 ) -> Result<()> {
     let path = path.join("Drone.toml");
     let mut file = File::create(&path)?;
-    let probe = probe
-        .as_ref()
-        .unwrap_or_else(|| device.probes().first().unwrap());
+    let probe = probe.as_ref().unwrap_or_else(|| device.probes().first().unwrap());
     file.write_all(
-        registry
-            .new_drone_toml(device, flash_size, ram_size, probe, probe_itm)?
-            .as_bytes(),
+        registry.new_drone_toml(device, flash_size, ram_size, probe, probe_itm)?.as_bytes(),
     )?;
     print_created(shell, "Drone.toml")
 }

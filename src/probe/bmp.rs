@@ -32,13 +32,7 @@ pub struct ResetCmd<'a> {
 impl ResetCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
-        let Self {
-            cmd,
-            signals,
-            registry,
-            config,
-            config_probe,
-        } = self;
+        let Self { cmd, signals, registry, config, config_probe } = self;
         let ProbeResetCmd {} = cmd;
         let script = registry.bmp_reset(config)?;
         let mut gdb = Command::new(&config_probe.gdb_client);
@@ -63,13 +57,7 @@ pub struct FlashCmd<'a> {
 impl FlashCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
-        let Self {
-            cmd,
-            signals,
-            registry,
-            config,
-            config_probe,
-        } = self;
+        let Self { cmd, signals, registry, config, config_probe } = self;
         let ProbeFlashCmd { firmware } = cmd;
         let script = registry.bmp_flash(config)?;
         let mut gdb = Command::new(&config_probe.gdb_client);
@@ -95,13 +83,7 @@ pub struct GdbCmd<'a> {
 impl GdbCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
-        let Self {
-            cmd,
-            signals,
-            registry,
-            config,
-            config_probe,
-        } = self;
+        let Self { cmd, signals, registry, config, config_probe } = self;
         let ProbeGdbCmd { firmware, reset } = cmd;
         let script = registry.bmp_gdb(config, *reset)?;
         let mut gdb = Command::new(&config_probe.gdb_client);
@@ -128,20 +110,8 @@ pub struct ItmCmd<'a> {
 impl ItmCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
-        let Self {
-            cmd,
-            signals,
-            registry,
-            config,
-            config_probe,
-            config_probe_itm,
-            shell,
-        } = self;
-        let ProbeItmCmd {
-            ports,
-            reset,
-            itmsink_args,
-        } = cmd;
+        let Self { cmd, signals, registry, config, config_probe, config_probe_itm, shell } = self;
+        let ProbeItmCmd { ports, reset, itmsink_args } = cmd;
 
         let uart_endpoint = config_probe_itm.uart_endpoint.as_ref().ok_or_else(|| {
             anyhow!(
@@ -163,10 +133,7 @@ impl ItmCmd<'_> {
 
         let (pipe, packet) = block_with_signals(&signals, false, move || {
             let mut packet = [0];
-            OpenOptions::new()
-                .read(true)
-                .open(&pipe)?
-                .read_exact(&mut packet)?;
+            OpenOptions::new().read(true).open(&pipe)?.read_exact(&mut packet)?;
             Ok((pipe, packet))
         })?;
 
@@ -178,10 +145,7 @@ impl ItmCmd<'_> {
         let _itmsink = finally(|| itmsink.kill().expect("itmsink wasn't running"));
 
         block_with_signals(&signals, false, move || {
-            OpenOptions::new()
-                .write(true)
-                .open(&pipe)?
-                .write_all(&packet)?;
+            OpenOptions::new().write(true).open(&pipe)?.write_all(&packet)?;
             Ok(())
         })?;
 

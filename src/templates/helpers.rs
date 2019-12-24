@@ -77,16 +77,8 @@ impl HelperDef for IfIncludes {
         rc: &mut RenderContext<'reg>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        let value = h
-            .param(0)
-            .ok_or_else(|| RenderError::new("missing parameter"))?
-            .render();
-        let result = h
-            .params()
-            .iter()
-            .skip(1)
-            .map(PathAndJson::render)
-            .any(|param| param == value);
+        let value = h.param(0).ok_or_else(|| RenderError::new("missing parameter"))?.render();
+        let result = h.params().iter().skip(1).map(PathAndJson::render).any(|param| param == value);
         match if result { h.template() } else { h.inverse() } {
             Some(t) => t.render(r, ctx, rc, out),
             None => Ok(()),

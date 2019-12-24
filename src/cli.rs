@@ -173,9 +173,6 @@ fn parse_color(src: &str) -> Result<ColorChoice, Error> {
         "always" => ColorChoice::Always,
         "never" => ColorChoice::Never,
         "auto" => ColorChoice::Auto,
-        _ => bail!(
-            "argument for --color must be auto, always, or never, but found `{}`",
-            src
-        ),
+        _ => bail!("argument for --color must be auto, always, or never, but found `{}`", src),
     })
 }

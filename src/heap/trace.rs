@@ -88,16 +88,8 @@ fn parser<R: Read>(
     let mut header = [0; 2];
     let mut value = [0; 4];
     let parse_u32 = move |bytes| {
-        let value = if big_endian {
-            u32::from_be_bytes(bytes)
-        } else {
-            u32::from_le_bytes(bytes)
-        };
-        if value == 0 {
-            Err(Error::InvalidValue)
-        } else {
-            Ok(value ^ KEY)
-        }
+        let value = if big_endian { u32::from_be_bytes(bytes) } else { u32::from_le_bytes(bytes) };
+        if value == 0 { Err(Error::InvalidValue) } else { Ok(value ^ KEY) }
     };
     static move || {
         loop {

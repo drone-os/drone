@@ -62,18 +62,10 @@ impl Config {
     }
 
     fn check_heap(&self) -> Result<()> {
-        let Self {
-            heap: Heap { size, pools },
-            ..
-        } = self;
+        let Self { heap: Heap { size, pools }, .. } = self;
         let used: u32 = pools.iter().map(|pool| pool.block * pool.capacity).sum();
         if used != *size {
-            bail!(
-                "{}: `heap.pools` adds up to {}, but `heap.size = {}",
-                CONFIG_NAME,
-                used,
-                size
-            );
+            bail!("{}: `heap.pools` adds up to {}, but `heap.size = {}", CONFIG_NAME, used, size);
         }
         Ok(())
     }

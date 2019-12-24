@@ -65,12 +65,7 @@ pub fn display(w: &mut impl Write, layout: &[(u32, u32)]) -> Result<()> {
         if *capacity == 0 {
             continue;
         }
-        writeln!(
-            w,
-            "    {{ block = \"{}\", capacity = {} }},",
-            format_size(*block),
-            capacity
-        )?;
+        writeln!(w, "    {{ block = \"{}\", capacity = {} }},", format_size(*block), capacity)?;
     }
     writeln!(w, "]")?;
     Ok(())
@@ -108,12 +103,7 @@ fn generate(
     shell.reset()?;
     write!(shell, "# Fragmentation: ")?;
     shell.set_color(ColorSpec::new().set_bold(true))?;
-    writeln!(
-        shell,
-        "{} / {:.2}%",
-        frag,
-        f64::from(frag) / f64::from(size) * 100.0
-    )?;
+    writeln!(shell, "{} / {:.2}%", frag, f64::from(frag) / f64::from(size) * 100.0)?;
     shell.reset()?;
     writeln!(shell)?;
     display(&mut stdout(), &output)?;
@@ -155,10 +145,7 @@ fn shrink(input: &[(u32, u32)], output: &mut [(u32, u32)], frag: &mut u32, cutof
 }
 
 fn extend(output: &mut [(u32, u32)], size: u32) {
-    let mut used = output
-        .iter()
-        .map(|(block, capacity)| block * capacity)
-        .sum::<u32>();
+    let mut used = output.iter().map(|(block, capacity)| block * capacity).sum::<u32>();
     let count = output.len() as u32;
     let free = f64::from(size - used);
     for ((block, capacity), ratio) in output.iter_mut().zip(ratios(count)) {

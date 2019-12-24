@@ -26,9 +26,8 @@ fn main() {
         let config = Config::read_from_current_dir()?;
         let script = Registry::new()?.layout_ld(&config)?;
         let signals = register_signals()?;
-        let linker = linker_command(script.as_ref(), &args, &[
-            "--defsym=_section_size_unknown=0".into(),
-        ])?;
+        let linker =
+            linker_command(script.as_ref(), &args, &["--defsym=_section_size_unknown=0".into()])?;
         block_with_signals(&signals, true, || run_command(linker))?;
         let size = size_command(&output)?;
         let syms = block_with_signals(&signals, true, || run_size(size))?

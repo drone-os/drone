@@ -69,54 +69,23 @@ impl ProbeCmd {
         match probe_sub_cmd {
             ProbeSubCmd::Reset(cmd) => {
                 if config_probe.bmp.is_some() {
-                    return bmp::ResetCmd {
-                        cmd,
-                        signals,
-                        registry,
-                        config,
-                        config_probe,
-                    }
-                    .run();
+                    return bmp::ResetCmd { cmd, signals, registry, config, config_probe }.run();
                 } else if let Some(config_probe_openocd) = &config_probe.openocd {
-                    return openocd::ResetCmd {
-                        cmd,
-                        signals,
-                        registry,
-                        config_probe_openocd,
-                    }
-                    .run();
+                    return openocd::ResetCmd { cmd, signals, registry, config_probe_openocd }
+                        .run();
                 }
             }
             ProbeSubCmd::Flash(cmd) => {
                 if config_probe.bmp.is_some() {
-                    return bmp::FlashCmd {
-                        cmd,
-                        signals,
-                        registry,
-                        config,
-                        config_probe,
-                    }
-                    .run();
+                    return bmp::FlashCmd { cmd, signals, registry, config, config_probe }.run();
                 } else if let Some(config_probe_openocd) = &config_probe.openocd {
-                    return openocd::FlashCmd {
-                        cmd,
-                        signals,
-                        registry,
-                        config_probe_openocd,
-                    }
-                    .run();
+                    return openocd::FlashCmd { cmd, signals, registry, config_probe_openocd }
+                        .run();
                 }
             }
             ProbeSubCmd::Gdb(cmd) => {
                 if config_probe.bmp.is_some() {
-                    return bmp::GdbCmd {
-                        cmd,
-                        signals,
-                        registry,
-                        config,
-                        config_probe,
-                    }
-                    .run();
+                    return bmp::GdbCmd { cmd, signals, registry, config, config_probe }.run();
                 } else if let Some(config_probe_openocd) = &config_probe.openocd {
                     return openocd::GdbCmd {
                         cmd,
@@ -157,10 +126,7 @@ impl ProbeCmd {
                 }
             }
         }
-        bail!(
-            "Suitable debug probe configuration is not found in `{}`",
-            config::CONFIG_NAME
-        );
+        bail!("Suitable debug probe configuration is not found in `{}`", config::CONFIG_NAME);
     }
 }
 
