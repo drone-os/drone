@@ -68,7 +68,7 @@ impl Iterator for Parser {
     type Item = Result<Packet, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.gen.as_mut().resume() {
+        match self.gen.as_mut().resume(()) {
             GeneratorState::Yielded(packet) => Some(Ok(packet)),
             GeneratorState::Complete(Ok(())) => None,
             GeneratorState::Complete(Err(Error::Io(ref err)))
