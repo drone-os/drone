@@ -81,7 +81,7 @@ fn src_main_rs(path: &Path, shell: &mut StandardStream) -> Result<()> {
 fn src_cortex_m_bin_rs(
     path: &Path,
     name: &str,
-    registry: &Registry,
+    registry: &Registry<'_>,
     shell: &mut StandardStream,
 ) -> Result<()> {
     let path = path.join("src/bin.rs");
@@ -93,7 +93,7 @@ fn src_cortex_m_bin_rs(
 fn src_cortex_m_lib_rs(
     path: &Path,
     device: &Device,
-    registry: &Registry,
+    registry: &Registry<'_>,
     shell: &mut StandardStream,
 ) -> Result<()> {
     let path = path.join("src/lib.rs");
@@ -105,7 +105,7 @@ fn src_cortex_m_lib_rs(
 fn src_cortex_m_thr_rs(
     path: &Path,
     device: &Device,
-    registry: &Registry,
+    registry: &Registry<'_>,
     shell: &mut StandardStream,
 ) -> Result<()> {
     let path = path.join("src/thr.rs");
@@ -116,7 +116,7 @@ fn src_cortex_m_thr_rs(
 
 fn src_cortex_m_tasks_mod_rs(
     path: &Path,
-    registry: &Registry,
+    registry: &Registry<'_>,
     shell: &mut StandardStream,
 ) -> Result<()> {
     let path = path.join("src/tasks");
@@ -129,7 +129,7 @@ fn src_cortex_m_tasks_mod_rs(
 
 fn src_cortex_m_tasks_root_rs(
     path: &Path,
-    registry: &Registry,
+    registry: &Registry<'_>,
     shell: &mut StandardStream,
 ) -> Result<()> {
     let path = path.join("src/tasks/root.rs");
@@ -142,7 +142,7 @@ fn cargo_toml(
     path: &Path,
     name: &str,
     device: &Device,
-    registry: &Registry,
+    registry: &Registry<'_>,
     shell: &mut StandardStream,
 ) -> Result<()> {
     const TAIL: &str = "[dependencies]\n";
@@ -166,7 +166,7 @@ fn drone_toml(
     ram_size: u32,
     probe: &Option<Probe>,
     probe_itm: &ProbeItm,
-    registry: &Registry,
+    registry: &Registry<'_>,
     shell: &mut StandardStream,
 ) -> Result<()> {
     let path = path.join("Drone.toml");
@@ -181,7 +181,7 @@ fn drone_toml(
 fn justfile(
     path: &Path,
     device: &Device,
-    registry: &Registry,
+    registry: &Registry<'_>,
     shell: &mut StandardStream,
 ) -> Result<()> {
     let path = path.join("Justfile");
@@ -193,7 +193,7 @@ fn justfile(
 fn rust_toolchain(
     path: &Path,
     toolchain: &str,
-    registry: &Registry,
+    registry: &Registry<'_>,
     shell: &mut StandardStream,
 ) -> Result<()> {
     let path = path.join("rust-toolchain");
@@ -202,7 +202,7 @@ fn rust_toolchain(
     print_created(shell, "rust-toolchain")
 }
 
-fn cargo_config(path: &Path, registry: &Registry, shell: &mut StandardStream) -> Result<()> {
+fn cargo_config(path: &Path, registry: &Registry<'_>, shell: &mut StandardStream) -> Result<()> {
     let path = path.join(".cargo");
     create_dir(&path)?;
     let path = path.join("config");
@@ -211,7 +211,7 @@ fn cargo_config(path: &Path, registry: &Registry, shell: &mut StandardStream) ->
     print_created(shell, ".cargo/config")
 }
 
-fn gitignore(path: &Path, registry: &Registry, shell: &mut StandardStream) -> Result<()> {
+fn gitignore(path: &Path, registry: &Registry<'_>, shell: &mut StandardStream) -> Result<()> {
     let path = path.join(".gitignore");
     let mut file = OpenOptions::new().append(true).open(&path)?;
     file.write_all(registry.new_gitignore()?.as_bytes())?;

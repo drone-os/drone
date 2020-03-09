@@ -18,9 +18,9 @@ use tempfile::NamedTempFile;
 const HEAP_POOLS: u32 = 8;
 
 /// Templates registry.
-pub struct Registry(Handlebars);
+pub struct Registry<'reg>(Handlebars<'reg>);
 
-impl Registry {
+impl Registry<'_> {
     /// Creates a new templates registry.
     pub fn new() -> Result<Self> {
         let mut handlebars = Handlebars::new();
@@ -49,6 +49,9 @@ impl Registry {
         template!("bmp/target.gdb")?;
         template!("bmp/target/cortex_m.gdb")?;
         template!("bmp/target/stm32.gdb")?;
+        template!("jlink/reset.jlink")?;
+        template!("jlink/flash.jlink")?;
+        template!("jlink/gdb.gdb")?;
         template!("openocd/reset.openocd")?;
         template!("openocd/flash.openocd")?;
         template!("openocd/gdb.gdb")?;
@@ -201,8 +204,17 @@ impl Registry {
     }
 
     /// Renders BMP `gdb` command script.
-    pub fn bmp_gdb(&self, config: &Config, reset: bool) -> Result<NamedTempFile> {
-        let data = json!({ "config": config, "reset": reset });
+    pub fn bmp_gdb(
+        &self,
+        config: &Config,
+        reset: bool,
+        rustc_substitute_path: &str,
+    ) -> Result<NamedTempFile> {
+        let data = json!({
+            "config": config,
+            "reset": reset,
+            "rustc-substitute-path": rustc_substitute_path,
+        });
         helpers::clear_vars();
         named_temp_file(|file| self.0.render_to_write("bmp/gdb.gdb", &data, file))
     }
@@ -225,6 +237,26 @@ impl Registry {
         named_temp_file(|file| self.0.render_to_write("bmp/itm.gdb", &data, file))
     }
 
+    /// Renders J-Link `reset` command script.
+    pub fn jlink_reset(&self) -> Result<NamedTempFile> {
+        helpers::clear_vars();
+        named_temp_file(|file| self.0.render_to_write("jlink/reset.jlink", &(), file))
+    }
+
+    /// Renders J-Link `flash` command script.
+    pub fn jlink_flash(&self, firmware: &Path) -> Result<NamedTempFile> {
+        let data = json!({ "firmware": firmware });
+        helpers::clear_vars();
+        named_temp_file(|file| self.0.render_to_write("jlink/flash.jlink", &data, file))
+    }
+
+    /// Renders J-Link `gdb` command script.
+    pub fn jlink_gdb(&self, config: &Config, rustc_substitute_path: &str) -> Result<NamedTempFile> {
+        let data = json!({ "config": config, "rustc-substitute-path": rustc_substitute_path });
+        helpers::clear_vars();
+        named_temp_file(|file| self.0.render_to_write("jlink/gdb.gdb", &data, file))
+    }
+
     /// Renders OpenOCD `reset` command script.
     pub fn openocd_reset(&self) -> Result<String> {
         helpers::clear_vars();
@@ -239,8 +271,17 @@ impl Registry {
     }
 
     /// Renders OpenOCD `gdb` command GDB script.
-    pub fn openocd_gdb_gdb(&self, config: &Config, reset: bool) -> Result<NamedTempFile> {
-        let data = json!({ "config": config, "reset": reset });
+    pub fn openocd_gdb_gdb(
+        &self,
+        config: &Config,
+        reset: bool,
+        rustc_substitute_path: &str,
+    ) -> Result<NamedTempFile> {
+        let data = json!({
+            "config": config,
+            "reset": reset,
+            "rustc-substitute-path": rustc_substitute_path,
+        });
         helpers::clear_vars();
         named_temp_file(|file| self.0.render_to_write("openocd/gdb.gdb", &data, file))
     }

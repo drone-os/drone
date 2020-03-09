@@ -67,6 +67,10 @@ flash: build
 gdb:
 	drone probe gdb \{{release_bin}} --reset
 
+# Run a GDB session for the attached device as a backend for a debugger GUI or an IDE
+@gdb-mi:
+	drone probe gdb \{{release_bin}} --reset -i=mi -- -nx
+
 # Display ITM output from the attached device
 itm:
 	drone probe itm --reset 0,1 -- 0,1

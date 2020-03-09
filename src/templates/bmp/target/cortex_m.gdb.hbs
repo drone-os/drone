@@ -2,7 +2,6 @@
 
 {{#set "TPIU_SPPR"}}     0xE00400F0 {{/set}}
 {{#set "TPIU_SPPR_NRZ"}} 0b10 {{/set}}
-{{#set "TPIU_SPPR_MANCHESTER"}} 0b01 {{/set}}
 
 {{#set "TPIU_FFCR"}}         0xE0040304 {{/set}}
 {{#set "TPIU_FFCR_ENFCONT"}} 0b10 {{/set}}
@@ -36,11 +35,7 @@
         set {int}{{get "TPIU_ACPR"}} = \
             {{config.probe.itm.reset-freq}} / {{config.probe.itm.baud-rate}} - 1
     {{/if}}
-    {{#if (eq config.probe.itm.encoding "nrz")}}
-        set {int}{{get "TPIU_SPPR"}} = {{get "TPIU_SPPR_NRZ"}}
-    {{else}}
-        set {int}{{get "TPIU_SPPR"}} = {{get "TPIU_SPPR_MANCHESTER"}}
-    {{/if}}
+    set {int}{{get "TPIU_SPPR"}} = {{get "TPIU_SPPR_NRZ"}}
     set {int}{{get "TPIU_FFCR"}} = \
         {int}{{get "TPIU_FFCR"}} & ~{{get "TPIU_FFCR_ENFCONT"}}
     set {int}{{get "ITM_LAR"}} = {{get "ITM_LAR_CODE"}}

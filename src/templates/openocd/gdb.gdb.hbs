@@ -1,3 +1,4 @@
+set substitute-path {{rustc-substitute-path}}
 target remote :{{config.probe.openocd.port}}
 {{#if reset}}
 monitor reset halt

@@ -23,9 +23,9 @@ impl HelperDef for Set {
     fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,
-        r: &'reg Handlebars,
+        r: &'reg Handlebars<'_>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg, 'rc>,
         _out: &mut dyn Output,
     ) -> HelperResult {
         let name = h
@@ -49,9 +49,9 @@ impl HelperDef for Get {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,
-        _r: &'reg Handlebars,
+        _r: &'reg Handlebars<'_>,
         _ctx: &'rc Context,
-        _rc: &mut RenderContext<'reg>,
+        _rc: &mut RenderContext<'reg, 'rc>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         let name = h
             .param(0)
@@ -72,9 +72,9 @@ impl HelperDef for IfIncludes {
     fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,
-        r: &'reg Handlebars,
+        r: &'reg Handlebars<'_>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
         let value = h.param(0).ok_or_else(|| RenderError::new("missing parameter"))?.render();
@@ -87,7 +87,7 @@ impl HelperDef for IfIncludes {
 }
 
 /// Register all helpers.
-pub fn register(handlebars: &mut Handlebars) {
+pub fn register(handlebars: &mut Handlebars<'_>) {
     handlebars.register_helper("set", Box::new(Set));
     handlebars.register_helper("get", Box::new(Get));
     handlebars.register_helper("addr", Box::new(addr));

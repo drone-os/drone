@@ -2,7 +2,7 @@
 
 use crate::{
     cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeItmCmd, ProbeResetCmd},
-    probe::setup_uart_endpoint,
+    probe::{run_gdb_client, rustc_substitute_path, setup_uart_endpoint},
     templates::Registry,
     utils::{
         block_with_signals, exhaust_fifo, finally, make_fifo, run_command, spawn_command, temp_dir,
@@ -14,6 +14,7 @@ use signal_hook::iterator::Signals;
 use std::{
     fs::OpenOptions,
     io::{Read, Write},
+    path::PathBuf,
     process::Command,
 };
 use tempfile::tempdir_in;
@@ -24,7 +25,7 @@ use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 pub struct ResetCmd<'a> {
     pub cmd: &'a ProbeResetCmd,
     pub signals: Signals,
-    pub registry: Registry,
+    pub registry: Registry<'a>,
     pub config: &'a config::Config,
     pub config_probe: &'a config::Probe,
 }
@@ -49,7 +50,7 @@ impl ResetCmd<'_> {
 pub struct FlashCmd<'a> {
     pub cmd: &'a ProbeFlashCmd,
     pub signals: Signals,
-    pub registry: Registry,
+    pub registry: Registry<'a>,
     pub config: &'a config::Config,
     pub config_probe: &'a config::Probe,
 }
@@ -75,7 +76,7 @@ impl FlashCmd<'_> {
 pub struct GdbCmd<'a> {
     pub cmd: &'a ProbeGdbCmd,
     pub signals: Signals,
-    pub registry: Registry,
+    pub registry: Registry<'a>,
     pub config: &'a config::Config,
     pub config_probe: &'a config::Probe,
 }
@@ -84,14 +85,16 @@ impl GdbCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
         let Self { cmd, signals, registry, config, config_probe } = self;
-        let ProbeGdbCmd { firmware, reset } = cmd;
-        let script = registry.bmp_gdb(config, *reset)?;
-        let mut gdb = Command::new(&config_probe.gdb_client);
-        if let Some(firmware) = firmware {
-            gdb.arg(firmware);
-        }
-        gdb.arg("--command").arg(script.path());
-        block_with_signals(&signals, true, || run_command(gdb))
+        let ProbeGdbCmd { firmware, reset, interpreter, gdb_args } = cmd;
+        let script = registry.bmp_gdb(config, *reset, &rustc_substitute_path()?)?;
+        run_gdb_client(
+            &signals,
+            config_probe,
+            gdb_args,
+            firmware.as_ref().map(PathBuf::as_path),
+            interpreter.as_ref().map(String::as_ref),
+            script.path(),
+        )
     }
 }
 
@@ -100,7 +103,7 @@ impl GdbCmd<'_> {
 pub struct ItmCmd<'a> {
     pub cmd: &'a ProbeItmCmd,
     pub signals: Signals,
-    pub registry: Registry,
+    pub registry: Registry<'a>,
     pub config: &'a config::Config,
     pub config_probe: &'a config::Probe,
     pub config_probe_itm: &'a config::ProbeItm,

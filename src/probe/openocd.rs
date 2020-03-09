@@ -2,17 +2,16 @@
 
 use crate::{
     cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeItmCmd, ProbeResetCmd},
-    probe::setup_uart_endpoint,
+    probe::{run_gdb_client, run_gdb_server, rustc_substitute_path, setup_uart_endpoint},
     templates::Registry,
     utils::{
-        block_with_signals, detach_pgid, exhaust_fifo, finally, make_fifo, run_command,
-        spawn_command, temp_dir,
+        block_with_signals, exhaust_fifo, finally, make_fifo, run_command, spawn_command, temp_dir,
     },
 };
 use anyhow::Result;
 use drone_config as config;
 use signal_hook::iterator::Signals;
-use std::process::Command;
+use std::{path::PathBuf, process::Command};
 use tempfile::tempdir_in;
 
 /// OpenOCD `drone probe reset` command.
@@ -20,7 +19,7 @@ use tempfile::tempdir_in;
 pub struct ResetCmd<'a> {
     pub cmd: &'a ProbeResetCmd,
     pub signals: Signals,
-    pub registry: Registry,
+    pub registry: Registry<'a>,
     pub config_probe_openocd: &'a config::ProbeOpenocd,
 }
 
@@ -42,7 +41,7 @@ impl ResetCmd<'_> {
 pub struct FlashCmd<'a> {
     pub cmd: &'a ProbeFlashCmd,
     pub signals: Signals,
-    pub registry: Registry,
+    pub registry: Registry<'a>,
     pub config_probe_openocd: &'a config::ProbeOpenocd,
 }
 
@@ -64,7 +63,7 @@ impl FlashCmd<'_> {
 pub struct GdbCmd<'a> {
     pub cmd: &'a ProbeGdbCmd,
     pub signals: Signals,
-    pub registry: Registry,
+    pub registry: Registry<'a>,
     pub config: &'a config::Config,
     pub config_probe: &'a config::Probe,
     pub config_probe_openocd: &'a config::ProbeOpenocd,
@@ -74,23 +73,23 @@ impl GdbCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
         let Self { cmd, signals, registry, config, config_probe, config_probe_openocd } = self;
-        let ProbeGdbCmd { firmware, reset } = cmd;
+        let ProbeGdbCmd { firmware, reset, interpreter, gdb_args } = cmd;
 
         let commands = registry.openocd_gdb_openocd(config)?;
         let mut openocd = Command::new(&config_probe_openocd.command);
         openocd_config(&mut openocd, config_probe_openocd);
         openocd_commands(&mut openocd, &commands);
-        detach_pgid(&mut openocd);
-        let mut openocd = spawn_command(openocd)?;
-        let _openocd = finally(|| openocd.kill().expect("openocd wasn't running"));
+        let _openocd = run_gdb_server(openocd, interpreter.as_ref().map(String::as_ref))?;
 
-        let script = registry.openocd_gdb_gdb(config, *reset)?;
-        let mut gdb = Command::new(&config_probe.gdb_client);
-        if let Some(firmware) = firmware {
-            gdb.arg(firmware);
-        }
-        gdb.arg("--command").arg(script.path());
-        block_with_signals(&signals, true, || run_command(gdb))
+        let script = registry.openocd_gdb_gdb(config, *reset, &rustc_substitute_path()?)?;
+        run_gdb_client(
+            &signals,
+            config_probe,
+            gdb_args,
+            firmware.as_ref().map(PathBuf::as_path),
+            interpreter.as_ref().map(String::as_ref),
+            script.path(),
+        )
     }
 }
 
@@ -99,7 +98,7 @@ impl GdbCmd<'_> {
 pub struct ItmCmd<'a> {
     pub cmd: &'a ProbeItmCmd,
     pub signals: Signals,
-    pub registry: Registry,
+    pub registry: Registry<'a>,
     pub config: &'a config::Config,
     pub config_probe_itm: &'a config::ProbeItm,
     pub config_probe_openocd: &'a config::ProbeOpenocd,

@@ -149,6 +149,12 @@ pub struct ProbeGdbCmd {
     /// Reset the attached device
     #[structopt(short, long)]
     pub reset: bool,
+    /// Select a specific interpreter / user interface
+    #[structopt(short, long)]
+    pub interpreter: Option<String>,
+    /// Arguments for `gdb`
+    #[structopt(parse(from_os_str), last(true))]
+    pub gdb_args: Vec<OsString>,
 }
 
 #[derive(Debug, StructOpt)]

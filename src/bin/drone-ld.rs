@@ -1,4 +1,3 @@
-#![feature(slice_patterns)]
 #![deny(elided_lifetimes_in_paths)]
 #![warn(clippy::pedantic)]
 

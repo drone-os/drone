@@ -73,6 +73,7 @@ pub struct Probe {
     pub gdb_client: String,
     pub itm: Option<ProbeItm>,
     pub bmp: Option<ProbeBmp>,
+    pub jlink: Option<ProbeJlink>,
     pub openocd: Option<ProbeOpenocd>,
 }
 
@@ -82,7 +83,6 @@ pub struct Probe {
 pub struct ProbeItm {
     pub reset_freq: u32,
     pub baud_rate: u32,
-    pub encoding: ProbeItmEncoding,
     pub uart_endpoint: Option<String>,
 }
 
@@ -97,16 +97,20 @@ pub struct ProbeBmp {
 #[non_exhaustive]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub struct ProbeOpenocd {
-    pub command: String,
+pub struct ProbeJlink {
+    pub gdb_server: String,
+    pub swo_viewer: String,
+    pub commander: String,
+    pub device: String,
+    pub speed: u32,
     pub port: u32,
-    pub config: Vec<String>,
 }
 
 #[non_exhaustive]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum ProbeItmEncoding {
-    Manchester,
-    Nrz,
+pub struct ProbeOpenocd {
+    pub command: String,
+    pub port: u32,
+    pub config: Vec<String>,
 }

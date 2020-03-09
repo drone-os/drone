@@ -41,7 +41,7 @@ fn upcase_target(target: &str) -> String {
     target
         .chars()
         .map(|c| match c {
-            '-' => '_',
+            '-' | '.' => '_',
             _ => c.to_ascii_uppercase(),
         })
         .collect()

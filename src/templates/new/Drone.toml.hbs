@@ -14,7 +14,6 @@ gdb-client = "gdb-multiarch"
 [probe.itm]
 reset-freq = {{device_itm_reset_freq}}
 baud-rate = 115200
-encoding = "nrz"
 {{~#if (eq probe_itm "external")}}
 uart-endpoint = "{{probe_itm_endpoint}}"
 {{~/if}}

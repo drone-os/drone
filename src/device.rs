@@ -15,6 +15,7 @@ pub enum Device {
     Nrf52811,
     Nrf52832,
     Nrf52840,
+    Nrf9160,
     Stm32F100,
     Stm32F101,
     Stm32F102,
@@ -74,42 +75,51 @@ impl Device {
                 shell.reset()?;
             }};
         }
-        family!("nRF52 Short-Range Wireless");
-        item!(Self::Nrf52810);
-        item!(Self::Nrf52811);
-        item!(Self::Nrf52832);
-        item!(Self::Nrf52840);
-        family!("STM32F1 Mainstream");
-        item!(Self::Stm32F100);
-        item!(Self::Stm32F101);
-        item!(Self::Stm32F102);
-        item!(Self::Stm32F103);
-        item!(Self::Stm32F107);
-        family!("STM32F4 High Performance");
-        item!(Self::Stm32F401);
-        item!(Self::Stm32F405);
-        item!(Self::Stm32F407);
-        item!(Self::Stm32F410);
-        item!(Self::Stm32F411);
-        item!(Self::Stm32F412);
-        item!(Self::Stm32F413);
-        item!(Self::Stm32F427);
-        item!(Self::Stm32F429);
-        item!(Self::Stm32F446);
-        item!(Self::Stm32F469);
-        family!("STM32L4 Ultra Low Power");
-        item!(Self::Stm32L4X1);
-        item!(Self::Stm32L4X2);
-        item!(Self::Stm32L4X3);
-        item!(Self::Stm32L4X5);
-        item!(Self::Stm32L4X6);
+
         family!("STM32L4+ Ultra Low Power");
-        item!(Self::Stm32L4R5);
-        item!(Self::Stm32L4R7);
-        item!(Self::Stm32L4R9);
-        item!(Self::Stm32L4S5);
-        item!(Self::Stm32L4S7);
         item!(Self::Stm32L4S9);
+        item!(Self::Stm32L4S7);
+        item!(Self::Stm32L4S5);
+        item!(Self::Stm32L4R9);
+        item!(Self::Stm32L4R7);
+        item!(Self::Stm32L4R5);
+
+        family!("STM32L4 Ultra Low Power");
+        item!(Self::Stm32L4X6);
+        item!(Self::Stm32L4X5);
+        item!(Self::Stm32L4X3);
+        item!(Self::Stm32L4X2);
+        item!(Self::Stm32L4X1);
+
+        family!("STM32F4 High Performance");
+        item!(Self::Stm32F469);
+        item!(Self::Stm32F446);
+        item!(Self::Stm32F429);
+        item!(Self::Stm32F427);
+        item!(Self::Stm32F413);
+        item!(Self::Stm32F412);
+        item!(Self::Stm32F411);
+        item!(Self::Stm32F410);
+        item!(Self::Stm32F407);
+        item!(Self::Stm32F405);
+        item!(Self::Stm32F401);
+
+        family!("STM32F1 Mainstream");
+        item!(Self::Stm32F107);
+        item!(Self::Stm32F103);
+        item!(Self::Stm32F102);
+        item!(Self::Stm32F101);
+        item!(Self::Stm32F100);
+
+        family!("nRF91 Low Power Cellular IoT");
+        item!(Self::Nrf9160);
+
+        family!("nRF52 Low Power Short-Range Wireless");
+        item!(Self::Nrf52840);
+        item!(Self::Nrf52832);
+        item!(Self::Nrf52811);
+        item!(Self::Nrf52810);
+
         Ok(())
     }
 
@@ -147,13 +157,16 @@ impl Device {
             | Self::Stm32L4S5
             | Self::Stm32L4S7
             | Self::Stm32L4S9 => "thumbv7em-none-eabihf",
+            Self::Nrf9160 => "thumbv8m.main-none-eabihf",
         }
     }
 
     /// Returns the origin of the Flash memory.
     pub fn flash_origin(&self) -> u32 {
         match self {
-            Self::Nrf52810 | Self::Nrf52811 | Self::Nrf52832 | Self::Nrf52840 => 0x0000_0000,
+            Self::Nrf52810 | Self::Nrf52811 | Self::Nrf52832 | Self::Nrf52840 | Self::Nrf9160 => {
+                0x0000_0000
+            }
             Self::Stm32F100
             | Self::Stm32F101
             | Self::Stm32F102
@@ -191,6 +204,7 @@ impl Device {
             | Self::Nrf52811
             | Self::Nrf52832
             | Self::Nrf52840
+            | Self::Nrf9160
             | Self::Stm32F100
             | Self::Stm32F101
             | Self::Stm32F102
@@ -224,7 +238,9 @@ impl Device {
     /// Returns frequency of ITM output at reset.
     pub fn itm_reset_freq(&self) -> Option<u32> {
         match self {
-            Self::Nrf52810 | Self::Nrf52811 | Self::Nrf52832 | Self::Nrf52840 => Some(32_000_000),
+            Self::Nrf52810 | Self::Nrf52811 | Self::Nrf52832 | Self::Nrf52840 | Self::Nrf9160 => {
+                Some(32_000_000)
+            }
             Self::Stm32F100
             | Self::Stm32F101
             | Self::Stm32F102
@@ -288,7 +304,13 @@ impl Device {
             | Self::Stm32L4R9
             | Self::Stm32L4S5
             | Self::Stm32L4S7
-            | Self::Stm32L4S9 => (crates::Platform::CortexM, "cortex_m4f_r0p1", &["fpu"]),
+            | Self::Stm32L4S9 => {
+                (crates::Platform::CortexM, "cortex_m4f_r0p1", &["floating_point_unit"])
+            }
+            Self::Nrf9160 => (crates::Platform::CortexM, "cortex_m33f_r0p2", &[
+                "floating_point_unit",
+                "security_extension",
+            ]),
         }
     }
 
@@ -299,6 +321,7 @@ impl Device {
             Self::Nrf52811 => (crates::Bindings::Nrf, "nrf52811", &[]),
             Self::Nrf52832 => (crates::Bindings::Nrf, "nrf52832", &[]),
             Self::Nrf52840 => (crates::Bindings::Nrf, "nrf52840", &[]),
+            Self::Nrf9160 => (crates::Bindings::Nrf, "nrf9160", &[]),
             Self::Stm32F100 => {
                 (crates::Bindings::Stm32, "stm32f100", &["dma", "gpio", "spi", "tim"])
             }
@@ -386,7 +409,6 @@ impl Device {
     /// Returns the list of supported debug probes.
     pub fn probes(&self) -> &[Probe] {
         match self {
-            Self::Nrf52810 | Self::Nrf52811 | Self::Nrf52832 | Self::Nrf52840 => &[Probe::Openocd],
             Self::Stm32F100
             | Self::Stm32F101
             | Self::Stm32F102
@@ -414,6 +436,8 @@ impl Device {
             | Self::Stm32L4S5
             | Self::Stm32L4S7
             | Self::Stm32L4S9 => &[Probe::Bmp, Probe::Openocd],
+            Self::Nrf52810 | Self::Nrf52811 | Self::Nrf52832 | Self::Nrf52840 => &[Probe::Openocd],
+            Self::Nrf9160 => &[Probe::Jlink],
         }
     }
 
@@ -450,6 +474,7 @@ impl Device {
             | Self::Stm32L4S5
             | Self::Stm32L4S7
             | Self::Stm32L4S9 => &["target/stm32l4x.cfg"],
+            Self::Nrf9160 => &[],
         }
     }
 }

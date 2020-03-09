@@ -134,9 +134,9 @@ pub fn exhaust_fifo(path: &str) -> Result<()> {
 }
 
 /// Moves the process to a new process group.
-pub fn detach_pgid(openocd: &mut Command) {
+pub fn detach_pgid(command: &mut Command) {
     unsafe {
-        openocd.pre_exec(|| {
+        command.pre_exec(|| {
             libc::setpgid(0, 0);
             Ok(())
         });

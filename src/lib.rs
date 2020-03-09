@@ -25,6 +25,7 @@
 //! $ drone help
 //! ```
 
+#![feature(bool_to_option)]
 #![feature(generator_trait)]
 #![feature(generators)]
 #![deny(elided_lifetimes_in_paths)]
@@ -35,9 +36,11 @@
     clippy::cast_precision_loss,
     clippy::cast_sign_loss,
     clippy::doc_markdown,
+    clippy::missing_errors_doc,
     clippy::module_name_repetitions,
     clippy::must_use_candidate,
-    clippy::similar_names
+    clippy::similar_names,
+    clippy::unneeded_field_pattern
 )]
 
 pub mod cli;
