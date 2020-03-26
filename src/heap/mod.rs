@@ -86,10 +86,6 @@ fn read_trace(
             Packet::Dealloc { size } => {
                 dealloc(trace, size)?;
             }
-            Packet::GrowInPlace { size, new_size } | Packet::ShrinkInPlace { size, new_size } => {
-                dealloc(trace, size)?;
-                alloc(trace, new_size, max_size)?;
-            }
         }
     }
     Ok(())

@@ -27,8 +27,6 @@ heap! {
 
     #[cfg(feature = "heaptrace")] use drone_cortex_m::itm::trace_alloc;
     #[cfg(feature = "heaptrace")] use drone_cortex_m::itm::trace_dealloc;
-    #[cfg(feature = "heaptrace")] use drone_cortex_m::itm::trace_grow_in_place;
-    #[cfg(feature = "heaptrace")] use drone_cortex_m::itm::trace_shrink_in_place;
 }
 
 /// The global allocator.

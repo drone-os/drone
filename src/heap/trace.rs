@@ -39,20 +39,6 @@ pub enum Packet {
         /// Allocation size.
         size: u32,
     },
-    /// Grow in place.
-    GrowInPlace {
-        /// Allocation size.
-        size: u32,
-        /// New allocation size.
-        new_size: u32,
-    },
-    /// Shrink in place.
-    ShrinkInPlace {
-        /// Allocation size.
-        size: u32,
-        /// New allocation size.
-        new_size: u32,
-    },
 }
 
 impl Parser {
@@ -68,7 +54,7 @@ impl Iterator for Parser {
     type Item = Result<Packet, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.gen.as_mut().resume() {
+        match self.gen.as_mut().resume(()) {
             GeneratorState::Yielded(packet) => Some(Ok(packet)),
             GeneratorState::Complete(Ok(())) => None,
             GeneratorState::Complete(Err(Error::Io(ref err)))
@@ -105,20 +91,6 @@ fn parser<R: Read>(
                     reader.read_exact(&mut value)?;
                     let size = parse_u32(value)?;
                     yield Packet::Dealloc { size };
-                }
-                [0xBC, 0xDE] => {
-                    reader.read_exact(&mut value)?;
-                    let size = parse_u32(value)?;
-                    reader.read_exact(&mut value)?;
-                    let new_size = parse_u32(value)?;
-                    yield Packet::GrowInPlace { size, new_size };
-                }
-                [0xED, 0xCB] => {
-                    reader.read_exact(&mut value)?;
-                    let size = parse_u32(value)?;
-                    reader.read_exact(&mut value)?;
-                    let new_size = parse_u32(value)?;
-                    yield Packet::ShrinkInPlace { size, new_size };
                 }
                 _ => break Err(Error::InvalidHeader),
             }
