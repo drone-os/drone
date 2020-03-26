@@ -112,5 +112,5 @@ pub struct ProbeJlink {
 pub struct ProbeOpenocd {
     pub command: String,
     pub port: u32,
-    pub config: Vec<String>,
+    pub arguments: Vec<String>,
 }

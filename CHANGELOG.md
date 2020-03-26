@@ -19,6 +19,8 @@ Possible log types:
 - [added] Add `gdb-mi` task in generated `Justfile`
 - [fixed] Display Rust's `core`/`alloc` sources inside a GDB session
 - [changed] `release` profile includes debug symbols by default
+- [removed] Remove `probe.openocd.config` from `Drone.toml`
+- [added] Add `probe.openocd.arguments` to `Drone.toml`
 
 ### v0.11.1 (2019-11-27)
 

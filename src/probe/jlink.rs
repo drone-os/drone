@@ -1,7 +1,7 @@
 //! Segger J-Link interface.
 
 use crate::{
-    cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeItmCmd, ProbeResetCmd},
+    cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeResetCmd},
     probe::{run_gdb_client, run_gdb_server, rustc_substitute_path},
     templates::Registry,
     utils::{block_with_signals, run_command, search_rust_tool},
@@ -105,33 +105,6 @@ impl GdbCmd<'_> {
             interpreter.as_ref().map(String::as_ref),
             script.path(),
         )
-    }
-}
-
-/// Segger J-Link `drone probe itm` command.
-#[allow(missing_docs)]
-pub struct ItmCmd<'a> {
-    pub cmd: &'a ProbeItmCmd,
-    pub signals: Signals,
-    pub registry: Registry<'a>,
-    pub config: &'a config::Config,
-    pub config_probe_itm: &'a config::ProbeItm,
-    pub config_probe_jlink: &'a config::ProbeJlink,
-}
-
-impl ItmCmd<'_> {
-    /// Runs the command.
-    pub fn run(self) -> Result<()> {
-        let Self { cmd, signals, registry, config, config_probe_itm, config_probe_jlink } = self;
-        let ProbeItmCmd { ports, reset, itmsink_args } = cmd;
-
-        let mut swo_viewer = Command::new(&config_probe_jlink.swo_viewer);
-        swo_viewer.arg("-Device").arg(&config_probe_jlink.device);
-        swo_viewer.arg("-SWOFreq").arg(config_probe_itm.baud_rate.to_string());
-        swo_viewer
-            .arg("-ITMMask")
-            .arg(format!("0x{:X}", ports.iter().fold(0, |mask, port| mask | 1 << port)));
-        block_with_signals(&signals, true, || run_command(swo_viewer))
     }
 }
 

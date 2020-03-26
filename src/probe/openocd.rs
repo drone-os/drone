@@ -30,7 +30,7 @@ impl ResetCmd<'_> {
         let ProbeResetCmd {} = cmd;
         let commands = registry.openocd_reset()?;
         let mut openocd = Command::new(&config_probe_openocd.command);
-        openocd_config(&mut openocd, config_probe_openocd);
+        openocd_arguments(&mut openocd, config_probe_openocd);
         openocd_commands(&mut openocd, &commands);
         block_with_signals(&signals, true, || run_command(openocd))
     }
@@ -52,7 +52,7 @@ impl FlashCmd<'_> {
         let ProbeFlashCmd { firmware } = cmd;
         let commands = registry.openocd_flash(firmware)?;
         let mut openocd = Command::new(&config_probe_openocd.command);
-        openocd_config(&mut openocd, config_probe_openocd);
+        openocd_arguments(&mut openocd, config_probe_openocd);
         openocd_commands(&mut openocd, &commands);
         block_with_signals(&signals, true, || run_command(openocd))
     }
@@ -77,7 +77,7 @@ impl GdbCmd<'_> {
 
         let commands = registry.openocd_gdb_openocd(config)?;
         let mut openocd = Command::new(&config_probe_openocd.command);
-        openocd_config(&mut openocd, config_probe_openocd);
+        openocd_arguments(&mut openocd, config_probe_openocd);
         openocd_commands(&mut openocd, &commands);
         let _openocd = run_gdb_server(openocd, interpreter.as_ref().map(String::as_ref))?;
 
@@ -129,7 +129,7 @@ impl ItmCmd<'_> {
         let _itmsink = finally(|| itmsink.kill().expect("itmsink wasn't running"));
 
         let mut openocd = Command::new(&config_probe_openocd.command);
-        openocd_config(&mut openocd, config_probe_openocd);
+        openocd_arguments(&mut openocd, config_probe_openocd);
         openocd_commands(&mut openocd, &commands);
         let mut openocd = spawn_command(openocd)?;
 
@@ -142,9 +142,9 @@ impl ItmCmd<'_> {
     }
 }
 
-fn openocd_config(openocd: &mut Command, config_probe_openocd: &config::ProbeOpenocd) {
-    for config in &config_probe_openocd.config {
-        openocd.arg("-f").arg(config);
+fn openocd_arguments(openocd: &mut Command, config_probe_openocd: &config::ProbeOpenocd) {
+    for argument in &config_probe_openocd.arguments {
+        openocd.arg(argument);
     }
 }
 

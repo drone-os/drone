@@ -126,16 +126,8 @@ impl ProbeCmd {
                 let config_probe_itm = config_probe.itm.as_ref().ok_or_else(|| {
                     anyhow!("Missing `probe.itm` section in `{}`", config::CONFIG_NAME)
                 })?;
-                if let Some(config_probe_jlink) = &config_probe.jlink {
-                    return jlink::ItmCmd {
-                        cmd,
-                        signals,
-                        registry,
-                        config,
-                        config_probe_itm,
-                        config_probe_jlink,
-                    }
-                    .run();
+                if config_probe.jlink.is_some() {
+                    unimplemented!("SWO capture with J-Link");
                 } else if config_probe.bmp.is_some() {
                     return bmp::ItmCmd {
                         cmd,

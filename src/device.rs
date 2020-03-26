@@ -445,13 +445,13 @@ impl Device {
     pub fn openocd_config(&self) -> &[&str] {
         match self {
             Self::Nrf52810 | Self::Nrf52811 | Self::Nrf52832 | Self::Nrf52840 => {
-                &["target/nrf52.cfg"]
+                &["-f", "target/nrf52.cfg"]
             }
             Self::Stm32F100
             | Self::Stm32F101
             | Self::Stm32F102
             | Self::Stm32F103
-            | Self::Stm32F107 => &["target/stm32f1x.cfg"],
+            | Self::Stm32F107 => &["-f", "target/stm32f1x.cfg"],
             Self::Stm32F401
             | Self::Stm32F405
             | Self::Stm32F407
@@ -462,7 +462,7 @@ impl Device {
             | Self::Stm32F427
             | Self::Stm32F429
             | Self::Stm32F446
-            | Self::Stm32F469 => &["target/stm32f4x.cfg"],
+            | Self::Stm32F469 => &["-f", "target/stm32f4x.cfg"],
             Self::Stm32L4X1
             | Self::Stm32L4X2
             | Self::Stm32L4X3
@@ -473,7 +473,7 @@ impl Device {
             | Self::Stm32L4R9
             | Self::Stm32L4S5
             | Self::Stm32L4S7
-            | Self::Stm32L4S9 => &["target/stm32l4x.cfg"],
+            | Self::Stm32L4S9 => &["-f", "target/stm32l4x.cfg"],
             Self::Nrf9160 => &[],
         }
     }

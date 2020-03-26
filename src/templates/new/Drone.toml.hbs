@@ -26,5 +26,5 @@ gdb-endpoint = "/dev/ttyBmpGdb"
 [probe.openocd]
 command = "openocd"
 port = 3333
-config = ["interface/stlink.cfg"{{#each probe_openocd_config}}, "{{this}}"{{/each}}]
+config = ["-f", "interface/stlink.cfg"{{#each probe_openocd_config}}, "{{this}}"{{/each}}]
 {{~/if}}
