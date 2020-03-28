@@ -11,17 +11,24 @@ origin = {{addr device_ram_origin}}
 [probe]
 gdb-client = "gdb-multiarch"
 
-[probe.itm]
-reset-freq = {{device_itm_reset_freq}}
+[probe.swo]
+reset-freq = {{device_swo_reset_freq}}
 baud-rate = 115200
-{{~#if (eq probe_itm "external")}}
-uart-endpoint = "{{probe_itm_endpoint}}"
+{{~#if (eq probe_monitor "swo-external")}}
+uart-endpoint = "{{probe_monitor_endpoint}}"
 {{~/if}}
 
 {{#if (eq probe_ident "bmp") ~}}
 [probe.bmp]
 device = "{{device_ident}}"
 gdb-endpoint = "/dev/ttyBmpGdb"
+{{~/if}}{{#if (eq probe_ident "jlink") ~}}
+[probe.jlink]
+gdb-server = "JLinkGDBServerCLExe"
+commander = "JLinkExe"
+device = "{{device_ident}}"
+speed = 4000
+port = 2331
 {{~/if}}{{#if (eq probe_ident "openocd") ~}}
 [probe.openocd]
 command = "openocd"

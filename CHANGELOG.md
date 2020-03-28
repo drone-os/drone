@@ -15,12 +15,15 @@ Possible log types:
 
 - [added] Add Nordic's nRF9160 MCU support
 - [added] Add Segger J-Link probe support
-- [removed] Remove `probe.itm.encoding` configuration in `Cargo.toml`
-- [added] Add `gdb-mi` task in generated `Justfile`
+- [removed] Remove `probe.itm.encoding` option in `Cargo.toml`
+- [added] Add `gdb-mi` task to generated `Justfile`
 - [fixed] Display Rust's `core`/`alloc` sources inside a GDB session
 - [changed] `release` profile includes debug symbols by default
-- [removed] Remove `probe.openocd.config` from `Drone.toml`
-- [added] Add `probe.openocd.arguments` to `Drone.toml`
+- [removed] Remove `probe.openocd.config` option from `Drone.toml`
+- [added] Add `probe.openocd.arguments` option to `Drone.toml`
+- [changed] Rename sub-command `drone probe itm` to `drone probe monitor`
+- [changed] Rename section `probe.itm` to `probe.swo` in `Drone.toml`
+- [changed] Rename task `itm` to `monitor` in generated `Justfile`
 
 ### v0.11.1 (2019-11-27)
 

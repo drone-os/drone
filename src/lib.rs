@@ -26,8 +26,10 @@
 //! ```
 
 #![feature(bool_to_option)]
+#![feature(exhaustive_patterns)]
 #![feature(generator_trait)]
 #![feature(generators)]
+#![feature(never_type)]
 #![deny(elided_lifetimes_in_paths)]
 #![warn(missing_docs)]
 #![warn(clippy::pedantic)]
@@ -48,6 +50,7 @@ pub mod crates;
 pub mod device;
 pub mod env;
 pub mod heap;
+pub mod itm;
 pub mod new;
 pub mod probe;
 pub mod templates;

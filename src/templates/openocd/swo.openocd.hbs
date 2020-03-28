@@ -7,7 +7,7 @@ itm port 0 off
 itm port {{this}} on
 {{/each}}
 
-tpiu config {{#if pipe}}internal {{pipe}}{{else}}external{{/if}} uart off {{config.probe.itm.reset-freq}} {{config.probe.itm.baud-rate}}
+tpiu config {{#if pipe}}internal {{pipe}}{{else}}external{{/if}} uart off {{config.probe.swo.reset-freq}} {{config.probe.swo.baud-rate}}
 
 {{#if reset}}
 reset run

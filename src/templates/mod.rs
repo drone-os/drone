@@ -5,7 +5,7 @@ pub mod helpers;
 use crate::{
     device::Device,
     heap,
-    probe::{Probe, ProbeItm},
+    probe::{Probe, ProbeMonitor},
     utils::{ser_to_string, temp_dir},
 };
 use anyhow::Result;
@@ -42,21 +42,21 @@ impl Registry<'_> {
         template!("new/rust-toolchain")?;
         template!("new/_cargo/config")?;
         template!("new/_gitignore")?;
-        template!("bmp/reset.gdb")?;
         template!("bmp/flash.gdb")?;
         template!("bmp/gdb.gdb")?;
-        template!("bmp/itm.gdb")?;
+        template!("bmp/reset.gdb")?;
+        template!("bmp/swo.gdb")?;
         template!("bmp/target.gdb")?;
         template!("bmp/target/cortex_m.gdb")?;
         template!("bmp/target/stm32.gdb")?;
         template!("jlink/reset.jlink")?;
         template!("jlink/flash.jlink")?;
         template!("jlink/gdb.gdb")?;
-        template!("openocd/reset.openocd")?;
         template!("openocd/flash.openocd")?;
         template!("openocd/gdb.gdb")?;
         template!("openocd/gdb.openocd")?;
-        template!("openocd/itm.openocd")?;
+        template!("openocd/reset.openocd")?;
+        template!("openocd/swo.openocd")?;
 
         helpers::register(&mut handlebars);
         Ok(Self(handlebars))
@@ -126,26 +126,23 @@ impl Registry<'_> {
         flash_size: u32,
         ram_size: u32,
         probe: &Probe,
-        probe_itm: &ProbeItm,
+        probe_monitor: &ProbeMonitor,
     ) -> Result<String> {
         let mut heap = Vec::new();
         let layout = heap::generate::new(ram_size / 2, HEAP_POOLS);
         heap::generate::display(&mut heap, &layout)?;
         let heap = String::from_utf8(heap)?;
-        let probe_itm = match probe_itm {
-            ProbeItm::Auto => probe.itm_default(),
-            ProbeItm::Internal | ProbeItm::External => probe_itm,
-        };
-        let probe_itm_endpoint = probe.itm_external_endpoint();
+        let probe_monitor = probe_monitor.for_probe(&probe);
+        let probe_monitor_endpoint = probe.swo_external_endpoint();
         let data = json!({
             "device_ident": ser_to_string(device),
             "device_flash_origin": device.flash_origin(),
             "device_ram_origin": device.ram_origin(),
             "device_flash_size": flash_size,
             "device_ram_size": ram_size,
-            "device_itm_reset_freq": device.itm_reset_freq(),
-            "probe_itm": ser_to_string(probe_itm),
-            "probe_itm_endpoint": probe_itm_endpoint,
+            "device_swo_reset_freq": device.swo_reset_freq(),
+            "probe_monitor": ser_to_string(probe_monitor),
+            "probe_monitor_endpoint": probe_monitor_endpoint,
             "probe_ident": ser_to_string(probe),
             "probe_openocd_config": device.openocd_config(),
             "generated_heap": heap.trim(),
@@ -219,8 +216,8 @@ impl Registry<'_> {
         named_temp_file(|file| self.0.render_to_write("bmp/gdb.gdb", &data, file))
     }
 
-    /// Renders BMP `itm` command script.
-    pub fn bmp_itm(
+    /// Renders BMP `swo` command script.
+    pub fn bmp_swo(
         &self,
         config: &Config,
         ports: &BTreeSet<u32>,
@@ -234,7 +231,7 @@ impl Registry<'_> {
             "pipe": pipe,
         });
         helpers::clear_vars();
-        named_temp_file(|file| self.0.render_to_write("bmp/itm.gdb", &data, file))
+        named_temp_file(|file| self.0.render_to_write("bmp/swo.gdb", &data, file))
     }
 
     /// Renders J-Link `reset` command script.
@@ -293,8 +290,8 @@ impl Registry<'_> {
         Ok(self.0.render("openocd/gdb.openocd", &data)?)
     }
 
-    /// Renders OpenOCD `itm` command script.
-    pub fn openocd_itm(
+    /// Renders OpenOCD `swo` command script.
+    pub fn openocd_swo(
         &self,
         config: &Config,
         ports: &BTreeSet<u32>,
@@ -308,7 +305,7 @@ impl Registry<'_> {
             "pipe": pipe,
         });
         helpers::clear_vars();
-        Ok(self.0.render("openocd/itm.openocd", &data)?)
+        Ok(self.0.render("openocd/swo.openocd", &data)?)
     }
 }
 

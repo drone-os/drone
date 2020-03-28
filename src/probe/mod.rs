@@ -34,32 +34,44 @@ pub enum Probe {
     Openocd,
 }
 
-/// ITM handling mode.
+/// Monitor type.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum ProbeItm {
-    /// Use default mode for the debug probe.
+pub enum ProbeMonitor {
+    /// Default type for the debug probe.
     Auto,
     /// SWO pin is connected to the debug probe.
-    Internal,
+    SwoInternal,
     /// SWO pin is connected to an external USB-UART converter.
-    External,
+    SwoExternal,
+}
+
+enum ProbeConfig<'a> {
+    Bmp(&'a config::ProbeBmp),
+    Jlink(&'a config::ProbeJlink),
+    Openocd(&'a config::ProbeOpenocd),
 }
 
 impl Probe {
-    /// Returns default mode for the given debug probe.
-    pub fn itm_default(&self) -> &ProbeItm {
-        match self {
-            Self::Bmp => &ProbeItm::External,
-            Self::Jlink | Self::Openocd => &ProbeItm::Internal,
-        }
-    }
-
-    /// Returns default UART endpoint value for the given debug probe.
-    pub fn itm_external_endpoint(&self) -> &str {
+    /// Returns default UART endpoint for the debug probe.
+    pub fn swo_external_endpoint(&self) -> &str {
         match self {
             Self::Bmp => "/dev/ttyBmpTarg",
             Self::Openocd | Self::Jlink => "/dev/ttyUSB0",
+        }
+    }
+}
+
+impl ProbeMonitor {
+    /// If `self` is `Auto`, returns default monitor type for the debug
+    /// probe. Returns `self` otherwise.
+    pub fn for_probe(&self, probe: &Probe) -> &Self {
+        if !matches!(self, Self::Auto) {
+            return self;
+        }
+        match probe {
+            Probe::Bmp => &Self::SwoExternal,
+            Probe::Jlink | Probe::Openocd => &Self::SwoInternal,
         }
     }
 }
@@ -76,83 +88,94 @@ impl ProbeCmd {
             .probe
             .as_ref()
             .ok_or_else(|| anyhow!("Missing `probe` section in `{}`", config::CONFIG_NAME))?;
+        let probe_config = if let Some(config_probe_bmp) = &config_probe.bmp {
+            ProbeConfig::Bmp(config_probe_bmp)
+        } else if let Some(config_probe_jlink) = &config_probe.jlink {
+            ProbeConfig::Jlink(config_probe_jlink)
+        } else if let Some(config_probe_openocd) = &config_probe.openocd {
+            ProbeConfig::Openocd(config_probe_openocd)
+        } else {
+            bail!(
+                "Missing one of `probe.bmp`, `probe.jlink`, `probe.openocd` sections in `{}`",
+                config::CONFIG_NAME
+            );
+        };
         match probe_sub_cmd {
-            ProbeSubCmd::Reset(cmd) => {
-                if let Some(config_probe_jlink) = &config_probe.jlink {
-                    return jlink::ResetCmd { cmd, signals, registry, config_probe_jlink }.run();
-                } else if config_probe.bmp.is_some() {
-                    return bmp::ResetCmd { cmd, signals, registry, config, config_probe }.run();
-                } else if let Some(config_probe_openocd) = &config_probe.openocd {
-                    return openocd::ResetCmd { cmd, signals, registry, config_probe_openocd }
-                        .run();
+            ProbeSubCmd::Reset(cmd) => match probe_config {
+                ProbeConfig::Bmp(_) => {
+                    bmp::ResetCmd { cmd, signals, registry, config, config_probe }.run()
                 }
-            }
-            ProbeSubCmd::Flash(cmd) => {
-                if let Some(config_probe_jlink) = &config_probe.jlink {
-                    return jlink::FlashCmd { cmd, signals, registry, config_probe_jlink }.run();
-                } else if config_probe.bmp.is_some() {
-                    return bmp::FlashCmd { cmd, signals, registry, config, config_probe }.run();
-                } else if let Some(config_probe_openocd) = &config_probe.openocd {
-                    return openocd::FlashCmd { cmd, signals, registry, config_probe_openocd }
-                        .run();
+                ProbeConfig::Jlink(config_probe_jlink) => {
+                    jlink::ResetCmd { cmd, signals, registry, config_probe_jlink }.run()
                 }
-            }
-            ProbeSubCmd::Gdb(cmd) => {
-                if let Some(config_probe_jlink) = &config_probe.jlink {
-                    return jlink::GdbCmd {
-                        cmd,
-                        signals,
-                        registry,
-                        config,
-                        config_probe,
-                        config_probe_jlink,
-                    }
-                    .run();
-                } else if config_probe.bmp.is_some() {
-                    return bmp::GdbCmd { cmd, signals, registry, config, config_probe }.run();
-                } else if let Some(config_probe_openocd) = &config_probe.openocd {
-                    return openocd::GdbCmd {
-                        cmd,
-                        signals,
-                        registry,
-                        config,
-                        config_probe,
-                        config_probe_openocd,
-                    }
-                    .run();
+                ProbeConfig::Openocd(config_probe_openocd) => {
+                    openocd::ResetCmd { cmd, signals, registry, config_probe_openocd }.run()
                 }
-            }
-            ProbeSubCmd::Itm(cmd) => {
-                let config_probe_itm = config_probe.itm.as_ref().ok_or_else(|| {
-                    anyhow!("Missing `probe.itm` section in `{}`", config::CONFIG_NAME)
+            },
+            ProbeSubCmd::Flash(cmd) => match probe_config {
+                ProbeConfig::Bmp(_) => {
+                    bmp::FlashCmd { cmd, signals, registry, config, config_probe }.run()
+                }
+                ProbeConfig::Jlink(config_probe_jlink) => {
+                    jlink::FlashCmd { cmd, signals, registry, config_probe_jlink }.run()
+                }
+                ProbeConfig::Openocd(config_probe_openocd) => {
+                    openocd::FlashCmd { cmd, signals, registry, config_probe_openocd }.run()
+                }
+            },
+            ProbeSubCmd::Gdb(cmd) => match probe_config {
+                ProbeConfig::Bmp(_) => {
+                    bmp::GdbCmd { cmd, signals, registry, config, config_probe }.run()
+                }
+                ProbeConfig::Jlink(config_probe_jlink) => jlink::GdbCmd {
+                    cmd,
+                    signals,
+                    registry,
+                    config,
+                    config_probe,
+                    config_probe_jlink,
+                }
+                .run(),
+                ProbeConfig::Openocd(config_probe_openocd) => openocd::GdbCmd {
+                    cmd,
+                    signals,
+                    registry,
+                    config,
+                    config_probe,
+                    config_probe_openocd,
+                }
+                .run(),
+            },
+            ProbeSubCmd::Monitor(cmd) => {
+                let config_probe_swo = config_probe.swo.as_ref().ok_or_else(|| {
+                    anyhow!("Missing `probe.swo` section in `{}`", config::CONFIG_NAME)
                 })?;
-                if config_probe.jlink.is_some() {
-                    unimplemented!("SWO capture with J-Link");
-                } else if config_probe.bmp.is_some() {
-                    return bmp::ItmCmd {
+                match probe_config {
+                    ProbeConfig::Bmp(_) => bmp::MonitorCmd {
                         cmd,
                         signals,
                         registry,
                         config,
                         config_probe,
-                        config_probe_itm,
+                        config_probe_swo,
                         shell,
                     }
-                    .run();
-                } else if let Some(config_probe_openocd) = &config_probe.openocd {
-                    return openocd::ItmCmd {
+                    .run(),
+                    ProbeConfig::Jlink(_) => {
+                        unimplemented!("SWO capture with J-Link");
+                    }
+                    ProbeConfig::Openocd(config_probe_openocd) => openocd::MonitorCmd {
                         cmd,
                         signals,
                         registry,
                         config,
-                        config_probe_itm,
+                        config_probe_swo,
                         config_probe_openocd,
                     }
-                    .run();
+                    .run(),
                 }
             }
         }
-        bail!("Suitable debug probe configuration is not found in `{}`", config::CONFIG_NAME);
     }
 }
 

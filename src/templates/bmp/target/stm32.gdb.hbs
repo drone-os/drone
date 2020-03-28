@@ -13,10 +13,10 @@
         {{get "DBGMCU_CR_DBG_SLEEP"}}
 {{/set}}
 
-{{#set "target_itm"}}
+{{#set "target_swo"}}
     set {int}{{get "DBGMCU_CR"}} = \
         ({int}{{get "DBGMCU_CR"}} & ~{{get "DBGMCU_CR_TRACE_MODE_MASK"}}) | \
         {{get "DBGMCU_CR_TRACE_IOEN"}} | {{get "DBGMCU_CR_DBG_STANDBY"}} | \
         {{get "DBGMCU_CR_DBG_STOP"}} | {{get "DBGMCU_CR_DBG_SLEEP"}}
-    {{get "cortex_m_itm"}}
+    {{get "cortex_m_swo"}}
 {{/set}}

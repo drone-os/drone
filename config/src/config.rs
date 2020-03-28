@@ -71,7 +71,7 @@ pub struct HeapPool {
 #[serde(rename_all = "kebab-case")]
 pub struct Probe {
     pub gdb_client: String,
-    pub itm: Option<ProbeItm>,
+    pub swo: Option<ProbeSwo>,
     pub bmp: Option<ProbeBmp>,
     pub jlink: Option<ProbeJlink>,
     pub openocd: Option<ProbeOpenocd>,
@@ -80,7 +80,7 @@ pub struct Probe {
 #[non_exhaustive]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub struct ProbeItm {
+pub struct ProbeSwo {
     pub reset_freq: u32,
     pub baud_rate: u32,
     pub uart_endpoint: Option<String>,
@@ -99,7 +99,6 @@ pub struct ProbeBmp {
 #[serde(rename_all = "kebab-case")]
 pub struct ProbeJlink {
     pub gdb_server: String,
-    pub swo_viewer: String,
     pub commander: String,
     pub device: String,
     pub speed: u32,

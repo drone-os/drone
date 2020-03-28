@@ -30,10 +30,10 @@
 
 {{#set "DWT_CYCCNT"}} 0xE0001004 {{/set}}
 
-{{#set "cortex_m_itm"}}
+{{#set "cortex_m_swo"}}
     {{#if reset}}
         set {int}{{get "TPIU_ACPR"}} = \
-            {{config.probe.itm.reset-freq}} / {{config.probe.itm.baud-rate}} - 1
+            {{config.probe.swo.reset-freq}} / {{config.probe.swo.baud-rate}} - 1
     {{/if}}
     set {int}{{get "TPIU_SPPR"}} = {{get "TPIU_SPPR_NRZ"}}
     set {int}{{get "TPIU_FFCR"}} = \

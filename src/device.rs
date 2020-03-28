@@ -235,8 +235,8 @@ impl Device {
         }
     }
 
-    /// Returns frequency of ITM output at reset.
-    pub fn itm_reset_freq(&self) -> Option<u32> {
+    /// Returns SWO frequency at reset.
+    pub fn swo_reset_freq(&self) -> Option<u32> {
         match self {
             Self::Nrf52810 | Self::Nrf52811 | Self::Nrf52832 | Self::Nrf52840 | Self::Nrf9160 => {
                 Some(32_000_000)

@@ -9,7 +9,7 @@ monitor connect_srst disable
 monitor swdp_scan
 attach 1
 set mem inaccessible-by-default off
-{{get "target_itm"}}
+{{get "target_swo"}}
 shell echo -n "1" > {{pipe}}
 shell cat {{pipe}} > /dev/null
 continue

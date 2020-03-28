@@ -1,12 +1,11 @@
 //! OpenOCD interface.
 
 use crate::{
-    cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeItmCmd, ProbeResetCmd},
+    cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeMonitorCmd, ProbeResetCmd},
+    itm,
     probe::{run_gdb_client, run_gdb_server, rustc_substitute_path, setup_uart_endpoint},
     templates::Registry,
-    utils::{
-        block_with_signals, exhaust_fifo, finally, make_fifo, run_command, spawn_command, temp_dir,
-    },
+    utils::{block_with_signals, exhaust_fifo, make_fifo, run_command, spawn_command, temp_dir},
 };
 use anyhow::Result;
 use drone_config as config;
@@ -93,40 +92,40 @@ impl GdbCmd<'_> {
     }
 }
 
-/// OpenOCD `drone probe itm` command.
+/// OpenOCD `drone probe monitor` command.
 #[allow(missing_docs)]
-pub struct ItmCmd<'a> {
-    pub cmd: &'a ProbeItmCmd,
+pub struct MonitorCmd<'a> {
+    pub cmd: &'a ProbeMonitorCmd,
     pub signals: Signals,
     pub registry: Registry<'a>,
     pub config: &'a config::Config,
-    pub config_probe_itm: &'a config::ProbeItm,
+    pub config_probe_swo: &'a config::ProbeSwo,
     pub config_probe_openocd: &'a config::ProbeOpenocd,
 }
 
-impl ItmCmd<'_> {
+impl MonitorCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
-        let Self { cmd, signals, registry, config, config_probe_itm, config_probe_openocd } = self;
-        let ProbeItmCmd { ports, reset, itmsink_args } = cmd;
+        let Self { cmd, signals, registry, config, config_probe_swo, config_probe_openocd } = self;
+        let ProbeMonitorCmd { reset, outputs } = cmd;
 
         let mut _pipe_dir = None;
-        let mut itmsink = Command::new("itmsink");
-        let commands = if let Some(uart_endpoint) = &config_probe_itm.uart_endpoint {
-            setup_uart_endpoint(&signals, uart_endpoint, config_probe_itm.baud_rate)?;
+        let ports = outputs.iter().flat_map(|output| output.ports.iter().copied()).collect();
+        let input;
+        let commands;
+        if let Some(uart_endpoint) = &config_probe_swo.uart_endpoint {
+            setup_uart_endpoint(&signals, uart_endpoint, config_probe_swo.baud_rate)?;
             exhaust_fifo(uart_endpoint)?;
-            itmsink.arg("--input").arg(uart_endpoint);
-            registry.openocd_itm(config, ports, *reset, None)?
+            input = uart_endpoint.into();
+            commands = registry.openocd_swo(config, &ports, *reset, None)?
         } else {
             let pipe_dir = tempdir_in(temp_dir())?;
             let pipe = make_fifo(&pipe_dir)?;
             _pipe_dir = Some(pipe_dir);
-            itmsink.arg("--input").arg(&pipe);
-            registry.openocd_itm(config, ports, *reset, Some(&pipe))?
-        };
-        itmsink.args(itmsink_args);
-        let mut itmsink = spawn_command(itmsink)?;
-        let _itmsink = finally(|| itmsink.kill().expect("itmsink wasn't running"));
+            input = pipe.clone();
+            commands = registry.openocd_swo(config, &ports, *reset, Some(&pipe))?
+        }
+        itm::spawn(&input, outputs);
 
         let mut openocd = Command::new(&config_probe_openocd.command);
         openocd_arguments(&mut openocd, config_probe_openocd);

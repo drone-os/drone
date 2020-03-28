@@ -4,12 +4,16 @@
 
 use crate::{
     device::Device,
-    probe::{Probe, ProbeItm},
+    probe::{Probe, ProbeMonitor},
     utils::de_from_str,
 };
 use anyhow::{bail, Error};
 use drone_config::parse_size;
-use std::{collections::BTreeSet, ffi::OsString, num::ParseIntError, path::PathBuf};
+use std::{
+    ffi::{OsStr, OsString},
+    os::unix::ffi::OsStrExt,
+    path::PathBuf,
+};
 use structopt::StructOpt;
 use termcolor::ColorChoice;
 
@@ -68,9 +72,9 @@ pub struct NewCmd {
     /// the list of available options)
     #[structopt(short, long, parse(try_from_str = de_from_str))]
     pub probe: Option<Probe>,
-    /// ITM handling mode: auto, internal, external
+    /// Monitor type: auto, swo-internal, swo-external
     #[structopt(long, default_value = "auto", parse(try_from_str = de_from_str))]
-    pub probe_itm: ProbeItm,
+    pub probe_monitor: ProbeMonitor,
     /// Set the resulting package name, defaults to the directory name
     #[structopt(long)]
     pub name: Option<String>,
@@ -127,8 +131,8 @@ pub enum ProbeSubCmd {
     Flash(ProbeFlashCmd),
     /// Run a GDB session for the attached device
     Gdb(ProbeGdbCmd),
-    /// Display ITM output from the attached device
-    Itm(ProbeItmCmd),
+    /// Display standard output from the attached device
+    Monitor(ProbeMonitorCmd),
 }
 
 #[derive(Debug, StructOpt)]
@@ -158,20 +162,25 @@ pub struct ProbeGdbCmd {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct ProbeItmCmd {
-    /// A comma-separated list of ITM ports to enable
-    #[structopt(default_value = "0,1", parse(try_from_str = parse_ports))]
-    pub ports: BTreeSet<u32>,
+pub struct ProbeMonitorCmd {
     /// Reset the attached device
     #[structopt(short, long)]
     pub reset: bool,
-    /// Arguments for `itmsink`
-    #[structopt(parse(from_os_str), last(true))]
-    pub itmsink_args: Vec<OsString>,
+    /// Monitor output (format: [path][:port]...)
+    #[structopt(
+        name = "OUTPUT",
+        parse(try_from_os_str = parse_monitor_output)
+    )]
+    pub outputs: Vec<MonitorOutput>,
 }
 
-fn parse_ports(src: &str) -> Result<BTreeSet<u32>, ParseIntError> {
-    src.split(',').map(str::parse).collect()
+/// Monitor output.
+#[derive(Debug, Clone)]
+pub struct MonitorOutput {
+    /// Selected ports.
+    pub ports: Vec<u32>,
+    /// Output path.
+    pub path: OsString,
 }
 
 fn parse_color(src: &str) -> Result<ColorChoice, Error> {
@@ -181,4 +190,14 @@ fn parse_color(src: &str) -> Result<ColorChoice, Error> {
         "auto" => ColorChoice::Auto,
         _ => bail!("argument for --color must be auto, always, or never, but found `{}`", src),
     })
+}
+
+fn parse_monitor_output(src: &OsStr) -> Result<MonitorOutput, OsString> {
+    let mut chunks = src.as_bytes().split(|&b| b == b':');
+    let path = OsStr::from_bytes(chunks.next().unwrap()).into();
+    let ports = chunks
+        .map(|port| Ok(String::from_utf8(port.to_vec())?.parse()?))
+        .collect::<Result<_, Error>>()
+        .map_err(|err| err.to_string())?;
+    Ok(MonitorOutput { ports, path })
 }

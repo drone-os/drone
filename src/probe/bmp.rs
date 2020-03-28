@@ -1,12 +1,11 @@
 //! Black Magic Probe interface.
 
 use crate::{
-    cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeItmCmd, ProbeResetCmd},
+    cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeMonitorCmd, ProbeResetCmd},
+    itm,
     probe::{run_gdb_client, rustc_substitute_path, setup_uart_endpoint},
     templates::Registry,
-    utils::{
-        block_with_signals, exhaust_fifo, finally, make_fifo, run_command, spawn_command, temp_dir,
-    },
+    utils::{block_with_signals, exhaust_fifo, make_fifo, run_command, spawn_command, temp_dir},
 };
 use anyhow::{anyhow, Result};
 use drone_config as config;
@@ -14,7 +13,7 @@ use signal_hook::iterator::Signals;
 use std::{
     fs::OpenOptions,
     io::{Read, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::Command,
 };
 use tempfile::tempdir_in;
@@ -98,35 +97,36 @@ impl GdbCmd<'_> {
     }
 }
 
-/// Black Magic Probe `drone probe itm` command.
+/// Black Magic Probe `drone probe monitor` command.
 #[allow(missing_docs)]
-pub struct ItmCmd<'a> {
-    pub cmd: &'a ProbeItmCmd,
+pub struct MonitorCmd<'a> {
+    pub cmd: &'a ProbeMonitorCmd,
     pub signals: Signals,
     pub registry: Registry<'a>,
     pub config: &'a config::Config,
     pub config_probe: &'a config::Probe,
-    pub config_probe_itm: &'a config::ProbeItm,
+    pub config_probe_swo: &'a config::ProbeSwo,
     pub shell: &'a mut StandardStream,
 }
 
-impl ItmCmd<'_> {
+impl MonitorCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
-        let Self { cmd, signals, registry, config, config_probe, config_probe_itm, shell } = self;
-        let ProbeItmCmd { ports, reset, itmsink_args } = cmd;
+        let Self { cmd, signals, registry, config, config_probe, config_probe_swo, shell } = self;
+        let ProbeMonitorCmd { reset, outputs } = cmd;
 
-        let uart_endpoint = config_probe_itm.uart_endpoint.as_ref().ok_or_else(|| {
+        let uart_endpoint = config_probe_swo.uart_endpoint.as_ref().ok_or_else(|| {
             anyhow!(
-                "TRACESWO is not yet implemented. Set `probe.itm.uart-endpoint` value at `{}`",
+                "TRACESWO is not yet implemented. Set `probe.swo.uart-endpoint` value at `{}`",
                 config::CONFIG_NAME
             )
         })?;
-        setup_uart_endpoint(&signals, uart_endpoint, config_probe_itm.baud_rate)?;
+        setup_uart_endpoint(&signals, uart_endpoint, config_probe_swo.baud_rate)?;
 
         let dir = tempdir_in(temp_dir())?;
         let pipe = make_fifo(&dir)?;
-        let script = registry.bmp_itm(config, ports, *reset, &pipe)?;
+        let ports = outputs.iter().flat_map(|output| output.ports.iter().copied()).collect();
+        let script = registry.bmp_swo(config, &ports, *reset, &pipe)?;
         let mut gdb = Command::new(&config_probe.gdb_client);
         gdb.arg("--quiet");
         gdb.arg("--nx");
@@ -141,11 +141,7 @@ impl ItmCmd<'_> {
         })?;
 
         exhaust_fifo(uart_endpoint)?;
-        let mut itmsink = Command::new("itmsink");
-        itmsink.arg("--input").arg(uart_endpoint);
-        itmsink.args(itmsink_args);
-        let mut itmsink = spawn_command(itmsink)?;
-        let _itmsink = finally(|| itmsink.kill().expect("itmsink wasn't running"));
+        itm::spawn(&Path::new(uart_endpoint), outputs);
 
         block_with_signals(&signals, false, move || {
             OpenOptions::new().write(true).open(&pipe)?.write_all(&packet)?;

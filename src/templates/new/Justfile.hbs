@@ -12,7 +12,6 @@ deps:
 	rustup component add clippy
 	rustup component add llvm-tools-preview
 	type cargo-objdump >/dev/null || cargo +stable install cargo-binutils
-	type itmsink >/dev/null || cargo install itmsink
 	type drone >/dev/null || cargo install drone
 
 # Reformat the source code
@@ -71,11 +70,11 @@ gdb:
 @gdb-mi:
 	drone probe gdb \{{release_bin}} --reset -i=mi -- -nx
 
-# Display ITM output from the attached device
-itm:
-	drone probe itm --reset 0,1 -- 0,1
+# Display standard output from the attached device
+monitor:
+	drone probe monitor --reset :0:1
 
 # Record `heaptrace` file from the attached device (should be compiled with `heaptrace` feature)
 heaptrace:
 	truncate -s0 heaptrace
-	drone probe itm --reset 0,1,31 -- 0,1 31:heaptrace
+	drone probe monitor --reset :0:1 heaptrace:31
