@@ -1,0 +1,8 @@
+target remote :{{config.probe.jlink.port}}
+{{#if reset}}
+monitor reset
+{{/if}}
+shell echo -n "1" > {{pipe}}
+shell cat {{pipe}} > /dev/null
+continue
+monitor go

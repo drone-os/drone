@@ -24,6 +24,7 @@ Possible log types:
 - [changed] Rename sub-command `drone probe itm` to `drone probe monitor`
 - [changed] Rename section `probe.itm` to `probe.swo` in `Drone.toml`
 - [changed] Rename task `itm` to `monitor` in generated `Justfile`
+- [added] Add `uart-external` monitor type
 
 ### v0.11.1 (2019-11-27)
 

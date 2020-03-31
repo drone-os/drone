@@ -72,7 +72,7 @@ pub struct NewCmd {
     /// the list of available options)
     #[structopt(short, long, parse(try_from_str = de_from_str))]
     pub probe: Option<Probe>,
-    /// Monitor type: auto, swo-internal, swo-external
+    /// Monitor type: auto, swo, swo-external, uart-external
     #[structopt(long, default_value = "auto", parse(try_from_str = de_from_str))]
     pub probe_monitor: ProbeMonitor,
     /// Set the resulting package name, defaults to the directory name

@@ -11,18 +11,20 @@ use crate::{
         block_with_signals, detach_pgid, finally, register_signals, run_command, spawn_command,
     },
 };
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, Error, Result};
 use drone_config as config;
 use serde::{Deserialize, Serialize};
 use signal_hook::iterator::Signals;
 use std::{
+    convert::TryFrom,
     ffi::OsString,
-    io::{BufRead, BufReader},
-    path::Path,
+    fs::OpenOptions,
+    io::{prelude::*, BufRead, BufReader},
+    path::{Path, PathBuf},
     process::{Command, Stdio},
     thread,
 };
-use termcolor::StandardStream;
+use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 
 /// An `enum` of all supported debug probes.
 #[allow(missing_docs)]
@@ -40,10 +42,12 @@ pub enum Probe {
 pub enum ProbeMonitor {
     /// Default type for the debug probe.
     Auto,
-    /// SWO pin is connected to the debug probe.
-    SwoInternal,
-    /// SWO pin is connected to an external USB-UART converter.
+    /// SWO pin connected to the debug probe.
+    Swo,
+    /// SWO pin connected to an external USB-UART converter.
     SwoExternal,
+    /// UART pin connected to an external USB-UART converter.
+    UartExternal,
 }
 
 enum ProbeConfig<'a> {
@@ -52,14 +56,9 @@ enum ProbeConfig<'a> {
     Openocd(&'a config::ProbeOpenocd),
 }
 
-impl Probe {
-    /// Returns default UART endpoint for the debug probe.
-    pub fn swo_external_endpoint(&self) -> &str {
-        match self {
-            Self::Bmp => "/dev/ttyBmpTarg",
-            Self::Openocd | Self::Jlink => "/dev/ttyUSB0",
-        }
-    }
+enum ProbeMonitorConfig<'a> {
+    Swo(&'a config::ProbeSwo),
+    Uart(&'a config::ProbeUart),
 }
 
 impl ProbeMonitor {
@@ -71,7 +70,44 @@ impl ProbeMonitor {
         }
         match probe {
             Probe::Bmp => &Self::SwoExternal,
-            Probe::Jlink | Probe::Openocd => &Self::SwoInternal,
+            Probe::Jlink => &Self::UartExternal,
+            Probe::Openocd => &Self::Swo,
+        }
+    }
+}
+
+impl<'a> TryFrom<&'a config::Probe> for ProbeConfig<'a> {
+    type Error = Error;
+
+    fn try_from(config_probe: &'a config::Probe) -> Result<Self> {
+        if let Some(config_probe_bmp) = &config_probe.bmp {
+            Ok(Self::Bmp(config_probe_bmp))
+        } else if let Some(config_probe_jlink) = &config_probe.jlink {
+            Ok(Self::Jlink(config_probe_jlink))
+        } else if let Some(config_probe_openocd) = &config_probe.openocd {
+            Ok(Self::Openocd(config_probe_openocd))
+        } else {
+            Err(anyhow!(
+                "Missing one of `probe.bmp`, `probe.jlink`, `probe.openocd` sections in `{}`",
+                config::CONFIG_NAME
+            ))
+        }
+    }
+}
+
+impl<'a> TryFrom<&'a config::Probe> for ProbeMonitorConfig<'a> {
+    type Error = Error;
+
+    fn try_from(config_probe: &'a config::Probe) -> Result<Self> {
+        if let Some(config_probe_swo) = &config_probe.swo {
+            Ok(Self::Swo(config_probe_swo))
+        } else if let Some(config_probe_uart) = &config_probe.uart {
+            Ok(Self::Uart(config_probe_uart))
+        } else {
+            Err(anyhow!(
+                "Missing one of `probe.swo`, `probe.uart` sections in `{}`",
+                config::CONFIG_NAME
+            ))
         }
     }
 }
@@ -88,55 +124,34 @@ impl ProbeCmd {
             .probe
             .as_ref()
             .ok_or_else(|| anyhow!("Missing `probe` section in `{}`", config::CONFIG_NAME))?;
-        let probe_config = if let Some(config_probe_bmp) = &config_probe.bmp {
-            ProbeConfig::Bmp(config_probe_bmp)
-        } else if let Some(config_probe_jlink) = &config_probe.jlink {
-            ProbeConfig::Jlink(config_probe_jlink)
-        } else if let Some(config_probe_openocd) = &config_probe.openocd {
-            ProbeConfig::Openocd(config_probe_openocd)
-        } else {
-            bail!(
-                "Missing one of `probe.bmp`, `probe.jlink`, `probe.openocd` sections in `{}`",
-                config::CONFIG_NAME
-            );
-        };
-        match probe_sub_cmd {
-            ProbeSubCmd::Reset(cmd) => match probe_config {
-                ProbeConfig::Bmp(_) => {
-                    bmp::ResetCmd { cmd, signals, registry, config, config_probe }.run()
-                }
-                ProbeConfig::Jlink(config_probe_jlink) => {
-                    jlink::ResetCmd { cmd, signals, registry, config_probe_jlink }.run()
-                }
-                ProbeConfig::Openocd(config_probe_openocd) => {
-                    openocd::ResetCmd { cmd, signals, registry, config_probe_openocd }.run()
-                }
-            },
-            ProbeSubCmd::Flash(cmd) => match probe_config {
-                ProbeConfig::Bmp(_) => {
-                    bmp::FlashCmd { cmd, signals, registry, config, config_probe }.run()
-                }
-                ProbeConfig::Jlink(config_probe_jlink) => {
-                    jlink::FlashCmd { cmd, signals, registry, config_probe_jlink }.run()
-                }
-                ProbeConfig::Openocd(config_probe_openocd) => {
-                    openocd::FlashCmd { cmd, signals, registry, config_probe_openocd }.run()
-                }
-            },
-            ProbeSubCmd::Gdb(cmd) => match probe_config {
-                ProbeConfig::Bmp(_) => {
-                    bmp::GdbCmd { cmd, signals, registry, config, config_probe }.run()
-                }
-                ProbeConfig::Jlink(config_probe_jlink) => jlink::GdbCmd {
-                    cmd,
-                    signals,
-                    registry,
-                    config,
-                    config_probe,
-                    config_probe_jlink,
-                }
-                .run(),
-                ProbeConfig::Openocd(config_probe_openocd) => openocd::GdbCmd {
+        match (probe_sub_cmd, ProbeConfig::try_from(config_probe)?) {
+            (ProbeSubCmd::Reset(cmd), ProbeConfig::Bmp(_)) => {
+                bmp::ResetCmd { cmd, signals, registry, config, config_probe }.run()
+            }
+            (ProbeSubCmd::Reset(cmd), ProbeConfig::Jlink(config_probe_jlink)) => {
+                jlink::ResetCmd { cmd, signals, registry, config_probe_jlink }.run()
+            }
+            (ProbeSubCmd::Reset(cmd), ProbeConfig::Openocd(config_probe_openocd)) => {
+                openocd::ResetCmd { cmd, signals, registry, config_probe_openocd }.run()
+            }
+            (ProbeSubCmd::Flash(cmd), ProbeConfig::Bmp(_)) => {
+                bmp::FlashCmd { cmd, signals, registry, config, config_probe }.run()
+            }
+            (ProbeSubCmd::Flash(cmd), ProbeConfig::Jlink(config_probe_jlink)) => {
+                jlink::FlashCmd { cmd, signals, registry, config_probe_jlink }.run()
+            }
+            (ProbeSubCmd::Flash(cmd), ProbeConfig::Openocd(config_probe_openocd)) => {
+                openocd::FlashCmd { cmd, signals, registry, config_probe_openocd }.run()
+            }
+            (ProbeSubCmd::Gdb(cmd), ProbeConfig::Bmp(_)) => {
+                bmp::GdbCmd { cmd, signals, registry, config, config_probe }.run()
+            }
+            (ProbeSubCmd::Gdb(cmd), ProbeConfig::Jlink(config_probe_jlink)) => {
+                jlink::GdbCmd { cmd, signals, registry, config, config_probe, config_probe_jlink }
+                    .run()
+            }
+            (ProbeSubCmd::Gdb(cmd), ProbeConfig::Openocd(config_probe_openocd)) => {
+                openocd::GdbCmd {
                     cmd,
                     signals,
                     registry,
@@ -144,27 +159,29 @@ impl ProbeCmd {
                     config_probe,
                     config_probe_openocd,
                 }
-                .run(),
-            },
-            ProbeSubCmd::Monitor(cmd) => {
-                let config_probe_swo = config_probe.swo.as_ref().ok_or_else(|| {
-                    anyhow!("Missing `probe.swo` section in `{}`", config::CONFIG_NAME)
-                })?;
-                match probe_config {
-                    ProbeConfig::Bmp(_) => bmp::MonitorCmd {
-                        cmd,
-                        signals,
-                        registry,
-                        config,
-                        config_probe,
-                        config_probe_swo,
-                        shell,
+                .run()
+            }
+            (ProbeSubCmd::Monitor(cmd), ref probe_config) => {
+                match (probe_config, ProbeMonitorConfig::try_from(config_probe)?) {
+                    (ProbeConfig::Bmp(_), ProbeMonitorConfig::Swo(config_probe_swo)) => {
+                        bmp::MonitorSwoCmd {
+                            cmd,
+                            signals,
+                            registry,
+                            config,
+                            config_probe,
+                            config_probe_swo,
+                            shell,
+                        }
+                        .run()
                     }
-                    .run(),
-                    ProbeConfig::Jlink(_) => {
+                    (ProbeConfig::Jlink(_), ProbeMonitorConfig::Swo(_)) => {
                         unimplemented!("SWO capture with J-Link");
                     }
-                    ProbeConfig::Openocd(config_probe_openocd) => openocd::MonitorCmd {
+                    (
+                        ProbeConfig::Openocd(config_probe_openocd),
+                        ProbeMonitorConfig::Swo(config_probe_swo),
+                    ) => openocd::MonitorSwoCmd {
                         cmd,
                         signals,
                         registry,
@@ -173,6 +190,22 @@ impl ProbeCmd {
                         config_probe_openocd,
                     }
                     .run(),
+                    (
+                        ProbeConfig::Jlink(config_probe_jlink),
+                        ProbeMonitorConfig::Uart(config_probe_uart),
+                    ) => jlink::MonitorUartCmd {
+                        cmd,
+                        signals,
+                        registry,
+                        config,
+                        config_probe,
+                        config_probe_uart,
+                        config_probe_jlink,
+                        shell,
+                    }
+                    .run(),
+                    (ProbeConfig::Bmp(_), ProbeMonitorConfig::Uart(_))
+                    | (ProbeConfig::Openocd(_), ProbeMonitorConfig::Uart(_)) => todo!(),
                 }
             }
         }
@@ -189,7 +222,7 @@ pub fn setup_uart_endpoint(signals: &Signals, endpoint: &str, baud_rate: u32) ->
     block_with_signals(signals, true, || run_command(stty))
 }
 
-/// Runs the GDB server.
+/// Runs a GDB server.
 pub fn run_gdb_server(mut gdb: Command, interpreter: Option<&str>) -> Result<impl Drop> {
     if interpreter.is_some() {
         gdb.stdout(Stdio::piped());
@@ -211,7 +244,7 @@ pub fn run_gdb_server(mut gdb: Command, interpreter: Option<&str>) -> Result<imp
     Ok(finally(move || gdb.kill().expect("gdb-server wasn't running")))
 }
 
-/// Runs the GDB client.
+/// Runs a GDB client.
 pub fn run_gdb_client(
     signals: &Signals,
     config_probe: &config::Probe,
@@ -232,6 +265,49 @@ pub fn run_gdb_client(
         gdb.arg("--interpreter").arg(interpreter);
     }
     block_with_signals(signals, true, || run_command(gdb))
+}
+
+/// Creates a GDB script command.
+pub fn gdb_script_command(
+    config_probe: &config::Probe,
+    firmware: Option<&Path>,
+    script: &Path,
+) -> Command {
+    let mut gdb = Command::new(&config_probe.gdb_client);
+    if let Some(firmware) = firmware {
+        gdb.arg(firmware);
+    }
+    gdb.arg("--quiet");
+    gdb.arg("--nx");
+    gdb.arg("--batch");
+    gdb.arg("--command").arg(script);
+    gdb
+}
+
+/// Synchronizes with GDB script via the `pipe`.
+pub fn gdb_script_wait(signals: &Signals, pipe: PathBuf) -> Result<(PathBuf, [u8; 1])> {
+    block_with_signals(&signals, false, move || {
+        let mut packet = [0];
+        OpenOptions::new().read(true).open(&pipe)?.read_exact(&mut packet)?;
+        Ok((pipe, packet))
+    })
+}
+
+/// Synchronizes with GDB script via the `pipe`.
+pub fn gdb_script_continue(signals: &Signals, pipe: PathBuf, packet: [u8; 1]) -> Result<()> {
+    block_with_signals(&signals, false, move || {
+        OpenOptions::new().write(true).open(&pipe)?.write_all(&packet)?;
+        Ok(())
+    })
+}
+
+/// Displays a banner representing beginning of monitor output.
+pub fn begin_monitor_output(shell: &mut StandardStream) -> Result<()> {
+    shell.set_color(ColorSpec::new().set_bold(true).set_fg(Some(Color::Cyan)))?;
+    writeln!(shell)?;
+    writeln!(shell, "{:=^80}", " MONITOR OUTPUT ")?;
+    shell.reset()?;
+    Ok(())
 }
 
 /// Returns a GDB substitute-path for rustc sources.

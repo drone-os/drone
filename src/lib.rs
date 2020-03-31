@@ -50,7 +50,7 @@ pub mod crates;
 pub mod device;
 pub mod env;
 pub mod heap;
-pub mod itm;
+pub mod monitor;
 pub mod new;
 pub mod probe;
 pub mod templates;

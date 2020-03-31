@@ -72,6 +72,7 @@ pub struct HeapPool {
 pub struct Probe {
     pub gdb_client: String,
     pub swo: Option<ProbeSwo>,
+    pub uart: Option<ProbeUart>,
     pub bmp: Option<ProbeBmp>,
     pub jlink: Option<ProbeJlink>,
     pub openocd: Option<ProbeOpenocd>,
@@ -84,6 +85,14 @@ pub struct ProbeSwo {
     pub reset_freq: u32,
     pub baud_rate: u32,
     pub uart_endpoint: Option<String>,
+}
+
+#[non_exhaustive]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct ProbeUart {
+    pub baud_rate: u32,
+    pub endpoint: String,
 }
 
 #[non_exhaustive]

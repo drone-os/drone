@@ -52,6 +52,7 @@ impl Registry<'_> {
         template!("jlink/reset.jlink")?;
         template!("jlink/flash.jlink")?;
         template!("jlink/gdb.gdb")?;
+        template!("jlink/uart.gdb")?;
         template!("openocd/flash.openocd")?;
         template!("openocd/gdb.gdb")?;
         template!("openocd/gdb.openocd")?;
@@ -133,7 +134,6 @@ impl Registry<'_> {
         heap::generate::display(&mut heap, &layout)?;
         let heap = String::from_utf8(heap)?;
         let probe_monitor = probe_monitor.for_probe(&probe);
-        let probe_monitor_endpoint = probe.swo_external_endpoint();
         let data = json!({
             "device_ident": ser_to_string(device),
             "device_flash_origin": device.flash_origin(),
@@ -142,7 +142,6 @@ impl Registry<'_> {
             "device_ram_size": ram_size,
             "device_swo_reset_freq": device.swo_reset_freq(),
             "probe_monitor": ser_to_string(probe_monitor),
-            "probe_monitor_endpoint": probe_monitor_endpoint,
             "probe_ident": ser_to_string(probe),
             "probe_openocd_config": device.openocd_config(),
             "generated_heap": heap.trim(),
@@ -248,10 +247,30 @@ impl Registry<'_> {
     }
 
     /// Renders J-Link `gdb` command script.
-    pub fn jlink_gdb(&self, config: &Config, rustc_substitute_path: &str) -> Result<NamedTempFile> {
-        let data = json!({ "config": config, "rustc-substitute-path": rustc_substitute_path });
+    pub fn jlink_gdb(
+        &self,
+        config: &Config,
+        reset: bool,
+        rustc_substitute_path: &str,
+    ) -> Result<NamedTempFile> {
+        let data = json!({
+            "config": config,
+            "reset": reset,
+            "rustc-substitute-path": rustc_substitute_path,
+        });
         helpers::clear_vars();
         named_temp_file(|file| self.0.render_to_write("jlink/gdb.gdb", &data, file))
+    }
+
+    /// Renders J-Link `uart` command script.
+    pub fn jlink_uart(&self, config: &Config, reset: bool, pipe: &Path) -> Result<NamedTempFile> {
+        let data = json!({
+            "config": config,
+            "reset": reset,
+            "pipe": pipe,
+        });
+        helpers::clear_vars();
+        named_temp_file(|file| self.0.render_to_write("jlink/uart.gdb", &data, file))
     }
 
     /// Renders OpenOCD `reset` command script.

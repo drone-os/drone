@@ -1,16 +1,16 @@
 //! OpenOCD interface.
 
+use super::{run_gdb_client, run_gdb_server, rustc_substitute_path, setup_uart_endpoint};
 use crate::{
     cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeMonitorCmd, ProbeResetCmd},
-    itm,
-    probe::{run_gdb_client, run_gdb_server, rustc_substitute_path, setup_uart_endpoint},
+    monitor,
     templates::Registry,
     utils::{block_with_signals, exhaust_fifo, make_fifo, run_command, spawn_command, temp_dir},
 };
 use anyhow::Result;
 use drone_config as config;
 use signal_hook::iterator::Signals;
-use std::{path::PathBuf, process::Command};
+use std::{fs::File, path::PathBuf, process::Command, thread};
 use tempfile::tempdir_in;
 
 /// OpenOCD `drone probe reset` command.
@@ -92,9 +92,9 @@ impl GdbCmd<'_> {
     }
 }
 
-/// OpenOCD `drone probe monitor` command.
+/// OpenOCD `drone probe monitor` SWO command.
 #[allow(missing_docs)]
-pub struct MonitorCmd<'a> {
+pub struct MonitorSwoCmd<'a> {
     pub cmd: &'a ProbeMonitorCmd,
     pub signals: Signals,
     pub registry: Registry<'a>,
@@ -103,7 +103,7 @@ pub struct MonitorCmd<'a> {
     pub config_probe_openocd: &'a config::ProbeOpenocd,
 }
 
-impl MonitorCmd<'_> {
+impl MonitorSwoCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
         let Self { cmd, signals, registry, config, config_probe_swo, config_probe_openocd } = self;
@@ -125,7 +125,11 @@ impl MonitorCmd<'_> {
             input = pipe.clone();
             commands = registry.openocd_swo(config, &ports, *reset, Some(&pipe))?
         }
-        itm::spawn(&input, outputs);
+        let input = File::open(input)?;
+        let outputs = monitor::Output::open_all(outputs)?;
+        thread::spawn(move || {
+            monitor::swo::capture(input, &outputs);
+        });
 
         let mut openocd = Command::new(&config_probe_openocd.command);
         openocd_arguments(&mut openocd, config_probe_openocd);

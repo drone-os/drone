@@ -11,11 +11,21 @@ origin = {{addr device_ram_origin}}
 [probe]
 gdb-client = "gdb-multiarch"
 
+{{#if (eq probe_monitor "uart-external") ~}}
+[probe.uart]
+baud-rate = 115200
+endpoint = "/dev/ttyACM0"
+{{else}}
 [probe.swo]
 reset-freq = {{device_swo_reset_freq}}
 baud-rate = 115200
 {{~#if (eq probe_monitor "swo-external")}}
-uart-endpoint = "{{probe_monitor_endpoint}}"
+{{#if (eq probe_ident "bmp") ~}}
+uart-endpoint = "/dev/ttyBmpTarg"
+{{else}}
+uart-endpoint = "/dev/ttyACM0"
+{{~/if}}
+{{~/if}}
 {{~/if}}
 
 {{#if (eq probe_ident "bmp") ~}}

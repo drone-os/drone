@@ -1,77 +1,25 @@
-//! ITM protocol.
+//! SWO monitor.
 
-use crate::cli;
-use anyhow::Result;
+use super::{Output, OutputMap};
+use anyhow::{Error, Result};
 use smallvec::SmallVec;
 use std::{
-    cell::RefCell,
-    fs::{File, OpenOptions},
-    io,
-    io::{Read, Stdout, Write},
+    convert::TryFrom,
+    fs::File,
+    io::prelude::*,
     ops::{Generator, GeneratorState},
-    path::Path,
     pin::Pin,
-    thread,
-    thread::JoinHandle,
 };
 
-const PORTS_COUNT: usize = 32;
-
-/// Run ITM parser in a child thread.
-pub fn spawn(input: &Path, outputs: &[cli::MonitorOutput]) -> JoinHandle<()> {
-    let input = input.to_path_buf();
-    let outputs = outputs.to_vec();
-    thread::spawn(move || {
-        let outputs = Output::open_all(&outputs).unwrap();
-        let mut parser = Parser::new(&outputs).unwrap();
-        for byte in File::open(input).unwrap().bytes() {
-            parser.pump(byte.unwrap()).unwrap();
-        }
-    })
-}
-
-struct Output<'cli> {
-    ports: &'cli [u32],
-    output: RefCell<Stream>,
-}
-
-enum Stream {
-    Stdout(Stdout),
-    File(File),
-}
-
-impl<'cli> Output<'cli> {
-    fn open_all(outputs: &'cli [cli::MonitorOutput]) -> io::Result<Vec<Output<'cli>>> {
-        outputs
-            .iter()
-            .map(|cli::MonitorOutput { ports, path }| {
-                if path.is_empty() {
-                    Ok(Stream::Stdout(io::stdout()))
-                } else {
-                    OpenOptions::new().write(true).open(path).map(Stream::File)
-                }
-                .map(|output| Self { ports, output: RefCell::new(output) })
-            })
-            .collect()
+/// Capture ITM output.
+pub fn capture(input: File, outputs: &[Output]) {
+    let mut parser = Parser::try_from(outputs).unwrap();
+    for byte in input.bytes() {
+        parser.pump(byte.unwrap()).unwrap();
     }
 }
 
-impl Stream {
-    fn write(&mut self, data: &[u8]) -> Result<()> {
-        match self {
-            Self::Stdout(stdout) => write_stream(stdout, data),
-            Self::File(file) => write_stream(file, data),
-        }
-    }
-}
-
-fn write_stream<T: Write>(stream: &mut T, data: &[u8]) -> Result<()> {
-    stream.write_all(data)?;
-    stream.flush()?;
-    Ok(())
-}
-
-struct Parser<'cli>(Pin<Box<dyn Generator<u8, Yield = (), Return = Result<!>> + 'cli>>);
+struct Parser<'a>(Pin<Box<dyn Generator<u8, Yield = (), Return = Result<!>> + 'a>>);
 
 enum Timestamp {
     Local { tc: u8 },
@@ -79,16 +27,18 @@ enum Timestamp {
     Global2,
 }
 
-type Streams<'cli> = SmallVec<[&'cli RefCell<Stream>; 2]>;
+impl<'a> TryFrom<&'a [Output]> for Parser<'a> {
+    type Error = Error;
 
-impl<'cli> Parser<'cli> {
-    fn new(outputs: &'cli [Output<'cli>]) -> Result<Self> {
+    fn try_from(outputs: &'a [Output]) -> Result<Self> {
         let gen = Box::pin(parser(outputs));
         let mut parser = Self(gen);
         parser.resume(0)?;
         Ok(parser)
     }
+}
 
+impl Parser<'_> {
     fn pump(&mut self, byte: u8) -> Result<()> {
         log::debug!("BYTE 0b{0:08b} 0x{0:02X} {1:?}", byte, char::from(byte));
         self.resume(byte)
@@ -102,26 +52,8 @@ impl<'cli> Parser<'cli> {
     }
 }
 
-fn outputs_map<'cli>(outputs: &'cli [Output<'cli>]) -> [Streams<'cli>; PORTS_COUNT] {
-    let mut map: [Streams<'_>; PORTS_COUNT] = Default::default();
-    for Output { ports, output } in outputs {
-        if ports.is_empty() {
-            for outputs in &mut map {
-                outputs.push(output);
-            }
-        } else {
-            for port in *ports {
-                map[*port as usize].push(output);
-            }
-        }
-    }
-    map
-}
-
 #[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
-fn parser<'cli>(
-    outputs: &'cli [Output<'cli>],
-) -> impl Generator<u8, Yield = (), Return = Result<!>> + 'cli {
+fn parser<'a>(outputs: &'a [Output]) -> impl Generator<u8, Yield = (), Return = Result<!>> + 'a {
     fn recycle<'a, T>(bytes: &'a mut SmallVec<[u8; 16]>, payload: T)
     where
         T: IntoIterator<Item = &'a u8>,
@@ -131,7 +63,7 @@ fn parser<'cli>(
             bytes.push(byte);
         }
     }
-    let outputs = outputs_map(outputs);
+    let outputs = OutputMap::from(outputs);
     let mut bytes = SmallVec::<[u8; 16]>::new();
     static move |_| loop {
         bytes.push(yield);
@@ -252,15 +184,13 @@ fn timestamp_packet(timestamp: &Timestamp, payload: &[u8]) {
     }
 }
 
-fn source_packet(software: bool, port: u8, payload: &[u8], outputs: &[Streams<'_>]) -> Result<()> {
+fn source_packet(software: bool, port: u8, payload: &[u8], outputs: &OutputMap<'_>) -> Result<()> {
     log::debug!(
         "{} packet {:?} {:?}",
         if software { "Software" } else { "Hardware" },
         payload,
         String::from_utf8_lossy(payload)
     );
-    for output in &outputs[port as usize] {
-        output.borrow_mut().write(payload)?;
-    }
+    outputs.write(u32::from(port), payload)?;
     Ok(())
 }
