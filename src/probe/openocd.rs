@@ -2,8 +2,8 @@
 
 use super::{run_gdb_client, run_gdb_server, rustc_substitute_path, setup_uart_endpoint};
 use crate::{
-    cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeMonitorCmd, ProbeResetCmd},
-    monitor,
+    cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeLogCmd, ProbeResetCmd},
+    log,
     templates::Registry,
     utils::{block_with_signals, exhaust_fifo, make_fifo, run_command, spawn_command, temp_dir},
 };
@@ -92,10 +92,10 @@ impl GdbCmd<'_> {
     }
 }
 
-/// OpenOCD `drone probe monitor` SWO command.
+/// OpenOCD `drone probe log` SWO command.
 #[allow(missing_docs)]
-pub struct MonitorSwoCmd<'a> {
-    pub cmd: &'a ProbeMonitorCmd,
+pub struct LogSwoCmd<'a> {
+    pub cmd: &'a ProbeLogCmd,
     pub signals: Signals,
     pub registry: Registry<'a>,
     pub config: &'a config::Config,
@@ -103,11 +103,11 @@ pub struct MonitorSwoCmd<'a> {
     pub config_probe_openocd: &'a config::ProbeOpenocd,
 }
 
-impl MonitorSwoCmd<'_> {
+impl LogSwoCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
         let Self { cmd, signals, registry, config, config_probe_swo, config_probe_openocd } = self;
-        let ProbeMonitorCmd { reset, outputs } = cmd;
+        let ProbeLogCmd { reset, outputs } = cmd;
 
         let mut _pipe_dir = None;
         let ports = outputs.iter().flat_map(|output| output.ports.iter().copied()).collect();
@@ -126,9 +126,9 @@ impl MonitorSwoCmd<'_> {
             commands = registry.openocd_swo(config, &ports, *reset, Some(&pipe))?
         }
         let input = File::open(input)?;
-        let outputs = monitor::Output::open_all(outputs)?;
+        let outputs = log::Output::open_all(outputs)?;
         thread::spawn(move || {
-            monitor::swo::capture(input, &outputs);
+            log::swo::capture(input, &outputs);
         });
 
         let mut openocd = Command::new(&config_probe_openocd.command);

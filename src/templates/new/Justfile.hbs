@@ -70,11 +70,11 @@ gdb:
 @gdb-mi:
 	drone probe gdb \{{release_bin}} --reset -i=mi -- -nx
 
-# Display standard output from the attached device
-monitor:
-	drone probe monitor --reset :0:1
+# Display log output from the attached device
+log:
+	drone probe log --reset :0:1
 
 # Record `heaptrace` file from the attached device (should be compiled with `heaptrace` feature)
 heaptrace:
 	truncate -s0 heaptrace
-	drone probe monitor --reset :0:1 heaptrace:31
+	drone probe log --reset :0:1 heaptrace:31

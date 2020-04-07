@@ -21,10 +21,10 @@ Possible log types:
 - [changed] `release` profile includes debug symbols by default
 - [removed] Remove `probe.openocd.config` option from `Drone.toml`
 - [added] Add `probe.openocd.arguments` option to `Drone.toml`
-- [changed] Rename sub-command `drone probe itm` to `drone probe monitor`
+- [changed] Rename sub-command `drone probe itm` to `drone probe log`
 - [changed] Rename section `probe.itm` to `probe.swo` in `Drone.toml`
-- [changed] Rename task `itm` to `monitor` in generated `Justfile`
-- [added] Add `uart-external` monitor type
+- [changed] Rename task `itm` to `log` in generated `Justfile`
+- [added] Add `uart-external` log type
 
 ### v0.11.1 (2019-11-27)
 

@@ -5,7 +5,7 @@ pub mod helpers;
 use crate::{
     device::Device,
     heap,
-    probe::{Probe, ProbeMonitor},
+    probe::{Probe, ProbeLog},
     utils::{ser_to_string, temp_dir},
 };
 use anyhow::Result;
@@ -127,13 +127,13 @@ impl Registry<'_> {
         flash_size: u32,
         ram_size: u32,
         probe: &Probe,
-        probe_monitor: &ProbeMonitor,
+        probe_log: &ProbeLog,
     ) -> Result<String> {
         let mut heap = Vec::new();
         let layout = heap::generate::new(ram_size / 2, HEAP_POOLS);
         heap::generate::display(&mut heap, &layout)?;
         let heap = String::from_utf8(heap)?;
-        let probe_monitor = probe_monitor.for_probe(&probe);
+        let probe_log = probe_log.for_probe(&probe);
         let data = json!({
             "device_ident": ser_to_string(device),
             "device_flash_origin": device.flash_origin(),
@@ -141,7 +141,7 @@ impl Registry<'_> {
             "device_flash_size": flash_size,
             "device_ram_size": ram_size,
             "device_swo_reset_freq": device.swo_reset_freq(),
-            "probe_monitor": ser_to_string(probe_monitor),
+            "probe_log": ser_to_string(probe_log),
             "probe_ident": ser_to_string(probe),
             "probe_openocd_config": device.openocd_config(),
             "generated_heap": heap.trim(),

@@ -50,17 +50,17 @@ pub mod crates;
 pub mod device;
 pub mod env;
 pub mod heap;
-pub mod monitor;
+pub mod log;
 pub mod new;
 pub mod probe;
 pub mod templates;
 pub mod utils;
 
 use crate::device::Device;
+use ::log::Level;
 use anyhow::Result;
 use cli::{Cli, Cmd};
 use env_logger::Builder as LoggerBuilder;
-use log::Level;
 use termcolor::StandardStream;
 
 impl Cli {

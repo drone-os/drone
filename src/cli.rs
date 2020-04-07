@@ -4,7 +4,7 @@
 
 use crate::{
     device::Device,
-    probe::{Probe, ProbeMonitor},
+    probe::{Probe, ProbeLog},
     utils::de_from_str,
 };
 use anyhow::{bail, Error};
@@ -72,9 +72,9 @@ pub struct NewCmd {
     /// the list of available options)
     #[structopt(short, long, parse(try_from_str = de_from_str))]
     pub probe: Option<Probe>,
-    /// Monitor type: auto, swo, swo-external, uart-external
+    /// Log type: auto, swo, swo-external, uart-external
     #[structopt(long, default_value = "auto", parse(try_from_str = de_from_str))]
-    pub probe_monitor: ProbeMonitor,
+    pub probe_log: ProbeLog,
     /// Set the resulting package name, defaults to the directory name
     #[structopt(long)]
     pub name: Option<String>,
@@ -132,7 +132,7 @@ pub enum ProbeSubCmd {
     /// Run a GDB session for the attached device
     Gdb(ProbeGdbCmd),
     /// Display standard output from the attached device
-    Monitor(ProbeMonitorCmd),
+    Log(ProbeLogCmd),
 }
 
 #[derive(Debug, StructOpt)]
@@ -162,21 +162,21 @@ pub struct ProbeGdbCmd {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct ProbeMonitorCmd {
+pub struct ProbeLogCmd {
     /// Reset the attached device
     #[structopt(short, long)]
     pub reset: bool,
-    /// Monitor output (format: [path][:port]...)
+    /// Log output (format: [path][:port]...)
     #[structopt(
         name = "OUTPUT",
-        parse(try_from_os_str = parse_monitor_output)
+        parse(try_from_os_str = parse_log_output)
     )]
-    pub outputs: Vec<MonitorOutput>,
+    pub outputs: Vec<LogOutput>,
 }
 
-/// Monitor output.
+/// Log output.
 #[derive(Debug, Clone)]
-pub struct MonitorOutput {
+pub struct LogOutput {
     /// Selected ports.
     pub ports: Vec<u32>,
     /// Output path.
@@ -192,12 +192,12 @@ fn parse_color(src: &str) -> Result<ColorChoice, Error> {
     })
 }
 
-fn parse_monitor_output(src: &OsStr) -> Result<MonitorOutput, OsString> {
+fn parse_log_output(src: &OsStr) -> Result<LogOutput, OsString> {
     let mut chunks = src.as_bytes().split(|&b| b == b':');
     let path = OsStr::from_bytes(chunks.next().unwrap()).into();
     let ports = chunks
         .map(|port| Ok(String::from_utf8(port.to_vec())?.parse()?))
         .collect::<Result<_, Error>>()
         .map_err(|err| err.to_string())?;
-    Ok(MonitorOutput { ports, path })
+    Ok(LogOutput { ports, path })
 }

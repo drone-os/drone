@@ -1,12 +1,12 @@
 //! Black Magic Probe interface.
 
 use super::{
-    begin_monitor_output, gdb_script_command, gdb_script_continue, gdb_script_wait, run_gdb_client,
+    begin_log_output, gdb_script_command, gdb_script_continue, gdb_script_wait, run_gdb_client,
     rustc_substitute_path, setup_uart_endpoint,
 };
 use crate::{
-    cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeMonitorCmd, ProbeResetCmd},
-    monitor,
+    cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeLogCmd, ProbeResetCmd},
+    log,
     templates::Registry,
     utils::{block_with_signals, exhaust_fifo, make_fifo, run_command, spawn_command, temp_dir},
 };
@@ -86,10 +86,10 @@ impl GdbCmd<'_> {
     }
 }
 
-/// Black Magic Probe `drone probe monitor` SWO command.
+/// Black Magic Probe `drone probe log` SWO command.
 #[allow(missing_docs)]
-pub struct MonitorSwoCmd<'a> {
-    pub cmd: &'a ProbeMonitorCmd,
+pub struct LogSwoCmd<'a> {
+    pub cmd: &'a ProbeLogCmd,
     pub signals: Signals,
     pub registry: Registry<'a>,
     pub config: &'a config::Config,
@@ -98,11 +98,11 @@ pub struct MonitorSwoCmd<'a> {
     pub shell: &'a mut StandardStream,
 }
 
-impl MonitorSwoCmd<'_> {
+impl LogSwoCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
         let Self { cmd, signals, registry, config, config_probe, config_probe_swo, shell } = self;
-        let ProbeMonitorCmd { reset, outputs } = cmd;
+        let ProbeLogCmd { reset, outputs } = cmd;
 
         let uart_endpoint = config_probe_swo.uart_endpoint.as_ref().ok_or_else(|| {
             anyhow!(
@@ -121,13 +121,13 @@ impl MonitorSwoCmd<'_> {
 
         exhaust_fifo(uart_endpoint)?;
         let input = File::open(uart_endpoint)?;
-        let outputs = monitor::Output::open_all(outputs)?;
+        let outputs = log::Output::open_all(outputs)?;
         thread::spawn(move || {
-            monitor::swo::capture(input, &outputs);
+            log::swo::capture(input, &outputs);
         });
 
         gdb_script_continue(&signals, pipe, packet)?;
-        begin_monitor_output(shell)?;
+        begin_log_output(shell)?;
         block_with_signals(&signals, true, move || {
             gdb.wait()?;
             Ok(())

@@ -1,4 +1,4 @@
-//! UART monitor.
+//! UART logging.
 
 use super::{Output, OutputMap};
 use std::{fs::File, io::prelude::*};

@@ -36,10 +36,10 @@ pub enum Probe {
     Openocd,
 }
 
-/// Monitor type.
+/// Log type.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum ProbeMonitor {
+pub enum ProbeLog {
     /// Default type for the debug probe.
     Auto,
     /// SWO pin connected to the debug probe.
@@ -56,13 +56,13 @@ enum ProbeConfig<'a> {
     Openocd(&'a config::ProbeOpenocd),
 }
 
-enum ProbeMonitorConfig<'a> {
+enum ProbeLogConfig<'a> {
     Swo(&'a config::ProbeSwo),
     Uart(&'a config::ProbeUart),
 }
 
-impl ProbeMonitor {
-    /// If `self` is `Auto`, returns default monitor type for the debug
+impl ProbeLog {
+    /// If `self` is `Auto`, returns default log type for the debug
     /// probe. Returns `self` otherwise.
     pub fn for_probe(&self, probe: &Probe) -> &Self {
         if !matches!(self, Self::Auto) {
@@ -95,7 +95,7 @@ impl<'a> TryFrom<&'a config::Probe> for ProbeConfig<'a> {
     }
 }
 
-impl<'a> TryFrom<&'a config::Probe> for ProbeMonitorConfig<'a> {
+impl<'a> TryFrom<&'a config::Probe> for ProbeLogConfig<'a> {
     type Error = Error;
 
     fn try_from(config_probe: &'a config::Probe) -> Result<Self> {
@@ -161,10 +161,10 @@ impl ProbeCmd {
                 }
                 .run()
             }
-            (ProbeSubCmd::Monitor(cmd), ref probe_config) => {
-                match (probe_config, ProbeMonitorConfig::try_from(config_probe)?) {
-                    (ProbeConfig::Bmp(_), ProbeMonitorConfig::Swo(config_probe_swo)) => {
-                        bmp::MonitorSwoCmd {
+            (ProbeSubCmd::Log(cmd), ref probe_config) => {
+                match (probe_config, ProbeLogConfig::try_from(config_probe)?) {
+                    (ProbeConfig::Bmp(_), ProbeLogConfig::Swo(config_probe_swo)) => {
+                        bmp::LogSwoCmd {
                             cmd,
                             signals,
                             registry,
@@ -175,13 +175,13 @@ impl ProbeCmd {
                         }
                         .run()
                     }
-                    (ProbeConfig::Jlink(_), ProbeMonitorConfig::Swo(_)) => {
+                    (ProbeConfig::Jlink(_), ProbeLogConfig::Swo(_)) => {
                         unimplemented!("SWO capture with J-Link");
                     }
                     (
                         ProbeConfig::Openocd(config_probe_openocd),
-                        ProbeMonitorConfig::Swo(config_probe_swo),
-                    ) => openocd::MonitorSwoCmd {
+                        ProbeLogConfig::Swo(config_probe_swo),
+                    ) => openocd::LogSwoCmd {
                         cmd,
                         signals,
                         registry,
@@ -192,8 +192,8 @@ impl ProbeCmd {
                     .run(),
                     (
                         ProbeConfig::Jlink(config_probe_jlink),
-                        ProbeMonitorConfig::Uart(config_probe_uart),
-                    ) => jlink::MonitorUartCmd {
+                        ProbeLogConfig::Uart(config_probe_uart),
+                    ) => jlink::LogUartCmd {
                         cmd,
                         signals,
                         registry,
@@ -204,8 +204,8 @@ impl ProbeCmd {
                         shell,
                     }
                     .run(),
-                    (ProbeConfig::Bmp(_), ProbeMonitorConfig::Uart(_))
-                    | (ProbeConfig::Openocd(_), ProbeMonitorConfig::Uart(_)) => todo!(),
+                    (ProbeConfig::Bmp(_), ProbeLogConfig::Uart(_))
+                    | (ProbeConfig::Openocd(_), ProbeLogConfig::Uart(_)) => todo!(),
                 }
             }
         }
@@ -301,11 +301,11 @@ pub fn gdb_script_continue(signals: &Signals, pipe: PathBuf, packet: [u8; 1]) ->
     })
 }
 
-/// Displays a banner representing beginning of monitor output.
-pub fn begin_monitor_output(shell: &mut StandardStream) -> Result<()> {
+/// Displays a banner representing beginning of log output.
+pub fn begin_log_output(shell: &mut StandardStream) -> Result<()> {
     shell.set_color(ColorSpec::new().set_bold(true).set_fg(Some(Color::Cyan)))?;
     writeln!(shell)?;
-    writeln!(shell, "{:=^80}", " MONITOR OUTPUT ")?;
+    writeln!(shell, "{:=^80}", " LOG OUTPUT ")?;
     shell.reset()?;
     Ok(())
 }

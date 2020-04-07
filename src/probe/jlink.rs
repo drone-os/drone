@@ -1,12 +1,12 @@
 //! Segger J-Link interface.
 
 use super::{
-    begin_monitor_output, gdb_script_command, gdb_script_continue, gdb_script_wait, run_gdb_client,
+    begin_log_output, gdb_script_command, gdb_script_continue, gdb_script_wait, run_gdb_client,
     run_gdb_server, rustc_substitute_path, setup_uart_endpoint,
 };
 use crate::{
-    cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeMonitorCmd, ProbeResetCmd},
-    monitor,
+    cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeLogCmd, ProbeResetCmd},
+    log,
     templates::Registry,
     utils::{
         block_with_signals, exhaust_fifo, make_fifo, run_command, search_rust_tool, spawn_command,
@@ -114,10 +114,10 @@ impl GdbCmd<'_> {
     }
 }
 
-/// Segger J-Link `drone probe monitor` UART command.
+/// Segger J-Link `drone probe log` UART command.
 #[allow(missing_docs)]
-pub struct MonitorUartCmd<'a> {
-    pub cmd: &'a ProbeMonitorCmd,
+pub struct LogUartCmd<'a> {
+    pub cmd: &'a ProbeLogCmd,
     pub signals: Signals,
     pub registry: Registry<'a>,
     pub config: &'a config::Config,
@@ -127,7 +127,7 @@ pub struct MonitorUartCmd<'a> {
     pub shell: &'a mut StandardStream,
 }
 
-impl MonitorUartCmd<'_> {
+impl LogUartCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
         let Self {
@@ -140,7 +140,7 @@ impl MonitorUartCmd<'_> {
             config_probe_jlink,
             shell,
         } = self;
-        let ProbeMonitorCmd { reset, outputs } = cmd;
+        let ProbeLogCmd { reset, outputs } = cmd;
 
         let mut gdb_server = Command::new(&config_probe_jlink.gdb_server);
         jlink_args(&mut gdb_server, config_probe_jlink);
@@ -156,13 +156,13 @@ impl MonitorUartCmd<'_> {
         setup_uart_endpoint(&signals, &config_probe_uart.endpoint, config_probe_uart.baud_rate)?;
         exhaust_fifo(&config_probe_uart.endpoint)?;
         let input = File::open(&config_probe_uart.endpoint)?;
-        let outputs = monitor::Output::open_all(outputs)?;
+        let outputs = log::Output::open_all(outputs)?;
         thread::spawn(move || {
-            monitor::uart::capture(input, &outputs);
+            log::uart::capture(input, &outputs);
         });
 
         gdb_script_continue(&signals, pipe, packet)?;
-        begin_monitor_output(shell)?;
+        begin_log_output(shell)?;
         block_with_signals(&signals, true, move || {
             gdb.wait()?;
             Ok(())

@@ -4,7 +4,7 @@ use crate::{
     cli::NewCmd,
     crates,
     device::Device,
-    probe::{Probe, ProbeMonitor},
+    probe::{Probe, ProbeLog},
     templates::Registry,
     utils::run_command,
 };
@@ -20,8 +20,7 @@ use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 impl NewCmd {
     /// Runs the `drone new` command.
     pub fn run(&self, shell: &mut StandardStream) -> Result<()> {
-        let Self { path, device, flash_size, ram_size, probe, probe_monitor, name, toolchain } =
-            self;
+        let Self { path, device, flash_size, ram_size, probe, probe_log, name, toolchain } = self;
         let registry = Registry::new()?;
         let name = name.as_ref().map(String::as_str).map_or_else(
             || {
@@ -56,16 +55,7 @@ impl NewCmd {
             }
         }
         cargo_toml(path, &name, &device, &registry, shell)?;
-        drone_toml(
-            path,
-            &device,
-            *flash_size,
-            *ram_size,
-            &probe,
-            &probe_monitor,
-            &registry,
-            shell,
-        )?;
+        drone_toml(path, &device, *flash_size, *ram_size, &probe, &probe_log, &registry, shell)?;
         justfile(path, &device, &registry, shell)?;
         rust_toolchain(path, &toolchain, &registry, shell)?;
         cargo_config(path, &registry, shell)?;
@@ -175,7 +165,7 @@ fn drone_toml(
     flash_size: u32,
     ram_size: u32,
     probe: &Option<Probe>,
-    probe_monitor: &ProbeMonitor,
+    probe_log: &ProbeLog,
     registry: &Registry<'_>,
     shell: &mut StandardStream,
 ) -> Result<()> {
@@ -183,7 +173,7 @@ fn drone_toml(
     let mut file = File::create(&path)?;
     let probe = probe.as_ref().unwrap_or_else(|| device.probes().first().unwrap());
     file.write_all(
-        registry.new_drone_toml(device, flash_size, ram_size, probe, probe_monitor)?.as_bytes(),
+        registry.new_drone_toml(device, flash_size, ram_size, probe, probe_log)?.as_bytes(),
     )?;
     print_created(shell, "Drone.toml")
 }

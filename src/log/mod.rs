@@ -1,4 +1,4 @@
-//! Probe Monitor.
+//! Probe logging.
 
 pub mod swo;
 pub mod uart;
@@ -35,10 +35,10 @@ pub struct OutputMap<'a>([Vec<&'a RefCell<OutputStream>>; PORTS_COUNT]);
 
 impl Output {
     /// Opens all output streams.
-    pub fn open_all(outputs: &[cli::MonitorOutput]) -> io::Result<Vec<Output>> {
+    pub fn open_all(outputs: &[cli::LogOutput]) -> io::Result<Vec<Output>> {
         outputs
             .iter()
-            .map(|cli::MonitorOutput { ports, path }| {
+            .map(|cli::LogOutput { ports, path }| {
                 if path.is_empty() {
                     Ok(OutputStream::Stdout(io::stdout()))
                 } else {

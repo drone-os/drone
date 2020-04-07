@@ -1,4 +1,4 @@
-//! SWO monitor.
+//! SWO logging.
 
 use super::{Output, OutputMap};
 use anyhow::{Error, Result};
