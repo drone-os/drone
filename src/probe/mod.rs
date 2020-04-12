@@ -253,7 +253,7 @@ pub fn run_gdb_client(
     interpreter: Option<&str>,
     script: &Path,
 ) -> Result<()> {
-    let mut gdb = Command::new(&config_probe.gdb_client);
+    let mut gdb = Command::new(&config_probe.gdb_client_command);
     for arg in gdb_args {
         gdb.arg(arg);
     }
@@ -273,7 +273,7 @@ pub fn gdb_script_command(
     firmware: Option<&Path>,
     script: &Path,
 ) -> Command {
-    let mut gdb = Command::new(&config_probe.gdb_client);
+    let mut gdb = Command::new(&config_probe.gdb_client_command);
     if let Some(firmware) = firmware {
         gdb.arg(firmware);
     }

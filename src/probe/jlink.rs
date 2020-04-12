@@ -42,7 +42,7 @@ impl ResetCmd<'_> {
         let Self { cmd, signals, registry, config_probe_jlink } = self;
         let ProbeResetCmd {} = cmd;
         let script = registry.jlink_reset()?;
-        let mut commander = Command::new(&config_probe_jlink.commander);
+        let mut commander = Command::new(&config_probe_jlink.commander_command);
         jlink_args(&mut commander, config_probe_jlink);
         commander_script(&mut commander, script.path());
         block_with_signals(&signals, true, || run_command(commander))
@@ -73,7 +73,7 @@ impl FlashCmd<'_> {
         block_with_signals(&signals, true, || run_command(objcopy))?;
         fs::set_permissions(firmware_bin, fs::Permissions::from_mode(0o644))?;
 
-        let mut commander = Command::new(&config_probe_jlink.commander);
+        let mut commander = Command::new(&config_probe_jlink.commander_command);
         jlink_args(&mut commander, config_probe_jlink);
         commander_script(&mut commander, script.path());
         block_with_signals(&signals, true, || run_command(commander))
@@ -97,7 +97,7 @@ impl GdbCmd<'_> {
         let Self { cmd, signals, registry, config, config_probe, config_probe_jlink } = self;
         let ProbeGdbCmd { firmware, reset, interpreter, gdb_args } = cmd;
 
-        let mut gdb_server = Command::new(&config_probe_jlink.gdb_server);
+        let mut gdb_server = Command::new(&config_probe_jlink.gdb_server_command);
         jlink_args(&mut gdb_server, config_probe_jlink);
         gdb_server_args(&mut gdb_server, config_probe_jlink);
         let _gdb_server = run_gdb_server(gdb_server, interpreter.as_ref().map(String::as_ref))?;
@@ -142,7 +142,7 @@ impl LogUartCmd<'_> {
         } = self;
         let ProbeLogCmd { reset, outputs } = cmd;
 
-        let mut gdb_server = Command::new(&config_probe_jlink.gdb_server);
+        let mut gdb_server = Command::new(&config_probe_jlink.gdb_server_command);
         jlink_args(&mut gdb_server, config_probe_jlink);
         gdb_server_args(&mut gdb_server, config_probe_jlink);
         let _gdb_server = run_gdb_server(gdb_server, None)?;

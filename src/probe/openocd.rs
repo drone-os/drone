@@ -125,9 +125,9 @@ impl LogSwoCmd<'_> {
             input = pipe.clone();
             commands = registry.openocd_swo(config, &ports, *reset, Some(&pipe))?
         }
-        let input = File::open(input)?;
         let outputs = log::Output::open_all(outputs)?;
         thread::spawn(move || {
+            let input = File::open(input).unwrap();
             log::swo::capture(input, &outputs);
         });
 

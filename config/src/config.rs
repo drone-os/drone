@@ -70,7 +70,7 @@ pub struct HeapPool {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Probe {
-    pub gdb_client: String,
+    pub gdb_client_command: String,
     pub swo: Option<ProbeSwo>,
     pub uart: Option<ProbeUart>,
     pub bmp: Option<ProbeBmp>,
@@ -107,8 +107,8 @@ pub struct ProbeBmp {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ProbeJlink {
-    pub gdb_server: String,
-    pub commander: String,
+    pub gdb_server_command: String,
+    pub commander_command: String,
     pub device: String,
     pub speed: u32,
     pub port: u32,

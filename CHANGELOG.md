@@ -25,6 +25,8 @@ Possible log types:
 - [changed] Rename section `probe.itm` to `probe.swo` in `Drone.toml`
 - [changed] Rename task `itm` to `log` in generated `Justfile`
 - [added] Add `uart-external` log type
+- [changed] Rename `probe.gdb-client` to `probe.gdb-client-command` in
+  `Drone.toml`
 
 ### v0.11.1 (2019-11-27)
 
