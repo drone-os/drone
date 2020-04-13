@@ -1,4 +1,4 @@
-//! SWO logging.
+//! ARM® Single Wire Output protocol.
 
 use super::{Output, OutputMap};
 use anyhow::{Error, Result};
@@ -11,7 +11,7 @@ use std::{
     pin::Pin,
 };
 
-/// Capture ITM output.
+/// Capture SWO output.
 pub fn capture(input: File, outputs: &[Output]) {
     let mut parser = Parser::try_from(outputs).unwrap();
     for byte in input.bytes() {

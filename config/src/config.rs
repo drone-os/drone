@@ -71,28 +71,11 @@ pub struct HeapPool {
 #[serde(rename_all = "kebab-case")]
 pub struct Probe {
     pub gdb_client_command: String,
-    pub swo: Option<ProbeSwo>,
-    pub uart: Option<ProbeUart>,
     pub bmp: Option<ProbeBmp>,
     pub jlink: Option<ProbeJlink>,
     pub openocd: Option<ProbeOpenocd>,
-}
-
-#[non_exhaustive]
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct ProbeSwo {
-    pub reset_freq: u32,
-    pub baud_rate: u32,
-    pub uart_endpoint: Option<String>,
-}
-
-#[non_exhaustive]
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct ProbeUart {
-    pub baud_rate: u32,
-    pub endpoint: String,
+    pub swo: Option<ProbeSwo>,
+    pub dso: Option<ProbeDso>,
 }
 
 #[non_exhaustive]
@@ -121,4 +104,21 @@ pub struct ProbeOpenocd {
     pub command: String,
     pub port: u32,
     pub arguments: Vec<String>,
+}
+
+#[non_exhaustive]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct ProbeSwo {
+    pub reset_freq: u32,
+    pub baud_rate: u32,
+    pub serial_endpoint: Option<String>,
+}
+
+#[non_exhaustive]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct ProbeDso {
+    pub baud_rate: u32,
+    pub serial_endpoint: String,
 }

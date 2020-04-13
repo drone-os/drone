@@ -4,7 +4,7 @@
 
 use crate::{
     device::Device,
-    probe::{Probe, ProbeLog},
+    probe::{Log, Probe},
     utils::de_from_str,
 };
 use anyhow::{bail, Error};
@@ -68,13 +68,14 @@ pub struct NewCmd {
     /// RAM size
     #[structopt(short, long, parse(try_from_str = parse_size))]
     pub ram_size: u32,
-    /// The debug probe connected to the target device (run `drone support` for
-    /// the list of available options)
+    /// Debug probe connected to the target device (run `drone support` for the
+    /// list of all available options)
     #[structopt(short, long, parse(try_from_str = de_from_str))]
     pub probe: Option<Probe>,
-    /// Log type: auto, swo, swo-external, uart-external
-    #[structopt(long, default_value = "auto", parse(try_from_str = de_from_str))]
-    pub probe_log: ProbeLog,
+    /// Debug log type for the target device (run `drone support` for the list
+    /// of all available options)
+    #[structopt(long, short, parse(try_from_str = de_from_str))]
+    pub log: Option<Log>,
     /// Set the resulting package name, defaults to the directory name
     #[structopt(long)]
     pub name: Option<String>,

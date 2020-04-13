@@ -5,7 +5,7 @@ pub mod helpers;
 use crate::{
     device::Device,
     heap,
-    probe::{Probe, ProbeLog},
+    probe::{Log, Probe},
     utils::{ser_to_string, temp_dir},
 };
 use anyhow::Result;
@@ -52,7 +52,7 @@ impl Registry<'_> {
         template!("jlink/reset.jlink")?;
         template!("jlink/flash.jlink")?;
         template!("jlink/gdb.gdb")?;
-        template!("jlink/uart.gdb")?;
+        template!("jlink/dso.gdb")?;
         template!("openocd/flash.openocd")?;
         template!("openocd/gdb.gdb")?;
         template!("openocd/gdb.openocd")?;
@@ -127,13 +127,12 @@ impl Registry<'_> {
         flash_size: u32,
         ram_size: u32,
         probe: &Probe,
-        probe_log: &ProbeLog,
+        log: &Log,
     ) -> Result<String> {
         let mut heap = Vec::new();
         let layout = heap::generate::new(ram_size / 2, HEAP_POOLS);
         heap::generate::display(&mut heap, &layout)?;
         let heap = String::from_utf8(heap)?;
-        let probe_log = probe_log.for_probe(&probe);
         let data = json!({
             "device_ident": ser_to_string(device),
             "device_flash_origin": device.flash_origin(),
@@ -141,7 +140,7 @@ impl Registry<'_> {
             "device_flash_size": flash_size,
             "device_ram_size": ram_size,
             "device_swo_reset_freq": device.swo_reset_freq(),
-            "probe_log": ser_to_string(probe_log),
+            "log_ident": ser_to_string(log),
             "probe_ident": ser_to_string(probe),
             "probe_openocd_config": device.openocd_config(),
             "generated_heap": heap.trim(),
@@ -262,15 +261,15 @@ impl Registry<'_> {
         named_temp_file(|file| self.0.render_to_write("jlink/gdb.gdb", &data, file))
     }
 
-    /// Renders J-Link `uart` command script.
-    pub fn jlink_uart(&self, config: &Config, reset: bool, pipe: &Path) -> Result<NamedTempFile> {
+    /// Renders J-Link `dso` command script.
+    pub fn jlink_dso(&self, config: &Config, reset: bool, pipe: &Path) -> Result<NamedTempFile> {
         let data = json!({
             "config": config,
             "reset": reset,
             "pipe": pipe,
         });
         helpers::clear_vars();
-        named_temp_file(|file| self.0.render_to_write("jlink/uart.gdb", &data, file))
+        named_temp_file(|file| self.0.render_to_write("jlink/dso.gdb", &data, file))
     }
 
     /// Renders OpenOCD `reset` command script.

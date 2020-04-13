@@ -2,7 +2,7 @@
 
 use super::{
     begin_log_output, gdb_script_command, gdb_script_continue, gdb_script_wait, run_gdb_client,
-    run_gdb_server, rustc_substitute_path, setup_uart_endpoint,
+    run_gdb_server, rustc_substitute_path, setup_serial_endpoint,
 };
 use crate::{
     cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeLogCmd, ProbeResetCmd},
@@ -27,7 +27,7 @@ use std::{
 use tempfile::tempdir_in;
 use termcolor::StandardStream;
 
-/// Segger J-Link `drone probe reset` command.
+/// `drone probe reset` command with Segger J-Link.
 #[allow(missing_docs)]
 pub struct ResetCmd<'a> {
     pub cmd: &'a ProbeResetCmd,
@@ -49,7 +49,7 @@ impl ResetCmd<'_> {
     }
 }
 
-/// Segger J-Link `drone probe flash` command.
+/// `drone probe flash` command with Segger J-Link.
 #[allow(missing_docs)]
 pub struct FlashCmd<'a> {
     pub cmd: &'a ProbeFlashCmd,
@@ -80,7 +80,7 @@ impl FlashCmd<'_> {
     }
 }
 
-/// Segger J-Link `drone probe gdb` command.
+/// `drone probe gdb` command with Segger J-Link.
 #[allow(missing_docs)]
 pub struct GdbCmd<'a> {
     pub cmd: &'a ProbeGdbCmd,
@@ -114,20 +114,20 @@ impl GdbCmd<'_> {
     }
 }
 
-/// Segger J-Link `drone probe log` UART command.
+/// `drone probe log` command with Segger J-Link and DSO.
 #[allow(missing_docs)]
-pub struct LogUartCmd<'a> {
+pub struct LogDsoCmd<'a> {
     pub cmd: &'a ProbeLogCmd,
     pub signals: Signals,
     pub registry: Registry<'a>,
     pub config: &'a config::Config,
     pub config_probe: &'a config::Probe,
-    pub config_probe_uart: &'a config::ProbeUart,
     pub config_probe_jlink: &'a config::ProbeJlink,
+    pub config_probe_dso: &'a config::ProbeDso,
     pub shell: &'a mut StandardStream,
 }
 
-impl LogUartCmd<'_> {
+impl LogDsoCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
         let Self {
@@ -136,8 +136,8 @@ impl LogUartCmd<'_> {
             registry,
             config,
             config_probe,
-            config_probe_uart,
             config_probe_jlink,
+            config_probe_dso,
             shell,
         } = self;
         let ProbeLogCmd { reset, outputs } = cmd;
@@ -149,16 +149,20 @@ impl LogUartCmd<'_> {
 
         let dir = tempdir_in(temp_dir())?;
         let pipe = make_fifo(&dir)?;
-        let script = registry.jlink_uart(config, *reset, &pipe)?;
+        let script = registry.jlink_dso(config, *reset, &pipe)?;
         let mut gdb = spawn_command(gdb_script_command(config_probe, None, script.path()))?;
         let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
 
-        setup_uart_endpoint(&signals, &config_probe_uart.endpoint, config_probe_uart.baud_rate)?;
-        exhaust_fifo(&config_probe_uart.endpoint)?;
-        let input = File::open(&config_probe_uart.endpoint)?;
+        setup_serial_endpoint(
+            &signals,
+            &config_probe_dso.serial_endpoint,
+            config_probe_dso.baud_rate,
+        )?;
+        exhaust_fifo(&config_probe_dso.serial_endpoint)?;
+        let input = File::open(&config_probe_dso.serial_endpoint)?;
         let outputs = log::Output::open_all(outputs)?;
         thread::spawn(move || {
-            log::uart::capture(input, &outputs);
+            log::dso::capture(input, &outputs);
         });
 
         gdb_script_continue(&signals, pipe, packet)?;

@@ -4,6 +4,10 @@ pub mod bmp;
 pub mod jlink;
 pub mod openocd;
 
+mod log;
+
+pub use self::log::Log;
+
 use crate::{
     cli::{ProbeCmd, ProbeSubCmd},
     templates::Registry,
@@ -36,44 +40,10 @@ pub enum Probe {
     Openocd,
 }
 
-/// Log type.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ProbeLog {
-    /// Default type for the debug probe.
-    Auto,
-    /// SWO pin connected to the debug probe.
-    Swo,
-    /// SWO pin connected to an external USB-UART converter.
-    SwoExternal,
-    /// UART pin connected to an external USB-UART converter.
-    UartExternal,
-}
-
 enum ProbeConfig<'a> {
     Bmp(&'a config::ProbeBmp),
     Jlink(&'a config::ProbeJlink),
     Openocd(&'a config::ProbeOpenocd),
-}
-
-enum ProbeLogConfig<'a> {
-    Swo(&'a config::ProbeSwo),
-    Uart(&'a config::ProbeUart),
-}
-
-impl ProbeLog {
-    /// If `self` is `Auto`, returns default log type for the debug
-    /// probe. Returns `self` otherwise.
-    pub fn for_probe(&self, probe: &Probe) -> &Self {
-        if !matches!(self, Self::Auto) {
-            return self;
-        }
-        match probe {
-            Probe::Bmp => &Self::SwoExternal,
-            Probe::Jlink => &Self::UartExternal,
-            Probe::Openocd => &Self::Swo,
-        }
-    }
 }
 
 impl<'a> TryFrom<&'a config::Probe> for ProbeConfig<'a> {
@@ -89,23 +59,6 @@ impl<'a> TryFrom<&'a config::Probe> for ProbeConfig<'a> {
         } else {
             Err(anyhow!(
                 "Missing one of `probe.bmp`, `probe.jlink`, `probe.openocd` sections in `{}`",
-                config::CONFIG_NAME
-            ))
-        }
-    }
-}
-
-impl<'a> TryFrom<&'a config::Probe> for ProbeLogConfig<'a> {
-    type Error = Error;
-
-    fn try_from(config_probe: &'a config::Probe) -> Result<Self> {
-        if let Some(config_probe_swo) = &config_probe.swo {
-            Ok(Self::Swo(config_probe_swo))
-        } else if let Some(config_probe_uart) = &config_probe.uart {
-            Ok(Self::Uart(config_probe_uart))
-        } else {
-            Err(anyhow!(
-                "Missing one of `probe.swo`, `probe.uart` sections in `{}`",
                 config::CONFIG_NAME
             ))
         }
@@ -162,58 +115,14 @@ impl ProbeCmd {
                 .run()
             }
             (ProbeSubCmd::Log(cmd), ref probe_config) => {
-                match (probe_config, ProbeLogConfig::try_from(config_probe)?) {
-                    (ProbeConfig::Bmp(_), ProbeLogConfig::Swo(config_probe_swo)) => {
-                        bmp::LogSwoCmd {
-                            cmd,
-                            signals,
-                            registry,
-                            config,
-                            config_probe,
-                            config_probe_swo,
-                            shell,
-                        }
-                        .run()
-                    }
-                    (ProbeConfig::Jlink(_), ProbeLogConfig::Swo(_)) => {
-                        unimplemented!("SWO capture with J-Link");
-                    }
-                    (
-                        ProbeConfig::Openocd(config_probe_openocd),
-                        ProbeLogConfig::Swo(config_probe_swo),
-                    ) => openocd::LogSwoCmd {
-                        cmd,
-                        signals,
-                        registry,
-                        config,
-                        config_probe_swo,
-                        config_probe_openocd,
-                    }
-                    .run(),
-                    (
-                        ProbeConfig::Jlink(config_probe_jlink),
-                        ProbeLogConfig::Uart(config_probe_uart),
-                    ) => jlink::LogUartCmd {
-                        cmd,
-                        signals,
-                        registry,
-                        config,
-                        config_probe,
-                        config_probe_uart,
-                        config_probe_jlink,
-                        shell,
-                    }
-                    .run(),
-                    (ProbeConfig::Bmp(_), ProbeLogConfig::Uart(_))
-                    | (ProbeConfig::Openocd(_), ProbeLogConfig::Uart(_)) => todo!(),
-                }
+                log::run(cmd, signals, registry, config, config_probe, probe_config, shell)
             }
         }
     }
 }
 
 /// Configures the endpoint with `stty` command.
-pub fn setup_uart_endpoint(signals: &Signals, endpoint: &str, baud_rate: u32) -> Result<()> {
+pub fn setup_serial_endpoint(signals: &Signals, endpoint: &str, baud_rate: u32) -> Result<()> {
     let mut stty = Command::new("stty");
     stty.arg(format!("--file={}", endpoint));
     stty.arg("speed");

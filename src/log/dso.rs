@@ -1,9 +1,9 @@
-//! UART logging.
+//! Drone Serial Output protocol.
 
 use super::{Output, OutputMap};
 use std::{fs::File, io::prelude::*};
 
-/// Capture UART output.
+/// Capture DSO output.
 pub fn capture(input: File, outputs: &[Output]) {
     let outputs = OutputMap::from(outputs);
     for byte in input.bytes() {

@@ -2,7 +2,7 @@
 
 use super::{
     begin_log_output, gdb_script_command, gdb_script_continue, gdb_script_wait, run_gdb_client,
-    rustc_substitute_path, setup_uart_endpoint,
+    rustc_substitute_path, setup_serial_endpoint,
 };
 use crate::{
     cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeLogCmd, ProbeResetCmd},
@@ -17,7 +17,7 @@ use std::{fs::File, path::PathBuf, thread};
 use tempfile::tempdir_in;
 use termcolor::StandardStream;
 
-/// Black Magic Probe `drone probe reset` command.
+/// `drone probe reset` command with Black Magic Probe.
 #[allow(missing_docs)]
 pub struct ResetCmd<'a> {
     pub cmd: &'a ProbeResetCmd,
@@ -38,7 +38,7 @@ impl ResetCmd<'_> {
     }
 }
 
-/// Black Magic Probe `drone probe flash` command.
+/// `drone probe flash` command with Black Magic Probe.
 #[allow(missing_docs)]
 pub struct FlashCmd<'a> {
     pub cmd: &'a ProbeFlashCmd,
@@ -59,7 +59,7 @@ impl FlashCmd<'_> {
     }
 }
 
-/// Black Magic Probe `drone probe gdb` command.
+/// `drone probe gdb` command with Black Magic Probe.
 #[allow(missing_docs)]
 pub struct GdbCmd<'a> {
     pub cmd: &'a ProbeGdbCmd,
@@ -86,7 +86,7 @@ impl GdbCmd<'_> {
     }
 }
 
-/// Black Magic Probe `drone probe log` SWO command.
+/// `drone probe log` command with Black Magic Probe and SWO.
 #[allow(missing_docs)]
 pub struct LogSwoCmd<'a> {
     pub cmd: &'a ProbeLogCmd,
@@ -104,13 +104,13 @@ impl LogSwoCmd<'_> {
         let Self { cmd, signals, registry, config, config_probe, config_probe_swo, shell } = self;
         let ProbeLogCmd { reset, outputs } = cmd;
 
-        let uart_endpoint = config_probe_swo.uart_endpoint.as_ref().ok_or_else(|| {
+        let serial_endpoint = config_probe_swo.serial_endpoint.as_ref().ok_or_else(|| {
             anyhow!(
-                "TRACESWO is not yet implemented. Set `probe.swo.uart-endpoint` value at `{}`",
+                "TRACESWO is not yet implemented. Set `probe.swo.serial-endpoint` value at `{}`",
                 config::CONFIG_NAME
             )
         })?;
-        setup_uart_endpoint(&signals, uart_endpoint, config_probe_swo.baud_rate)?;
+        setup_serial_endpoint(&signals, serial_endpoint, config_probe_swo.baud_rate)?;
 
         let dir = tempdir_in(temp_dir())?;
         let pipe = make_fifo(&dir)?;
@@ -119,8 +119,8 @@ impl LogSwoCmd<'_> {
         let mut gdb = spawn_command(gdb_script_command(config_probe, None, script.path()))?;
         let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
 
-        exhaust_fifo(uart_endpoint)?;
-        let input = File::open(uart_endpoint)?;
+        exhaust_fifo(serial_endpoint)?;
+        let input = File::open(serial_endpoint)?;
         let outputs = log::Output::open_all(outputs)?;
         thread::spawn(move || {
             log::swo::capture(input, &outputs);

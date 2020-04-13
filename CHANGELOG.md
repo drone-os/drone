@@ -24,8 +24,10 @@ Possible log types:
 - [changed] Rename sub-command `drone probe itm` to `drone probe log`
 - [changed] Rename section `probe.itm` to `probe.swo` in `Drone.toml`
 - [changed] Rename task `itm` to `log` in generated `Justfile`
-- [added] Add `uart-external` log type
+- [added] Add `dso-serial` log type
 - [changed] Rename `probe.gdb-client` to `probe.gdb-client-command` in
+  `Drone.toml`
+- [changed] Rename `probe.swo.uart-endpoint` to `probe.swo.serial-endpoint` in
   `Drone.toml`
 
 ### v0.11.1 (2019-11-27)
