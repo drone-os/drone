@@ -64,8 +64,8 @@ impl Registry<'_> {
     }
 
     /// Renders linker script.
-    pub fn layout_ld(&self, config: &Config) -> Result<NamedTempFile> {
-        let data = json!({ "config": config });
+    pub fn layout_ld(&self, config: &Config, prelink: bool) -> Result<NamedTempFile> {
+        let data = json!({ "config": config, "prelink": prelink });
         helpers::clear_vars();
         named_temp_file(|file| self.0.render_to_write("layout.ld", &data, file))
     }
@@ -262,9 +262,16 @@ impl Registry<'_> {
     }
 
     /// Renders J-Link `dso` command script.
-    pub fn jlink_dso(&self, config: &Config, reset: bool, pipe: &Path) -> Result<NamedTempFile> {
+    pub fn jlink_dso(
+        &self,
+        config: &Config,
+        ports: &BTreeSet<u32>,
+        reset: bool,
+        pipe: &Path,
+    ) -> Result<NamedTempFile> {
         let data = json!({
             "config": config,
+            "ports": ports,
             "reset": reset,
             "pipe": pipe,
         });

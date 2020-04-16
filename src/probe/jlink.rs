@@ -149,7 +149,8 @@ impl LogDsoCmd<'_> {
 
         let dir = tempdir_in(temp_dir())?;
         let pipe = make_fifo(&dir)?;
-        let script = registry.jlink_dso(config, *reset, &pipe)?;
+        let ports = outputs.iter().flat_map(|output| output.ports.iter().copied()).collect();
+        let script = registry.jlink_dso(config, &ports, *reset, &pipe)?;
         let mut gdb = spawn_command(gdb_script_command(config_probe, None, script.path()))?;
         let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
 

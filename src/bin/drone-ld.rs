@@ -23,18 +23,23 @@ fn main() {
         let args = env::args_os().skip(1).collect::<Vec<_>>();
         let output = args[args.iter().position(|arg| arg == "-o").unwrap() + 1].clone();
         let config = Config::read_from_current_dir()?;
-        let script = Registry::new()?.layout_ld(&config)?;
+        let registry = Registry::new()?;
         let signals = register_signals()?;
-        let linker =
-            linker_command(script.as_ref(), &args, &["--defsym=_section_size_unknown=0".into()])?;
-        block_with_signals(&signals, true, || run_command(linker))?;
+        {
+            let script = registry.layout_ld(&config, true)?;
+            let linker = linker_command(script.as_ref(), &args, &[])?;
+            block_with_signals(&signals, true, || run_command(linker))?;
+        }
         let size = size_command(&output)?;
         let syms = block_with_signals(&signals, true, || run_size(size))?
             .into_iter()
             .map(|(name, size)| format!("--defsym=_{}_section_size={}", name, size))
             .collect::<Vec<_>>();
-        let linker = linker_command(script.as_ref(), &args, &syms)?;
-        block_with_signals(&signals, true, || run_command(linker))?;
+        {
+            let script = registry.layout_ld(&config, false)?;
+            let linker = linker_command(script.as_ref(), &args, &syms)?;
+            block_with_signals(&signals, true, || run_command(linker))?;
+        }
         Ok(())
     });
 }

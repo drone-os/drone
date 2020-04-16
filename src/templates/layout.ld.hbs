@@ -8,9 +8,15 @@ ENTRY(reset);
 
 SECTIONS
 {
-    STACK_POINTER = DEFINED(_section_size_unknown)
-        ? ORIGIN(RAM)
-        : ORIGIN(RAM) + LENGTH(RAM) - _bss_section_size - _data_section_size - _heap_section_size;
+    {{#if prelink}}
+    STACK_POINTER = ORIGIN(RAM);
+    {{else}}
+    STACK_POINTER = ORIGIN(RAM) + LENGTH(RAM)
+        - _data_section_size
+        - _bss_section_size
+        - _dronereg_section_size
+        - _heap_section_size;
+    {{/if}}
 
     .vtable ORIGIN(FLASH) :
     {
@@ -45,11 +51,16 @@ SECTIONS
         DATA_LOAD = LOADADDR(.data);
         DATA_START = .;
         *(.data.*);
-        . = ALIGN(4);
-        DATA_END = .;
     } > RAM AT > FLASH
 
-    .heap ADDR(.data) + SIZEOF(.data) (NOLOAD) :
+    .dronereg ADDR(.data) + SIZEOF(.data) (NOLOAD) :
+    {
+        *(.dronereg.DSO_PORTS);
+        . = ALIGN(4);
+        DATA_END = .;
+    } > RAM
+
+    .heap ADDR(.dronereg) + SIZEOF(.dronereg) (NOLOAD) :
     {
         HEAP_START = .;
         . += {{size config.heap.size}};
