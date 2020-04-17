@@ -109,8 +109,8 @@ pub fn temp_dir() -> PathBuf {
 }
 
 /// Creates a new fifo.
-pub fn make_fifo(dir: &TempDir) -> Result<PathBuf> {
-    let pipe = dir.path().join("pipe");
+pub fn make_fifo(dir: &TempDir, name: &str) -> Result<PathBuf> {
+    let pipe = dir.path().join(name);
     let c_pipe = CString::new(pipe.as_os_str().as_bytes())?;
     if unsafe { libc::mkfifo(c_pipe.as_ptr(), 0o644) } == -1 {
         return Err(std::io::Error::last_os_error().into());

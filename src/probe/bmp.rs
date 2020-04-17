@@ -103,27 +103,26 @@ impl LogSwoCmd<'_> {
     pub fn run(self) -> Result<()> {
         let Self { cmd, signals, registry, config, config_probe, config_probe_swo, shell } = self;
         let ProbeLogCmd { reset, outputs } = cmd;
-
         let serial_endpoint = config_probe_swo.serial_endpoint.as_ref().ok_or_else(|| {
             anyhow!(
                 "TRACESWO is not yet implemented. Set `probe.swo.serial-endpoint` value at `{}`",
                 config::CONFIG_NAME
             )
         })?;
-        setup_serial_endpoint(&signals, serial_endpoint, config_probe_swo.baud_rate)?;
 
         let dir = tempdir_in(temp_dir())?;
-        let pipe = make_fifo(&dir)?;
+        let pipe = make_fifo(&dir, "pipe")?;
         let ports = outputs.iter().flat_map(|output| output.ports.iter().copied()).collect();
         let script = registry.bmp_swo(config, &ports, *reset, &pipe)?;
         let mut gdb = spawn_command(gdb_script_command(config_probe, None, script.path()))?;
-        let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
 
+        let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
+        setup_serial_endpoint(&signals, serial_endpoint, config_probe_swo.baud_rate)?;
         exhaust_fifo(serial_endpoint)?;
         log::capture(serial_endpoint.into(), log::Output::open_all(outputs)?, log::swo::parser);
-
-        gdb_script_continue(&signals, pipe, packet)?;
         begin_log_output(shell)?;
+        gdb_script_continue(&signals, pipe, packet)?;
+
         block_with_signals(&signals, true, move || {
             gdb.wait()?;
             Ok(())

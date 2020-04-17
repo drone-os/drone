@@ -64,8 +64,10 @@ pub(super) fn run(
                 signals,
                 registry,
                 config,
+                config_probe,
                 config_probe_openocd,
                 config_probe_swo,
+                shell,
             }
             .run()
         }

@@ -193,7 +193,7 @@ pub fn gdb_script_command(
     gdb
 }
 
-/// Synchronizes with GDB script via the `pipe`.
+/// Waits for the other side of `pipe`.
 pub fn gdb_script_wait(signals: &Signals, pipe: PathBuf) -> Result<(PathBuf, [u8; 1])> {
     block_with_signals(&signals, false, move || {
         let mut packet = [0];
@@ -202,7 +202,7 @@ pub fn gdb_script_wait(signals: &Signals, pipe: PathBuf) -> Result<(PathBuf, [u8
     })
 }
 
-/// Synchronizes with GDB script via the `pipe`.
+/// Signals the other size of `pipe`.
 pub fn gdb_script_continue(signals: &Signals, pipe: PathBuf, packet: [u8; 1]) -> Result<()> {
     block_with_signals(&signals, false, move || {
         OpenOptions::new().write(true).open(&pipe)?.write_all(&packet)?;

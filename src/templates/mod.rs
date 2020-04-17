@@ -57,7 +57,7 @@ impl Registry<'_> {
         template!("openocd/gdb.gdb")?;
         template!("openocd/gdb.openocd")?;
         template!("openocd/reset.openocd")?;
-        template!("openocd/swo.openocd")?;
+        template!("openocd/swo.gdb")?;
 
         helpers::register(&mut handlebars);
         Ok(Self(handlebars))
@@ -321,16 +321,18 @@ impl Registry<'_> {
         config: &Config,
         ports: &BTreeSet<u32>,
         reset: bool,
-        pipe: Option<&Path>,
-    ) -> Result<String> {
+        pipe: &Path,
+        output: Option<&Path>,
+    ) -> Result<NamedTempFile> {
         let data = json!({
             "config": config,
             "ports": ports,
             "reset": reset,
             "pipe": pipe,
+            "output": output,
         });
         helpers::clear_vars();
-        Ok(self.0.render("openocd/swo.openocd", &data)?)
+        named_temp_file(|file| self.0.render_to_write("openocd/swo.gdb", &data, file))
     }
 }
 

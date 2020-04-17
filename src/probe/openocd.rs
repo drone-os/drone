@@ -1,6 +1,9 @@
 //! OpenOCD interface.
 
-use super::{run_gdb_client, run_gdb_server, rustc_substitute_path, setup_serial_endpoint};
+use super::{
+    begin_log_output, gdb_script_command, gdb_script_continue, gdb_script_wait, run_gdb_client,
+    run_gdb_server, rustc_substitute_path, setup_serial_endpoint,
+};
 use crate::{
     cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeLogCmd, ProbeResetCmd},
     log,
@@ -12,6 +15,7 @@ use drone_config as config;
 use signal_hook::iterator::Signals;
 use std::{path::PathBuf, process::Command};
 use tempfile::tempdir_in;
+use termcolor::StandardStream;
 
 /// `drone probe reset` command with OpenOCD.
 #[allow(missing_docs)]
@@ -99,41 +103,56 @@ pub struct LogSwoCmd<'a> {
     pub signals: Signals,
     pub registry: Registry<'a>,
     pub config: &'a config::Config,
+    pub config_probe: &'a config::Probe,
     pub config_probe_openocd: &'a config::ProbeOpenocd,
     pub config_probe_swo: &'a config::ProbeSwo,
+    pub shell: &'a mut StandardStream,
 }
 
 impl LogSwoCmd<'_> {
     /// Runs the command.
     pub fn run(self) -> Result<()> {
-        let Self { cmd, signals, registry, config, config_probe_openocd, config_probe_swo } = self;
+        let Self {
+            cmd,
+            signals,
+            registry,
+            config,
+            config_probe,
+            config_probe_openocd,
+            config_probe_swo,
+            shell,
+        } = self;
         let ProbeLogCmd { reset, outputs } = cmd;
 
-        let mut _pipe_dir = None;
+        let commands = registry.openocd_gdb_openocd(config)?;
+        let mut openocd = Command::new(&config_probe_openocd.command);
+        openocd_arguments(&mut openocd, config_probe_openocd);
+        openocd_commands(&mut openocd, &commands);
+        let _openocd = run_gdb_server(openocd, None)?;
+
+        let dir = tempdir_in(temp_dir())?;
+        let pipe = make_fifo(&dir, "pipe")?;
         let ports = outputs.iter().flat_map(|output| output.ports.iter().copied()).collect();
         let input;
-        let commands;
+        let script;
         if let Some(serial_endpoint) = &config_probe_swo.serial_endpoint {
             setup_serial_endpoint(&signals, serial_endpoint, config_probe_swo.baud_rate)?;
             exhaust_fifo(serial_endpoint)?;
             input = serial_endpoint.into();
-            commands = registry.openocd_swo(config, &ports, *reset, None)?
+            script = registry.openocd_swo(config, &ports, *reset, &pipe, None)?;
         } else {
-            let pipe_dir = tempdir_in(temp_dir())?;
-            let pipe = make_fifo(&pipe_dir)?;
-            _pipe_dir = Some(pipe_dir);
-            input = pipe.clone();
-            commands = registry.openocd_swo(config, &ports, *reset, Some(&pipe))?
+            input = make_fifo(&dir, "input")?;
+            script = registry.openocd_swo(config, &ports, *reset, &pipe, Some(&input))?;
         }
         log::capture(input, log::Output::open_all(outputs)?, log::swo::parser);
+        let mut gdb = spawn_command(gdb_script_command(config_probe, None, script.path()))?;
 
-        let mut openocd = Command::new(&config_probe_openocd.command);
-        openocd_arguments(&mut openocd, config_probe_openocd);
-        openocd_commands(&mut openocd, &commands);
-        let mut openocd = spawn_command(openocd)?;
+        let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
+        begin_log_output(shell)?;
+        gdb_script_continue(&signals, pipe, packet)?;
 
         block_with_signals(&signals, true, move || {
-            openocd.wait()?;
+            gdb.wait()?;
             Ok(())
         })?;
 

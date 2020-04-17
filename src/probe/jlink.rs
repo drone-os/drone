@@ -146,12 +146,12 @@ impl LogDsoCmd<'_> {
         let _gdb_server = run_gdb_server(gdb_server, None)?;
 
         let dir = tempdir_in(temp_dir())?;
-        let pipe = make_fifo(&dir)?;
+        let pipe = make_fifo(&dir, "pipe")?;
         let ports = outputs.iter().flat_map(|output| output.ports.iter().copied()).collect();
         let script = registry.jlink_dso(config, &ports, *reset, &pipe)?;
         let mut gdb = spawn_command(gdb_script_command(config_probe, None, script.path()))?;
-        let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
 
+        let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
         setup_serial_endpoint(
             &signals,
             &config_probe_dso.serial_endpoint,
@@ -163,9 +163,9 @@ impl LogDsoCmd<'_> {
             log::Output::open_all(outputs)?,
             log::dso::parser,
         );
-
-        gdb_script_continue(&signals, pipe, packet)?;
         begin_log_output(shell)?;
+        gdb_script_continue(&signals, pipe, packet)?;
+
         block_with_signals(&signals, true, move || {
             gdb.wait()?;
             Ok(())
