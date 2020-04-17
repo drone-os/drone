@@ -6,7 +6,7 @@ use std::{
     io::{prelude::*, Stdout},
 };
 
-/// Maximum ports count.
+/// Number of ports.
 pub const PORTS_COUNT: usize = 32;
 
 /// Opened output.
@@ -55,7 +55,11 @@ impl<'a> From<&'a [Output]> for OutputMap<'a> {
                 }
             } else {
                 for port in ports {
-                    map[*port as usize].push(stream);
+                    if let Some(map) = map.get_mut(*port as usize) {
+                        map.push(stream);
+                    } else {
+                        log::warn!("Ignoring port {}", port);
+                    }
                 }
             }
         }
@@ -65,7 +69,7 @@ impl<'a> From<&'a [Output]> for OutputMap<'a> {
 
 impl OutputMap<'_> {
     /// Write `data` to all `port` outputs.
-    pub fn write(&self, port: u32, data: &[u8]) -> io::Result<()> {
+    pub fn write(&self, port: u8, data: &[u8]) -> io::Result<()> {
         for output in &self.0[port as usize] {
             output.borrow_mut().write(data)?;
         }

@@ -10,7 +10,7 @@ use crate::{
 use anyhow::Result;
 use drone_config as config;
 use signal_hook::iterator::Signals;
-use std::{fs::File, path::PathBuf, process::Command, thread};
+use std::{path::PathBuf, process::Command};
 use tempfile::tempdir_in;
 
 /// `drone probe reset` command with OpenOCD.
@@ -125,11 +125,7 @@ impl LogSwoCmd<'_> {
             input = pipe.clone();
             commands = registry.openocd_swo(config, &ports, *reset, Some(&pipe))?
         }
-        let outputs = log::Output::open_all(outputs)?;
-        thread::spawn(move || {
-            let input = File::open(input).unwrap();
-            log::swo::capture(input, &outputs);
-        });
+        log::capture(input, log::Output::open_all(outputs)?, log::swo::parser);
 
         let mut openocd = Command::new(&config_probe_openocd.command);
         openocd_arguments(&mut openocd, config_probe_openocd);

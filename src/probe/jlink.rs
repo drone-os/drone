@@ -18,11 +18,9 @@ use drone_config as config;
 use signal_hook::iterator::Signals;
 use std::{
     fs,
-    fs::File,
     os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
     process::Command,
-    thread,
 };
 use tempfile::tempdir_in;
 use termcolor::StandardStream;
@@ -160,11 +158,11 @@ impl LogDsoCmd<'_> {
             config_probe_dso.baud_rate,
         )?;
         exhaust_fifo(&config_probe_dso.serial_endpoint)?;
-        let input = File::open(&config_probe_dso.serial_endpoint)?;
-        let outputs = log::Output::open_all(outputs)?;
-        thread::spawn(move || {
-            log::dso::capture(input, &outputs);
-        });
+        log::capture(
+            config_probe_dso.serial_endpoint.clone().into(),
+            log::Output::open_all(outputs)?,
+            log::dso::parser,
+        );
 
         gdb_script_continue(&signals, pipe, packet)?;
         begin_log_output(shell)?;

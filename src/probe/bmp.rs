@@ -13,7 +13,7 @@ use crate::{
 use anyhow::{anyhow, Result};
 use drone_config as config;
 use signal_hook::iterator::Signals;
-use std::{fs::File, path::PathBuf, thread};
+use std::path::PathBuf;
 use tempfile::tempdir_in;
 use termcolor::StandardStream;
 
@@ -120,11 +120,7 @@ impl LogSwoCmd<'_> {
         let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
 
         exhaust_fifo(serial_endpoint)?;
-        let input = File::open(serial_endpoint)?;
-        let outputs = log::Output::open_all(outputs)?;
-        thread::spawn(move || {
-            log::swo::capture(input, &outputs);
-        });
+        log::capture(serial_endpoint.into(), log::Output::open_all(outputs)?, log::swo::parser);
 
         gdb_script_continue(&signals, pipe, packet)?;
         begin_log_output(shell)?;
