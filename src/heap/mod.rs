@@ -21,13 +21,13 @@ pub struct TraceEntry {
 impl HeapCmd {
     /// Runs the `drone heap` command.
     pub fn run(&self, shell: &mut StandardStream) -> Result<()> {
-        let Self { trace_file, size, big_endian, heap_sub_cmd } = self;
+        let Self { trace_file, size, heap_sub_cmd } = self;
         let size = size.map(Ok).unwrap_or_else(|| {
             config::Config::read_from_current_dir().map(|config| config.heap.size)
         })?;
         let mut trace = BTreeMap::new();
         if let Ok(file) = File::open(trace_file) {
-            read_trace(&mut trace, file, size, *big_endian)?;
+            read_trace(&mut trace, file, size)?;
             if trace.is_empty() {
                 shell.set_color(ColorSpec::new().set_bold(true).set_fg(Some(Color::Yellow)))?;
                 write!(shell, "warning")?;
@@ -74,9 +74,8 @@ fn read_trace(
     trace: &mut BTreeMap<u32, TraceEntry>,
     trace_file: File,
     max_size: u32,
-    big_endian: bool,
 ) -> Result<()> {
-    let parser = trace::Parser::new(trace_file, big_endian)?;
+    let parser = trace::Parser::new(trace_file)?;
     for packet in parser {
         let packet = packet?;
         match packet {
@@ -85,6 +84,11 @@ fn read_trace(
             }
             Packet::Dealloc { size } => {
                 dealloc(trace, size)?;
+            }
+            Packet::GrowInPlace { old_size, new_size }
+            | Packet::ShrinkInPlace { old_size, new_size } => {
+                dealloc(trace, old_size)?;
+                alloc(trace, new_size, max_size)?;
             }
         }
     }

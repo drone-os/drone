@@ -98,9 +98,6 @@ pub struct HeapCmd {
     /// Maximum size of the heap
     #[structopt(short, long, parse(try_from_str = parse_size))]
     pub size: Option<u32>,
-    /// Read the trace file in big endian
-    #[structopt(short = "B", long)]
-    pub big_endian: bool,
     #[structopt(subcommand)]
     pub heap_sub_cmd: Option<HeapSubCmd>,
 }
