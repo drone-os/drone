@@ -1,6 +1,7 @@
 export DRONE_RUSTFLAGS := '--cfg {{platform_flag_name}}="{{platform_flag}}" --cfg {{bindings_flag_name}}="{{bindings_flag}}"'
 target := '{{device_target}}'
 features := ''
+cargo_features := '-Z features=itarget,build_dep,dev_dep -Z package-features'
 name := `basename $(pwd)`
 release_bin := "target/" + target + "/release/" + name
 
@@ -16,65 +17,65 @@ deps:
 
 # Reformat the source code
 fmt:
-	cargo fmt
+	cargo \{{cargo_features}} fmt
 
 # Check for mistakes
 lint:
-	drone env \{{target}} -- cargo clippy --features "\{{features}}"
+	drone env \{{target}} -- cargo \{{cargo_features}} clippy --features "\{{features}}"
 
 # Build the firmware
 build:
-	drone env \{{target}} -- cargo build --features "\{{features}}" --release
+	drone env \{{target}} -- cargo \{{cargo_features}} build --features "\{{features}}" --release
 
 # Generate the docs
 doc:
-	drone env \{{target}} -- cargo doc --features "\{{features}}"
+	drone env \{{target}} -- cargo \{{cargo_features}} doc --features "\{{features}}"
 
 # Open the docs in a browser
 doc-open: doc
-	drone env \{{target}} -- cargo doc --features "\{{features}}" --open
+	drone env \{{target}} -- cargo \{{cargo_features}} doc --features "\{{features}}" --open
 
 # Run the tests
 test:
-	drone env -- cargo test --features "std \{{features}}"
+	drone env -- cargo \{{cargo_features}} test --features "std \{{features}}"
 
 # Display information from the compiled firmware
 dump: build
-	drone env \{{target}} -- cargo objdump --target \{{target}} \
+	drone env \{{target}} -- cargo \{{cargo_features}} objdump --target \{{target}} \
 		--features "\{{features}}" --release --bin \{{name}} -- \
 		--disassemble --demangle --full-contents -all-headers --syms | pager
 
 # Display section sizes inside the compiled firmware
 size +args='': build
-	drone env \{{target}} -- cargo size --target \{{target}} \
+	drone env \{{target}} -- cargo \{{cargo_features}} size --target \{{target}} \
 		--features "\{{features}}" --release --bin \{{name}} -- \{{args}}
 
 # Display result of macro expansion
 expand:
-	drone env \{{target}} -- cargo rustc --target \{{target}} \
+	drone env \{{target}} -- cargo \{{cargo_features}} rustc --target \{{target}} \
 		--features "\{{features}}" --lib -- -Z unstable-options --pretty=expanded
 
 # Force a pulse on the reset line of the attached device
 reset:
-	drone probe reset
+	drone reset
 
 # Flash the firmware to the attached device
 flash: build
-	drone probe flash \{{release_bin}}
+	drone flash \{{release_bin}}
 
 # Run a GDB session for the attached device
 gdb:
-	drone probe gdb \{{release_bin}} --reset
+	drone gdb \{{release_bin}} --reset
 
 # Run a GDB session for the attached device as a backend for a debugger GUI or an IDE
 @gdb-mi:
-	drone probe gdb \{{release_bin}} --reset -i=mi -- -nx
+	drone gdb \{{release_bin}} --reset -i=mi -- -nx
 
 # Display log output from the attached device
 log:
-	drone probe log --reset :0:1
+	drone log --reset :0:1
 
 # Record `heaptrace` file from the attached device (should be compiled with `heaptrace` feature)
 heaptrace:
 	truncate -s0 heaptrace
-	drone probe log --reset :0:1 heaptrace:31
+	drone log --reset :0:1 heaptrace:31

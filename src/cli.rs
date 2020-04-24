@@ -3,7 +3,6 @@
 #![allow(missing_docs)]
 
 use crate::{
-    device::Device,
     probe::{Log, Probe},
     utils::de_from_str,
 };
@@ -32,14 +31,20 @@ pub struct Cli {
 
 #[derive(Debug, StructOpt)]
 pub enum Cmd {
-    /// Run cargo in a cross-compile environment
+    /// Fixes cross-compile environment for cargo
     Env(EnvCmd),
-    /// Create a new Drone project
-    New(NewCmd),
+    /// Flash the firmware to the attached device
+    Flash(FlashCmd),
+    /// Run a GDB session for the attached device
+    Gdb(GdbCmd),
     /// Analyze or modify the heap layout
     Heap(HeapCmd),
-    /// Debug probe interface
-    Probe(ProbeCmd),
+    /// Display standard output from the attached device
+    Log(LogCmd),
+    /// Create a new Drone project
+    New(NewCmd),
+    /// Reset the attached device
+    Reset(ResetCmd),
     /// Print the list of supported devices and debug probes
     Support,
 }
@@ -60,8 +65,8 @@ pub struct NewCmd {
     pub path: PathBuf,
     /// The target device for the project (run `drone support` for the list of
     /// available options)
-    #[structopt(short, long, parse(try_from_str = de_from_str))]
-    pub device: Device,
+    #[structopt(short, long)]
+    pub device: String,
     /// Flash memory size
     #[structopt(short, long, parse(try_from_str = parse_size))]
     pub flash_size: u32,
@@ -116,35 +121,17 @@ pub struct HeapGenerateCmd {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct ProbeCmd {
-    #[structopt(subcommand)]
-    pub probe_sub_cmd: ProbeSubCmd,
-}
+pub struct ResetCmd {}
 
 #[derive(Debug, StructOpt)]
-pub enum ProbeSubCmd {
-    /// Reset the attached device
-    Reset(ProbeResetCmd),
-    /// Flash the firmware to the attached device
-    Flash(ProbeFlashCmd),
-    /// Run a GDB session for the attached device
-    Gdb(ProbeGdbCmd),
-    /// Display standard output from the attached device
-    Log(ProbeLogCmd),
-}
-
-#[derive(Debug, StructOpt)]
-pub struct ProbeResetCmd {}
-
-#[derive(Debug, StructOpt)]
-pub struct ProbeFlashCmd {
+pub struct FlashCmd {
     /// Path to the compiled firmware file
     #[structopt(parse(from_os_str))]
     pub firmware: PathBuf,
 }
 
 #[derive(Debug, StructOpt)]
-pub struct ProbeGdbCmd {
+pub struct GdbCmd {
     /// Path to the compiled firmware file
     #[structopt(parse(from_os_str))]
     pub firmware: Option<PathBuf>,
@@ -160,7 +147,7 @@ pub struct ProbeGdbCmd {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct ProbeLogCmd {
+pub struct LogCmd {
     /// Reset the attached device
     #[structopt(short, long)]
     pub reset: bool,

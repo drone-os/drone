@@ -4,9 +4,8 @@ use anyhow::{bail, Result};
 use serde::{de, ser};
 use signal_hook::{iterator::Signals, SIGINT, SIGQUIT, SIGTERM};
 use std::{
-    env, error,
+    env,
     ffi::CString,
-    fmt,
     fs::OpenOptions,
     io::{ErrorKind, Read, Write},
     os::unix::{ffi::OsStrExt, io::AsRawFd, process::CommandExt},
@@ -18,6 +17,7 @@ use std::{
 };
 use tempfile::TempDir;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use thiserror::Error;
 use walkdir::WalkDir;
 
 /// Search for the Rust tool `tool` in the sysroot.
@@ -172,13 +172,6 @@ pub fn de_from_str<T: de::DeserializeOwned>(s: &str) -> Result<T> {
     serde_json::from_value(serde_json::Value::String(s.to_string())).map_err(Into::into)
 }
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
+#[error("signal")]
 struct SignalError;
-
-impl fmt::Display for SignalError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Ok(())
-    }
-}
-
-impl error::Error for SignalError {}

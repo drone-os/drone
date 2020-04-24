@@ -41,25 +41,25 @@
     clippy::missing_errors_doc,
     clippy::module_name_repetitions,
     clippy::must_use_candidate,
+    clippy::needless_pass_by_value,
     clippy::similar_names,
-    clippy::unneeded_field_pattern
+    clippy::unneeded_field_pattern,
+    clippy::wildcard_imports
 )]
 
 pub mod cli;
+pub mod cmd;
 pub mod crates;
-pub mod device;
-pub mod env;
+pub mod devices;
 pub mod heap;
 pub mod log;
-pub mod new;
 pub mod probe;
 pub mod templates;
 pub mod utils;
 
-use crate::device::Device;
+use self::cli::{Cli, Cmd};
 use ::log::Level;
 use anyhow::Result;
-use cli::{Cli, Cmd};
 use env_logger::Builder as LoggerBuilder;
 use termcolor::StandardStream;
 
@@ -80,11 +80,14 @@ impl Cli {
             .try_init()?;
         let mut shell = StandardStream::stderr(color);
         match cmd {
-            Cmd::Env(cmd) => cmd.run(),
-            Cmd::New(cmd) => cmd.run(&mut shell),
-            Cmd::Heap(cmd) => cmd.run(&mut shell),
-            Cmd::Probe(cmd) => cmd.run(&mut shell),
-            Cmd::Support => Device::support(color),
+            Cmd::Env(cmd) => cmd::env(cmd),
+            Cmd::Flash(cmd) => cmd::flash(cmd),
+            Cmd::Gdb(cmd) => cmd::gdb(cmd),
+            Cmd::Heap(cmd) => cmd::heap(cmd, &mut shell),
+            Cmd::Log(cmd) => cmd::log(cmd, &mut shell),
+            Cmd::New(cmd) => cmd::new(cmd, &mut shell),
+            Cmd::Reset(cmd) => cmd::reset(cmd),
+            Cmd::Support => cmd::support(),
         }
     }
 }

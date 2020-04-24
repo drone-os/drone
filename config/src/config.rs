@@ -12,6 +12,7 @@ pub struct Config {
     pub heap: Heap,
     pub linker: Option<Linker>,
     pub probe: Option<Probe>,
+    pub log: Option<Log>,
 }
 
 #[non_exhaustive]
@@ -74,8 +75,6 @@ pub struct Probe {
     pub bmp: Option<ProbeBmp>,
     pub jlink: Option<ProbeJlink>,
     pub openocd: Option<ProbeOpenocd>,
-    pub swo: Option<ProbeSwo>,
-    pub dso: Option<ProbeDso>,
 }
 
 #[non_exhaustive]
@@ -109,7 +108,15 @@ pub struct ProbeOpenocd {
 #[non_exhaustive]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub struct ProbeSwo {
+pub struct Log {
+    pub swo: Option<LogSwo>,
+    pub dso: Option<LogDso>,
+}
+
+#[non_exhaustive]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct LogSwo {
     pub reset_freq: u32,
     pub baud_rate: u32,
     pub serial_endpoint: Option<String>,
@@ -118,7 +125,7 @@ pub struct ProbeSwo {
 #[non_exhaustive]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub struct ProbeDso {
+pub struct LogDso {
     pub baud_rate: u32,
     pub serial_endpoint: String,
 }

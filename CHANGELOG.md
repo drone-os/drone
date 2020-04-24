@@ -21,13 +21,16 @@ Possible log types:
 - [changed] `release` profile includes debug symbols by default
 - [removed] Remove `probe.openocd.config` option from `Drone.toml`
 - [added] Add `probe.openocd.arguments` option to `Drone.toml`
-- [changed] Rename sub-command `drone probe itm` to `drone probe log`
-- [changed] Rename section `probe.itm` to `probe.swo` in `Drone.toml`
+- [changed] Rename `drone probe reset` sub-command to `drone reset`
+- [changed] Rename `drone probe flash` sub-command to `drone flash`
+- [changed] Rename `drone probe gdb` sub-command to `drone gdb`
+- [changed] Rename `drone probe itm` sub-command to `drone log`
+- [changed] Rename section `probe.itm` to `log.swo` in `Drone.toml`
 - [changed] Rename task `itm` to `log` in generated `Justfile`
-- [added] Add `dso-serial` log type
+- [added] Add `dsoserial` log type
 - [changed] Rename `probe.gdb-client` to `probe.gdb-client-command` in
   `Drone.toml`
-- [changed] Rename `probe.swo.uart-endpoint` to `probe.swo.serial-endpoint` in
+- [changed] Rename `probe.itm.uart-endpoint` to `log.swo.serial-endpoint` in
   `Drone.toml`
 
 ### v0.11.1 (2019-11-27)

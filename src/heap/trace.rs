@@ -2,10 +2,12 @@
 
 use std::{
     fs::File,
-    io::{self, BufReader, Read},
+    io,
+    io::{BufReader, Read},
     ops::{Generator, GeneratorState},
     pin::Pin,
 };
+use thiserror::Error;
 
 /// The key used to shuffle packet bits.
 pub const KEY: u32 = 0xC5AC_CE55;
@@ -13,13 +15,16 @@ pub const KEY: u32 = 0xC5AC_CE55;
 const MAX_FRAME: usize = 8;
 
 /// Heap trace file parser error.
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum Error {
     /// I/O error.
-    Io(io::Error),
+    #[error(transparent)]
+    Io(#[from] io::Error),
     /// Invalid frame.
+    #[error("invalid frame")]
     InvalidFrame,
     /// Invalid frame sequence.
+    #[error("invalid frame sequence")]
     InvalidSequence,
 }
 
@@ -30,28 +35,28 @@ pub struct Parser {
 
 /// Heap trace file packet.
 pub enum Packet {
-    /// Allocate.
+    /// Allocate a block of memory.
     Alloc {
-        /// Allocation size.
+        /// Block size.
         size: u32,
     },
-    /// Deallocate.
+    /// Deallocate a block of memory.
     Dealloc {
-        /// Allocation size.
+        /// Block size.
         size: u32,
     },
-    /// Grow in place.
-    GrowInPlace {
-        /// Old allocation size.
+    /// Extend a memory block.
+    Grow {
+        /// Old block size.
         old_size: u32,
-        /// New allocation size.
+        /// New block size.
         new_size: u32,
     },
-    /// Shrink in place.
-    ShrinkInPlace {
-        /// Old allocation size.
+    /// Shrink a memory block.
+    Shrink {
+        /// Old block size.
         old_size: u32,
-        /// New allocation size.
+        /// New block size.
         new_size: u32,
     },
 }
@@ -205,8 +210,8 @@ fn parser<R: Read>(
                     if !frame.is_empty() {
                         break Err(Error::InvalidSequence);
                     }
-                    log::debug!("Grow in place: 0x{:08X} -> 0x{:08X}", old_size, new_size);
-                    yield Packet::GrowInPlace { old_size, new_size };
+                    log::debug!("Grow: 0x{:08X} -> 0x{:08X}", old_size, new_size);
+                    yield Packet::Grow { old_size, new_size };
                 }
                 0xC3 => {
                     let mut frame = shrink_in_place.pop().ok_or(Error::InvalidSequence)?;
@@ -219,29 +224,11 @@ fn parser<R: Read>(
                     if !frame.is_empty() {
                         break Err(Error::InvalidSequence);
                     }
-                    log::debug!("Shrink in place: 0x{:08X} -> 0x{:08X}", old_size, new_size);
-                    yield Packet::ShrinkInPlace { old_size, new_size };
+                    log::debug!("Shrink: 0x{:08X} -> 0x{:08X}", old_size, new_size);
+                    yield Packet::Shrink { old_size, new_size };
                 }
                 _ => break Err(Error::InvalidFrame),
             }
-        }
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Self {
-        Self::Io(err)
-    }
-}
-
-impl std::error::Error for Error {}
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Io(err) => write!(f, "{}", err),
-            Self::InvalidFrame => write!(f, "Invalid frame"),
-            Self::InvalidSequence => write!(f, "Invalid frame sequence"),
         }
     }
 }

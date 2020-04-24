@@ -4,18 +4,12 @@ pub mod bmp;
 pub mod jlink;
 pub mod openocd;
 
-mod log;
-
-pub use self::log::Log;
-
 use crate::{
-    cli::{ProbeCmd, ProbeSubCmd},
+    cli::{FlashCmd, GdbCmd, LogCmd, ResetCmd},
     templates::Registry,
-    utils::{
-        block_with_signals, detach_pgid, finally, register_signals, run_command, spawn_command,
-    },
+    utils::{block_with_signals, detach_pgid, finally, run_command, spawn_command},
 };
-use anyhow::{anyhow, Error, Result};
+use anyhow::{anyhow, bail, Error, Result};
 use drone_config as config;
 use serde::{Deserialize, Serialize};
 use signal_hook::iterator::Signals;
@@ -32,7 +26,7 @@ use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 
 /// An `enum` of all supported debug probes.
 #[allow(missing_docs)]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Probe {
     Bmp,
@@ -40,84 +34,104 @@ pub enum Probe {
     Openocd,
 }
 
-enum ProbeConfig<'a> {
-    Bmp(&'a config::ProbeBmp),
-    Jlink(&'a config::ProbeJlink),
-    Openocd(&'a config::ProbeOpenocd),
+/// An `enum` of all supported debug loggers.
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Log {
+    /// ARM® SWO through debug probe.
+    SwoProbe,
+    /// ARM® SWO through USB-serial adapter.
+    SwoSerial,
+    /// Drone Serial Output through USB-serial adapter.
+    DsoSerial,
 }
 
-impl<'a> TryFrom<&'a config::Probe> for ProbeConfig<'a> {
+impl<'a> TryFrom<&'a config::Config> for Probe {
     type Error = Error;
 
-    fn try_from(config_probe: &'a config::Probe) -> Result<Self> {
-        if let Some(config_probe_bmp) = &config_probe.bmp {
-            Ok(Self::Bmp(config_probe_bmp))
-        } else if let Some(config_probe_jlink) = &config_probe.jlink {
-            Ok(Self::Jlink(config_probe_jlink))
-        } else if let Some(config_probe_openocd) = &config_probe.openocd {
-            Ok(Self::Openocd(config_probe_openocd))
-        } else {
-            Err(anyhow!(
-                "Missing one of `probe.bmp`, `probe.jlink`, `probe.openocd` sections in `{}`",
-                config::CONFIG_NAME
-            ))
-        }
-    }
-}
-
-impl ProbeCmd {
-    /// Runs the `drone probe` command.
-    #[allow(clippy::too_many_lines)]
-    pub fn run(&self, shell: &mut StandardStream) -> Result<()> {
-        let Self { probe_sub_cmd } = self;
-        let signals = register_signals()?;
-        let registry = Registry::new()?;
-        let config = &config::Config::read_from_current_dir()?;
+    fn try_from(config: &'a config::Config) -> Result<Self> {
         let config_probe = config
             .probe
             .as_ref()
             .ok_or_else(|| anyhow!("Missing `probe` section in `{}`", config::CONFIG_NAME))?;
-        match (probe_sub_cmd, ProbeConfig::try_from(config_probe)?) {
-            (ProbeSubCmd::Reset(cmd), ProbeConfig::Bmp(_)) => {
-                bmp::ResetCmd { cmd, signals, registry, config, config_probe }.run()
-            }
-            (ProbeSubCmd::Reset(cmd), ProbeConfig::Jlink(config_probe_jlink)) => {
-                jlink::ResetCmd { cmd, signals, registry, config_probe_jlink }.run()
-            }
-            (ProbeSubCmd::Reset(cmd), ProbeConfig::Openocd(config_probe_openocd)) => {
-                openocd::ResetCmd { cmd, signals, registry, config_probe_openocd }.run()
-            }
-            (ProbeSubCmd::Flash(cmd), ProbeConfig::Bmp(_)) => {
-                bmp::FlashCmd { cmd, signals, registry, config, config_probe }.run()
-            }
-            (ProbeSubCmd::Flash(cmd), ProbeConfig::Jlink(config_probe_jlink)) => {
-                jlink::FlashCmd { cmd, signals, registry, config_probe_jlink }.run()
-            }
-            (ProbeSubCmd::Flash(cmd), ProbeConfig::Openocd(config_probe_openocd)) => {
-                openocd::FlashCmd { cmd, signals, registry, config_probe_openocd }.run()
-            }
-            (ProbeSubCmd::Gdb(cmd), ProbeConfig::Bmp(_)) => {
-                bmp::GdbCmd { cmd, signals, registry, config, config_probe }.run()
-            }
-            (ProbeSubCmd::Gdb(cmd), ProbeConfig::Jlink(config_probe_jlink)) => {
-                jlink::GdbCmd { cmd, signals, registry, config, config_probe, config_probe_jlink }
-                    .run()
-            }
-            (ProbeSubCmd::Gdb(cmd), ProbeConfig::Openocd(config_probe_openocd)) => {
-                openocd::GdbCmd {
-                    cmd,
-                    signals,
-                    registry,
-                    config,
-                    config_probe,
-                    config_probe_openocd,
-                }
-                .run()
-            }
-            (ProbeSubCmd::Log(cmd), ref probe_config) => {
-                log::run(cmd, signals, registry, config, config_probe, probe_config, shell)
-            }
+        if config_probe.bmp.is_some() {
+            Ok(Self::Bmp)
+        } else if config_probe.jlink.is_some() {
+            Ok(Self::Jlink)
+        } else if config_probe.openocd.is_some() {
+            Ok(Self::Openocd)
+        } else {
+            bail!(
+                "Missing one of `probe.bmp`, `probe.jlink`, `probe.openocd` sections in `{}`",
+                config::CONFIG_NAME
+            );
         }
+    }
+}
+
+impl<'a> TryFrom<&'a config::Config> for Log {
+    type Error = Error;
+
+    fn try_from(config: &'a config::Config) -> Result<Self> {
+        let config_log = config
+            .log
+            .as_ref()
+            .ok_or_else(|| anyhow!("Missing `log` section in `{}`", config::CONFIG_NAME))?;
+        if let Some(config_log_swo) = &config_log.swo {
+            if config_log_swo.serial_endpoint.is_some() {
+                Ok(Self::SwoSerial)
+            } else {
+                Ok(Self::SwoProbe)
+            }
+        } else if config_log.dso.is_some() {
+            Ok(Self::DsoSerial)
+        } else {
+            bail!("Missing one of `log.swo`, `log.dso` sections in `{}`", config::CONFIG_NAME);
+        }
+    }
+}
+
+type LogFn = fn(LogCmd, Signals, Registry<'_>, config::Config, &mut StandardStream) -> Result<()>;
+type ResetFn = fn(ResetCmd, Signals, Registry<'_>, config::Config) -> Result<()>;
+type FlashFn = fn(FlashCmd, Signals, Registry<'_>, config::Config) -> Result<()>;
+type GdbFn = fn(GdbCmd, Signals, Registry<'_>, config::Config) -> Result<()>;
+
+/// Returns a function to serve `drone reset` command.
+pub fn reset(probe: Probe) -> ResetFn {
+    match probe {
+        Probe::Bmp => bmp::reset,
+        Probe::Jlink => jlink::reset,
+        Probe::Openocd => openocd::reset,
+    }
+}
+
+/// Returns a function to serve `drone flash` command.
+pub fn flash(probe: Probe) -> FlashFn {
+    match probe {
+        Probe::Bmp => bmp::flash,
+        Probe::Jlink => jlink::flash,
+        Probe::Openocd => openocd::flash,
+    }
+}
+
+/// Returns a function to serve `drone gdb` command.
+pub fn gdb(probe: Probe) -> GdbFn {
+    match probe {
+        Probe::Bmp => bmp::gdb,
+        Probe::Jlink => jlink::gdb,
+        Probe::Openocd => openocd::gdb,
+    }
+}
+
+/// Returns a function to serve `drone log` command.
+pub fn log(probe: Probe, log: Log) -> Option<LogFn> {
+    match (probe, log) {
+        (Probe::Bmp, Log::SwoSerial) => Some(bmp::log_swo_serial),
+        (Probe::Jlink, Log::DsoSerial) => Some(jlink::log_dso_serial),
+        (Probe::Openocd, Log::SwoProbe) | (Probe::Openocd, Log::SwoSerial) => {
+            Some(openocd::log_swo)
+        }
+        _ => None,
     }
 }
 
@@ -156,13 +170,13 @@ pub fn run_gdb_server(mut gdb: Command, interpreter: Option<&str>) -> Result<imp
 /// Runs a GDB client.
 pub fn run_gdb_client(
     signals: &Signals,
-    config_probe: &config::Probe,
+    config: &config::Config,
     gdb_args: &[OsString],
     firmware: Option<&Path>,
     interpreter: Option<&str>,
     script: &Path,
 ) -> Result<()> {
-    let mut gdb = Command::new(&config_probe.gdb_client_command);
+    let mut gdb = Command::new(&config.probe.as_ref().unwrap().gdb_client_command);
     for arg in gdb_args {
         gdb.arg(arg);
     }
@@ -178,11 +192,11 @@ pub fn run_gdb_client(
 
 /// Creates a GDB script command.
 pub fn gdb_script_command(
-    config_probe: &config::Probe,
+    config: &config::Config,
     firmware: Option<&Path>,
     script: &Path,
 ) -> Command {
-    let mut gdb = Command::new(&config_probe.gdb_client_command);
+    let mut gdb = Command::new(&config.probe.as_ref().unwrap().gdb_client_command);
     if let Some(firmware) = firmware {
         gdb.arg(firmware);
     }

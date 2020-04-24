@@ -3,8 +3,7 @@
 pub mod helpers;
 
 use crate::{
-    device::Device,
-    heap,
+    devices::Device,
     probe::{Log, Probe},
     utils::{ser_to_string, temp_dir},
 };
@@ -14,8 +13,6 @@ use handlebars::Handlebars;
 use serde_json::json;
 use std::{collections::BTreeSet, error::Error, fs::File, path::Path};
 use tempfile::NamedTempFile;
-
-const HEAP_POOLS: u32 = 8;
 
 /// Templates registry.
 pub struct Registry<'reg>(Handlebars<'reg>);
@@ -78,17 +75,41 @@ impl Registry<'_> {
     }
 
     /// Renders cortex-m `src/lib.rs`.
-    pub fn new_src_cortex_m_lib_rs(&self, device: &Device) -> Result<String> {
-        let (bindings, _, _) = device.bindings_crate();
-        let data = json!({ "bindings_name": bindings.underscore_name() });
+    pub fn new_src_cortex_m_lib_rs(&self, device: &Device, log: Log) -> Result<String> {
+        let dso_regs = device.log_dso.as_ref().map(|x| {
+            x.krate
+                .used_regs()
+                .iter()
+                .map(|reg| format!("!{};", reg))
+                .fold::<Vec<(usize, Vec<_>)>, _>(Vec::new(), |mut acc, x| {
+                    if let Some((len, line)) = acc.last_mut() {
+                        if *len + x.len() < 96 {
+                            *len += x.len() + 1;
+                            line.push(x);
+                            return acc;
+                        }
+                    }
+                    acc.push((x.len(), vec![x]));
+                    acc
+                })
+                .iter()
+                .map(|(_, line)| format!("    {}", line.join(" ")))
+                .collect::<Vec<_>>()
+                .join("\n")
+        });
+        let data = json!({
+            "bindings_name": device.bindings_crate.krate.underscore_name(),
+            "log_ident": ser_to_string(log),
+            "dso_name": device.log_dso.as_ref().map(|x| x.krate.kebab_name()),
+            "dso_regs": dso_regs,
+        });
         helpers::clear_vars();
         Ok(self.0.render("new/src-cortex-m/lib.rs", &data)?)
     }
 
     /// Renders cortex-m `src/thr.rs`.
     pub fn new_src_cortex_m_thr_rs(&self, device: &Device) -> Result<String> {
-        let (bindings, _, _) = device.bindings_crate();
-        let data = json!({ "bindings_name": bindings.underscore_name() });
+        let data = json!({ "bindings_name": device.bindings_crate.krate.underscore_name() });
         helpers::clear_vars();
         Ok(self.0.render("new/src-cortex-m/thr.rs", &data)?)
     }
@@ -107,14 +128,14 @@ impl Registry<'_> {
 
     /// Renders `Cargo.toml`.
     pub fn new_cargo_toml(&self, device: &Device, crate_name: &str) -> Result<String> {
-        let (platform, _, platform_features) = device.platform_crate();
-        let (bindings, _, bindings_features) = device.bindings_crate();
         let data = json!({
             "crate_name": crate_name,
-            "platform_name": platform.kebab_name(),
-            "bindings_name": bindings.kebab_name(),
-            "platform_features": platform_features,
-            "bindings_features": bindings_features,
+            "platform_name": device.platform_crate.krate.kebab_name(),
+            "bindings_name": device.bindings_crate.krate.kebab_name(),
+            "platform_features": device.platform_crate.features,
+            "bindings_features": device.bindings_crate.features,
+            "dso_name": device.log_dso.as_ref().map(|x| x.krate.kebab_name()),
+            "dso_features": device.log_dso.as_ref().map(|x| x.features),
         });
         helpers::clear_vars();
         Ok(self.0.render("new/Cargo.toml", &data)?)
@@ -126,24 +147,22 @@ impl Registry<'_> {
         device: &Device,
         flash_size: u32,
         ram_size: u32,
-        probe: &Probe,
-        log: &Log,
+        heap: &str,
+        probe: Probe,
+        log: Log,
     ) -> Result<String> {
-        let mut heap = Vec::new();
-        let layout = heap::generate::new(ram_size / 2, HEAP_POOLS);
-        heap::generate::display(&mut heap, &layout)?;
-        let heap = String::from_utf8(heap)?;
         let data = json!({
-            "device_ident": ser_to_string(device),
-            "device_flash_origin": device.flash_origin(),
-            "device_ram_origin": device.ram_origin(),
             "device_flash_size": flash_size,
+            "device_flash_origin": device.flash_origin,
             "device_ram_size": ram_size,
-            "device_swo_reset_freq": device.swo_reset_freq(),
-            "log_ident": ser_to_string(log),
+            "device_ram_origin": device.ram_origin,
+            "heap": heap.trim_end(),
             "probe_ident": ser_to_string(probe),
-            "probe_openocd_config": device.openocd_config(),
-            "generated_heap": heap.trim(),
+            "probe_bmp_device": device.probe_bmp.as_ref().map(|x| x.device),
+            "probe_openocd_arguments": device.probe_openocd.as_ref().map(|x| x.arguments),
+            "probe_jlink_device": device.probe_jlink.as_ref().map(|x| x.device),
+            "log_ident": ser_to_string(log),
+            "log_swo_reset_freq": device.log_swo.as_ref().map(|x| x.reset_freq),
         });
         helpers::clear_vars();
         Ok(self.0.render("new/Drone.toml", &data)?)
@@ -151,15 +170,12 @@ impl Registry<'_> {
 
     /// Renders `Justfile`.
     pub fn new_justfile(&self, device: &Device) -> Result<String> {
-        let device_target = device.target();
-        let (platform, platform_flag, _) = device.platform_crate();
-        let (bindings, bindings_flag, _) = device.bindings_crate();
         let data = json!({
-            "device_target": device_target,
-            "platform_flag_name": platform.flag_name(),
-            "bindings_flag_name": bindings.flag_name(),
-            "platform_flag": platform_flag,
-            "bindings_flag": bindings_flag,
+            "device_target": device.target,
+            "platform_flag_name": device.platform_crate.krate.flag_name(),
+            "bindings_flag_name": device.bindings_crate.krate.flag_name(),
+            "platform_flag": device.platform_crate.flag,
+            "bindings_flag": device.bindings_crate.flag,
         });
         helpers::clear_vars();
         Ok(self.0.render("new/Justfile", &data)?)

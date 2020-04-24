@@ -6,42 +6,40 @@ origin = {{addr device_flash_origin}}
 size = "{{size device_ram_size}}"
 origin = {{addr device_ram_origin}}
 
-{{{generated_heap}}}
+{{{heap}}}
 
 [probe]
-gdb-client = "gdb-multiarch"
+gdb-client-command = "gdb-multiarch"
 
 {{#if (eq probe_ident "bmp") ~}}
 [probe.bmp]
-device = "{{device_ident}}"
+device = "{{probe_bmp_device}}"
 gdb-endpoint = "/dev/ttyBmpGdb"
 {{~/if}}{{#if (eq probe_ident "jlink") ~}}
 [probe.jlink]
-gdb-server = "JLinkGDBServerCLExe"
-commander = "JLinkExe"
-device = "{{device_ident}}"
+gdb-server-command = "JLinkGDBServerCLExe"
+commander-command = "JLinkExe"
+device = "{{probe_jlink_device}}"
 speed = 4000
 port = 2331
 {{~/if}}{{#if (eq probe_ident "openocd") ~}}
 [probe.openocd]
 command = "openocd"
 port = 3333
-config = ["-f", "interface/stlink.cfg"{{#each probe_openocd_config}}, "{{this}}"{{/each}}]
+arguments = [{{#each probe_openocd_arguments}}{{#unless @first}}, {{/unless}}"{{this}}"{{/each}}]
 {{~/if}}
 
-{{#if (eq log_ident "dso-serial") ~}}
-[probe.dso]
+{{#if (or (eq log_ident "swoprobe") (eq log_ident "swoserial")) ~}}
+[log.swo]
+reset-freq = {{log_swo_reset_freq}}
 baud-rate = 115200
-endpoint = "/dev/ttyACM0"
-{{else}}
-[probe.swo]
-reset-freq = {{device_swo_reset_freq}}
-baud-rate = 115200
-{{~#if (eq log_ident "swo-serial")}}
-{{#if (eq probe_ident "bmp") ~}}
+{{~#if (eq probe_ident "bmp")}}
 serial-endpoint = "/dev/ttyBmpTarg"
-{{else}}
+{{~else}}
 serial-endpoint = "/dev/ttyACM0"
 {{~/if}}
-{{~/if}}
+{{~/if}}{{#if (eq log_ident "dsoserial") ~}}
+[log.dso]
+baud-rate = 115200
+serial-endpoint = "/dev/ttyACM0"
 {{~/if}}

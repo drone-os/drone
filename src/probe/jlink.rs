@@ -1,11 +1,11 @@
-//! Segger J-Link interface.
+//! Segger J-Link.
 
 use super::{
     begin_log_output, gdb_script_command, gdb_script_continue, gdb_script_wait, run_gdb_client,
     run_gdb_server, rustc_substitute_path, setup_serial_endpoint,
 };
 use crate::{
-    cli::{ProbeFlashCmd, ProbeGdbCmd, ProbeLogCmd, ProbeResetCmd},
+    cli::{FlashCmd, GdbCmd, LogCmd, ResetCmd},
     log,
     templates::Registry,
     utils::{
@@ -16,163 +16,117 @@ use crate::{
 use anyhow::Result;
 use drone_config as config;
 use signal_hook::iterator::Signals;
-use std::{
-    fs,
-    os::unix::fs::PermissionsExt,
-    path::{Path, PathBuf},
-    process::Command,
-};
+use std::{fs, os::unix::fs::PermissionsExt, path::Path, process::Command};
 use tempfile::tempdir_in;
 use termcolor::StandardStream;
 
-/// `drone probe reset` command with Segger J-Link.
-#[allow(missing_docs)]
-pub struct ResetCmd<'a> {
-    pub cmd: &'a ProbeResetCmd,
-    pub signals: Signals,
-    pub registry: Registry<'a>,
-    pub config_probe_jlink: &'a config::ProbeJlink,
+/// Runs `drone reset` command.
+pub fn reset(
+    cmd: ResetCmd,
+    signals: Signals,
+    registry: Registry<'_>,
+    config: config::Config,
+) -> Result<()> {
+    let ResetCmd {} = cmd;
+    let config_probe_jlink = config.probe.as_ref().unwrap().jlink.as_ref().unwrap();
+    let script = registry.jlink_reset()?;
+    let mut commander = Command::new(&config_probe_jlink.commander_command);
+    jlink_args(&mut commander, config_probe_jlink);
+    commander_script(&mut commander, script.path());
+    block_with_signals(&signals, true, || run_command(commander))
 }
 
-impl ResetCmd<'_> {
-    /// Runs the command.
-    pub fn run(self) -> Result<()> {
-        let Self { cmd, signals, registry, config_probe_jlink } = self;
-        let ProbeResetCmd {} = cmd;
-        let script = registry.jlink_reset()?;
-        let mut commander = Command::new(&config_probe_jlink.commander_command);
-        jlink_args(&mut commander, config_probe_jlink);
-        commander_script(&mut commander, script.path());
-        block_with_signals(&signals, true, || run_command(commander))
-    }
+/// Runs the command.
+pub fn flash(
+    cmd: FlashCmd,
+    signals: Signals,
+    registry: Registry<'_>,
+    config: config::Config,
+) -> Result<()> {
+    let FlashCmd { firmware } = cmd;
+    let config_probe_jlink = config.probe.as_ref().unwrap().jlink.as_ref().unwrap();
+    let firmware_bin = &firmware.with_extension("bin");
+    let script = registry.jlink_flash(firmware_bin)?;
+
+    let mut objcopy = Command::new(search_rust_tool("llvm-objcopy")?);
+    objcopy.arg(firmware);
+    objcopy.arg(firmware_bin);
+    objcopy.arg("--output-target=binary");
+    block_with_signals(&signals, true, || run_command(objcopy))?;
+    fs::set_permissions(firmware_bin, fs::Permissions::from_mode(0o644))?;
+
+    let mut commander = Command::new(&config_probe_jlink.commander_command);
+    jlink_args(&mut commander, config_probe_jlink);
+    commander_script(&mut commander, script.path());
+    block_with_signals(&signals, true, || run_command(commander))
 }
 
-/// `drone probe flash` command with Segger J-Link.
-#[allow(missing_docs)]
-pub struct FlashCmd<'a> {
-    pub cmd: &'a ProbeFlashCmd,
-    pub signals: Signals,
-    pub registry: Registry<'a>,
-    pub config_probe_jlink: &'a config::ProbeJlink,
+/// Runs `drone gdb` command.
+pub fn gdb(
+    cmd: GdbCmd,
+    signals: Signals,
+    registry: Registry<'_>,
+    config: config::Config,
+) -> Result<()> {
+    let GdbCmd { firmware, reset, interpreter, gdb_args } = cmd;
+    let config_probe_jlink = config.probe.as_ref().unwrap().jlink.as_ref().unwrap();
+
+    let mut gdb_server = Command::new(&config_probe_jlink.gdb_server_command);
+    jlink_args(&mut gdb_server, config_probe_jlink);
+    gdb_server_args(&mut gdb_server, config_probe_jlink);
+    let _gdb_server = run_gdb_server(gdb_server, interpreter.as_ref().map(String::as_ref))?;
+
+    let script = registry.jlink_gdb(&config, reset, &rustc_substitute_path()?)?;
+    run_gdb_client(
+        &signals,
+        &config,
+        &gdb_args,
+        firmware.as_deref(),
+        interpreter.as_ref().map(String::as_ref),
+        script.path(),
+    )
 }
 
-impl FlashCmd<'_> {
-    /// Runs the command.
-    pub fn run(self) -> Result<()> {
-        let Self { cmd, signals, registry, config_probe_jlink } = self;
-        let ProbeFlashCmd { firmware } = cmd;
-        let firmware_bin = &firmware.with_extension("bin");
-        let script = registry.jlink_flash(firmware_bin)?;
+/// Runs `drone log` command.
+pub fn log_dso_serial(
+    cmd: LogCmd,
+    signals: Signals,
+    registry: Registry<'_>,
+    config: config::Config,
+    shell: &mut StandardStream,
+) -> Result<()> {
+    let LogCmd { reset, outputs } = cmd;
+    let config_probe_jlink = config.probe.as_ref().unwrap().jlink.as_ref().unwrap();
+    let config_log_dso = config.log.as_ref().unwrap().dso.as_ref().unwrap();
 
-        let mut objcopy = Command::new(search_rust_tool("llvm-objcopy")?);
-        objcopy.arg(firmware);
-        objcopy.arg(firmware_bin);
-        objcopy.arg("--output-target=binary");
-        block_with_signals(&signals, true, || run_command(objcopy))?;
-        fs::set_permissions(firmware_bin, fs::Permissions::from_mode(0o644))?;
+    let mut gdb_server = Command::new(&config_probe_jlink.gdb_server_command);
+    jlink_args(&mut gdb_server, config_probe_jlink);
+    gdb_server_args(&mut gdb_server, config_probe_jlink);
+    let _gdb_server = run_gdb_server(gdb_server, None)?;
 
-        let mut commander = Command::new(&config_probe_jlink.commander_command);
-        jlink_args(&mut commander, config_probe_jlink);
-        commander_script(&mut commander, script.path());
-        block_with_signals(&signals, true, || run_command(commander))
-    }
-}
+    let dir = tempdir_in(temp_dir())?;
+    let pipe = make_fifo(&dir, "pipe")?;
+    let ports = outputs.iter().flat_map(|output| output.ports.iter().copied()).collect();
+    let script = registry.jlink_dso(&config, &ports, reset, &pipe)?;
+    let mut gdb = spawn_command(gdb_script_command(&config, None, script.path()))?;
 
-/// `drone probe gdb` command with Segger J-Link.
-#[allow(missing_docs)]
-pub struct GdbCmd<'a> {
-    pub cmd: &'a ProbeGdbCmd,
-    pub signals: Signals,
-    pub registry: Registry<'a>,
-    pub config: &'a config::Config,
-    pub config_probe: &'a config::Probe,
-    pub config_probe_jlink: &'a config::ProbeJlink,
-}
+    let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
+    setup_serial_endpoint(&signals, &config_log_dso.serial_endpoint, config_log_dso.baud_rate)?;
+    exhaust_fifo(&config_log_dso.serial_endpoint)?;
+    log::capture(
+        config_log_dso.serial_endpoint.clone().into(),
+        log::Output::open_all(&outputs)?,
+        log::dso::parser,
+    );
+    begin_log_output(shell)?;
+    gdb_script_continue(&signals, pipe, packet)?;
 
-impl GdbCmd<'_> {
-    /// Runs the command.
-    pub fn run(self) -> Result<()> {
-        let Self { cmd, signals, registry, config, config_probe, config_probe_jlink } = self;
-        let ProbeGdbCmd { firmware, reset, interpreter, gdb_args } = cmd;
-
-        let mut gdb_server = Command::new(&config_probe_jlink.gdb_server_command);
-        jlink_args(&mut gdb_server, config_probe_jlink);
-        gdb_server_args(&mut gdb_server, config_probe_jlink);
-        let _gdb_server = run_gdb_server(gdb_server, interpreter.as_ref().map(String::as_ref))?;
-
-        let script = registry.jlink_gdb(config, *reset, &rustc_substitute_path()?)?;
-        run_gdb_client(
-            &signals,
-            config_probe,
-            gdb_args,
-            firmware.as_ref().map(PathBuf::as_path),
-            interpreter.as_ref().map(String::as_ref),
-            script.path(),
-        )
-    }
-}
-
-/// `drone probe log` command with Segger J-Link and DSO.
-#[allow(missing_docs)]
-pub struct LogDsoCmd<'a> {
-    pub cmd: &'a ProbeLogCmd,
-    pub signals: Signals,
-    pub registry: Registry<'a>,
-    pub config: &'a config::Config,
-    pub config_probe: &'a config::Probe,
-    pub config_probe_jlink: &'a config::ProbeJlink,
-    pub config_probe_dso: &'a config::ProbeDso,
-    pub shell: &'a mut StandardStream,
-}
-
-impl LogDsoCmd<'_> {
-    /// Runs the command.
-    pub fn run(self) -> Result<()> {
-        let Self {
-            cmd,
-            signals,
-            registry,
-            config,
-            config_probe,
-            config_probe_jlink,
-            config_probe_dso,
-            shell,
-        } = self;
-        let ProbeLogCmd { reset, outputs } = cmd;
-
-        let mut gdb_server = Command::new(&config_probe_jlink.gdb_server_command);
-        jlink_args(&mut gdb_server, config_probe_jlink);
-        gdb_server_args(&mut gdb_server, config_probe_jlink);
-        let _gdb_server = run_gdb_server(gdb_server, None)?;
-
-        let dir = tempdir_in(temp_dir())?;
-        let pipe = make_fifo(&dir, "pipe")?;
-        let ports = outputs.iter().flat_map(|output| output.ports.iter().copied()).collect();
-        let script = registry.jlink_dso(config, &ports, *reset, &pipe)?;
-        let mut gdb = spawn_command(gdb_script_command(config_probe, None, script.path()))?;
-
-        let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
-        setup_serial_endpoint(
-            &signals,
-            &config_probe_dso.serial_endpoint,
-            config_probe_dso.baud_rate,
-        )?;
-        exhaust_fifo(&config_probe_dso.serial_endpoint)?;
-        log::capture(
-            config_probe_dso.serial_endpoint.clone().into(),
-            log::Output::open_all(outputs)?,
-            log::dso::parser,
-        );
-        begin_log_output(shell)?;
-        gdb_script_continue(&signals, pipe, packet)?;
-
-        block_with_signals(&signals, true, move || {
-            gdb.wait()?;
-            Ok(())
-        })?;
-
+    block_with_signals(&signals, true, move || {
+        gdb.wait()?;
         Ok(())
-    }
+    })?;
+
+    Ok(())
 }
 
 fn jlink_args(jlink: &mut Command, config_probe_jlink: &config::ProbeJlink) {

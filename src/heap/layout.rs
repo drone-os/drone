@@ -1,38 +1,14 @@
 //! Heap layout generation.
 
-use super::TraceEntry;
-use crate::cli::HeapGenerateCmd;
+use super::TraceMap;
 use anyhow::Result;
 use drone_config::format_size;
-use std::{
-    collections::BTreeMap,
-    io::{stdout, Write},
-};
-use termcolor::{ColorSpec, StandardStream, WriteColor};
+use std::io::Write;
 
 const WORD_SIZE: u32 = 4;
 
-impl HeapGenerateCmd {
-    /// Runs the `drone heap generate` command.
-    pub fn run(
-        &self,
-        trace: &BTreeMap<u32, TraceEntry>,
-        size: u32,
-        shell: &mut StandardStream,
-    ) -> Result<()> {
-        let Self { pools } = self;
-        if trace.is_empty() {
-            let layout = new(size, *pools);
-            display(&mut stdout(), &layout)?;
-            Ok(())
-        } else {
-            generate(&trace, size, *pools, shell)
-        }
-    }
-}
-
-/// Generates a new empty layout.
-pub fn new(size: u32, pools: u32) -> Vec<(u32, u32)> {
+/// Generates a new empty layout for the given `size` and `pools`.
+pub fn empty(size: u32, pools: u32) -> Vec<(u32, u32)> {
     let pool_min = WORD_SIZE;
     let pool_max = size / 20;
     let mut layout = Vec::with_capacity(pools as usize);
@@ -55,28 +31,8 @@ pub fn new(size: u32, pools: u32) -> Vec<(u32, u32)> {
     layout
 }
 
-/// Writes the layout to `w` as `heap` section for `Drone.toml`.
-pub fn display(w: &mut impl Write, layout: &[(u32, u32)]) -> Result<()> {
-    let size = layout.iter().map(|(size, count)| size * count).sum::<u32>();
-    writeln!(w, "[heap]")?;
-    writeln!(w, "size = \"{}\"", format_size(size))?;
-    writeln!(w, "pools = [")?;
-    for (block, capacity) in layout {
-        if *capacity == 0 {
-            continue;
-        }
-        writeln!(w, "    {{ block = \"{}\", capacity = {} }},", format_size(*block), capacity)?;
-    }
-    writeln!(w, "]")?;
-    Ok(())
-}
-
-fn generate(
-    trace: &BTreeMap<u32, TraceEntry>,
-    size: u32,
-    mut pools: u32,
-    shell: &mut StandardStream,
-) -> Result<()> {
+/// Creates an optimized layout based on heaptrace.
+pub fn optimize(trace: &TraceMap, size: u32, mut pools: u32) -> Result<(Vec<(u32, u32)>, u32)> {
     let mut input = Vec::<(u32, u32)>::with_capacity(trace.len());
     let mut used = 0;
     let mut prev_size = 0;
@@ -98,15 +54,22 @@ fn generate(
     let mut frag = 0;
     shrink(&input, &mut output, &mut frag, size - used);
     extend(&mut output, size);
-    shell.set_color(ColorSpec::new().set_bold(true))?;
-    writeln!(shell, "{:-^80}", " SUGGESTED LAYOUT ")?;
-    shell.reset()?;
-    write!(shell, "# Fragmentation: ")?;
-    shell.set_color(ColorSpec::new().set_bold(true))?;
-    writeln!(shell, "{} / {:.2}%", frag, f64::from(frag) / f64::from(size) * 100.0)?;
-    shell.reset()?;
-    writeln!(shell)?;
-    display(&mut stdout(), &output)?;
+    Ok((output, frag))
+}
+
+/// Renders `[heap]` section for `Drone.toml`.
+pub fn render(w: &mut impl Write, layout: &[(u32, u32)]) -> Result<()> {
+    let size = layout.iter().map(|(size, count)| size * count).sum::<u32>();
+    writeln!(w, "[heap]")?;
+    writeln!(w, "size = \"{}\"", format_size(size))?;
+    writeln!(w, "pools = [")?;
+    for (block, capacity) in layout {
+        if *capacity == 0 {
+            continue;
+        }
+        writeln!(w, "    {{ block = \"{}\", capacity = {} }},", format_size(*block), capacity)?;
+    }
+    writeln!(w, "]")?;
     Ok(())
 }
 

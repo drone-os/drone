@@ -2,11 +2,11 @@
 #![no_main]
 #![no_std]
 
-use drone_core::{future, mem, token::Token};
+use drone_core::{mem, token::Token};
 use drone_cortex_m::processor;
 use {{crate_name}}::{
     tasks,
-    thr::{Handlers, Thr, Vtable},
+    thr::{Handlers, ThrsInit, Vtable},
     Regs,
 };
 
@@ -24,8 +24,7 @@ pub static VTABLE: Vtable = Vtable::new(Handlers { reset });
 pub unsafe extern "C" fn reset() -> ! {
     mem::bss_init();
     mem::data_init();
-    future::init::<Thr>();
-    tasks::root(Regs::take());
+    tasks::root(Regs::take(), ThrsInit::take());
     loop {
         processor::wait_for_int();
     }
