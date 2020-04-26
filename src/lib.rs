@@ -30,7 +30,6 @@
 #![feature(generator_trait)]
 #![feature(generators)]
 #![feature(never_type)]
-#![deny(elided_lifetimes_in_paths)]
 #![warn(missing_docs)]
 #![warn(clippy::pedantic)]
 #![allow(
@@ -61,7 +60,6 @@ use self::cli::{Cli, Cmd};
 use ::log::Level;
 use anyhow::Result;
 use env_logger::Builder as LoggerBuilder;
-use termcolor::StandardStream;
 
 impl Cli {
     /// Runs the program.
@@ -78,14 +76,13 @@ impl Cli {
             .filter(Some(env!("CARGO_PKG_NAME")), log_level.to_level_filter())
             .filter(None, Level::Warn.to_level_filter())
             .try_init()?;
-        let mut shell = StandardStream::stderr(color);
         match cmd {
             Cmd::Env(cmd) => cmd::env(cmd),
             Cmd::Flash(cmd) => cmd::flash(cmd),
             Cmd::Gdb(cmd) => cmd::gdb(cmd),
-            Cmd::Heap(cmd) => cmd::heap(cmd, &mut shell),
-            Cmd::Log(cmd) => cmd::log(cmd, &mut shell),
-            Cmd::New(cmd) => cmd::new(cmd, &mut shell),
+            Cmd::Heap(cmd) => cmd::heap(cmd, color),
+            Cmd::Log(cmd) => cmd::log(cmd, color),
+            Cmd::New(cmd) => cmd::new(cmd, color),
             Cmd::Reset(cmd) => cmd::reset(cmd),
             Cmd::Support => cmd::support(),
         }

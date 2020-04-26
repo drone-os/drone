@@ -16,13 +16,14 @@ use std::{
     path::Path,
     process::Command,
 };
-use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 const HEAP_POOLS: u32 = 8;
 
 /// Runs `drone new` command.
-pub fn run(cmd: NewCmd, shell: &mut StandardStream) -> Result<()> {
+pub fn run(cmd: NewCmd, color: ColorChoice) -> Result<()> {
     let NewCmd { path, device, flash_size, ram_size, probe, log, name, toolchain } = cmd;
+    let mut shell = StandardStream::stderr(color);
     let device = devices::find(&device)?;
     let registry = Registry::new()?;
     let name = name.as_deref().map_or_else(
@@ -47,22 +48,22 @@ pub fn run(cmd: NewCmd, shell: &mut StandardStream) -> Result<()> {
     let (probe, log) = choose_probe_and_log(device, probe, log)?;
 
     cargo_new(&path, &toolchain)?;
-    src_main_rs(&path, shell)?;
+    src_main_rs(&path, &mut shell)?;
     match device.platform_crate.krate {
-        crates::Platform::CortexM => {
-            src_cortex_m_bin_rs(&path, &underscore_name, &registry, shell)?;
-            src_cortex_m_lib_rs(&path, device, log, &registry, shell)?;
-            src_cortex_m_thr_rs(&path, device, &registry, shell)?;
-            src_cortex_m_tasks_mod_rs(&path, &registry, shell)?;
-            src_cortex_m_tasks_root_rs(&path, &registry, shell)?;
+        crates::Platform::Cortexm => {
+            src_cortexm_bin_rs(&path, &underscore_name, &registry, &mut shell)?;
+            src_cortexm_lib_rs(&path, device, log, &registry, &mut shell)?;
+            src_cortexm_thr_rs(&path, device, &registry, &mut shell)?;
+            src_cortexm_tasks_mod_rs(&path, &registry, &mut shell)?;
+            src_cortexm_tasks_root_rs(&path, &registry, &mut shell)?;
         }
     }
-    cargo_toml(&path, &name, device, &registry, shell)?;
-    drone_toml(&path, device, flash_size, ram_size, &heap, probe, log, &registry, shell)?;
-    justfile(&path, device, &registry, shell)?;
-    rust_toolchain(&path, &toolchain, &registry, shell)?;
-    cargo_config(&path, &registry, shell)?;
-    gitignore(&path, &registry, shell)?;
+    cargo_toml(&path, &name, device, &registry, &mut shell)?;
+    drone_toml(&path, device, flash_size, ram_size, &heap, probe, log, &registry, &mut shell)?;
+    justfile(&path, device, &registry, &mut shell)?;
+    rust_toolchain(&path, &toolchain, &registry, &mut shell)?;
+    cargo_config(&path, &registry, &mut shell)?;
+    gitignore(&path, &registry, &mut shell)?;
 
     Ok(())
 }
@@ -123,7 +124,7 @@ fn src_main_rs(path: &Path, shell: &mut StandardStream) -> Result<()> {
     print_removed(shell, "src/main.rs")
 }
 
-fn src_cortex_m_bin_rs(
+fn src_cortexm_bin_rs(
     path: &Path,
     name: &str,
     registry: &Registry<'_>,
@@ -131,11 +132,11 @@ fn src_cortex_m_bin_rs(
 ) -> Result<()> {
     let path = path.join("src/bin.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_cortex_m_bin_rs(name)?.as_bytes())?;
+    file.write_all(registry.new_src_cortexm_bin_rs(name)?.as_bytes())?;
     print_created(shell, "src/bin.rs")
 }
 
-fn src_cortex_m_lib_rs(
+fn src_cortexm_lib_rs(
     path: &Path,
     device: &Device,
     log: Log,
@@ -144,11 +145,11 @@ fn src_cortex_m_lib_rs(
 ) -> Result<()> {
     let path = path.join("src/lib.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_cortex_m_lib_rs(device, log)?.as_bytes())?;
+    file.write_all(registry.new_src_cortexm_lib_rs(device, log)?.as_bytes())?;
     print_created(shell, "src/lib.rs")
 }
 
-fn src_cortex_m_thr_rs(
+fn src_cortexm_thr_rs(
     path: &Path,
     device: &Device,
     registry: &Registry<'_>,
@@ -156,11 +157,11 @@ fn src_cortex_m_thr_rs(
 ) -> Result<()> {
     let path = path.join("src/thr.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_cortex_m_thr_rs(device)?.as_bytes())?;
+    file.write_all(registry.new_src_cortexm_thr_rs(device)?.as_bytes())?;
     print_created(shell, "src/thr.rs")
 }
 
-fn src_cortex_m_tasks_mod_rs(
+fn src_cortexm_tasks_mod_rs(
     path: &Path,
     registry: &Registry<'_>,
     shell: &mut StandardStream,
@@ -169,18 +170,18 @@ fn src_cortex_m_tasks_mod_rs(
     create_dir(&path)?;
     let path = path.join("mod.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_cortex_m_tasks_mod_rs()?.as_bytes())?;
+    file.write_all(registry.new_src_cortexm_tasks_mod_rs()?.as_bytes())?;
     print_created(shell, "src/tasks/mod.rs")
 }
 
-fn src_cortex_m_tasks_root_rs(
+fn src_cortexm_tasks_root_rs(
     path: &Path,
     registry: &Registry<'_>,
     shell: &mut StandardStream,
 ) -> Result<()> {
     let path = path.join("src/tasks/root.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_cortex_m_tasks_root_rs()?.as_bytes())?;
+    file.write_all(registry.new_src_cortexm_tasks_root_rs()?.as_bytes())?;
     print_created(shell, "src/tasks/root.rs")
 }
 

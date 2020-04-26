@@ -28,11 +28,11 @@ impl Registry<'_> {
         }
 
         template!("layout.ld")?;
-        template!("new/src-cortex-m/bin.rs")?;
-        template!("new/src-cortex-m/lib.rs")?;
-        template!("new/src-cortex-m/thr.rs")?;
-        template!("new/src-cortex-m/tasks/mod.rs")?;
-        template!("new/src-cortex-m/tasks/root.rs")?;
+        template!("new/src-cortexm/bin.rs")?;
+        template!("new/src-cortexm/lib.rs")?;
+        template!("new/src-cortexm/thr.rs")?;
+        template!("new/src-cortexm/tasks/mod.rs")?;
+        template!("new/src-cortexm/tasks/root.rs")?;
         template!("new/Cargo.toml")?;
         template!("new/Drone.toml")?;
         template!("new/Justfile")?;
@@ -44,7 +44,7 @@ impl Registry<'_> {
         template!("bmp/reset.gdb")?;
         template!("bmp/swo.gdb")?;
         template!("bmp/target.gdb")?;
-        template!("bmp/target/cortex_m.gdb")?;
+        template!("bmp/target/cortexm.gdb")?;
         template!("bmp/target/stm32.gdb")?;
         template!("jlink/reset.jlink")?;
         template!("jlink/flash.jlink")?;
@@ -67,15 +67,15 @@ impl Registry<'_> {
         named_temp_file(|file| self.0.render_to_write("layout.ld", &data, file))
     }
 
-    /// Renders cortex-m `src/bin.rs`.
-    pub fn new_src_cortex_m_bin_rs(&self, crate_name: &str) -> Result<String> {
+    /// Renders cortexm `src/bin.rs`.
+    pub fn new_src_cortexm_bin_rs(&self, crate_name: &str) -> Result<String> {
         let data = json!({ "crate_name": crate_name });
         helpers::clear_vars();
-        Ok(self.0.render("new/src-cortex-m/bin.rs", &data)?)
+        Ok(self.0.render("new/src-cortexm/bin.rs", &data)?)
     }
 
-    /// Renders cortex-m `src/lib.rs`.
-    pub fn new_src_cortex_m_lib_rs(&self, device: &Device, log: Log) -> Result<String> {
+    /// Renders cortexm `src/lib.rs`.
+    pub fn new_src_cortexm_lib_rs(&self, device: &Device, log: Log) -> Result<String> {
         let dso_regs = device.log_dso.as_ref().map(|x| {
             x.krate
                 .used_regs()
@@ -98,43 +98,43 @@ impl Registry<'_> {
                 .join("\n")
         });
         let data = json!({
-            "bindings_name": device.bindings_crate.krate.underscore_name(),
+            "bindings_name": device.bindings_crate.krate.name(),
             "log_ident": ser_to_string(log),
-            "dso_name": device.log_dso.as_ref().map(|x| x.krate.kebab_name()),
+            "dso_name": device.log_dso.as_ref().map(|x| x.krate.name()),
             "dso_regs": dso_regs,
         });
         helpers::clear_vars();
-        Ok(self.0.render("new/src-cortex-m/lib.rs", &data)?)
+        Ok(self.0.render("new/src-cortexm/lib.rs", &data)?)
     }
 
-    /// Renders cortex-m `src/thr.rs`.
-    pub fn new_src_cortex_m_thr_rs(&self, device: &Device) -> Result<String> {
-        let data = json!({ "bindings_name": device.bindings_crate.krate.underscore_name() });
+    /// Renders cortexm `src/thr.rs`.
+    pub fn new_src_cortexm_thr_rs(&self, device: &Device) -> Result<String> {
+        let data = json!({ "bindings_name": device.bindings_crate.krate.name() });
         helpers::clear_vars();
-        Ok(self.0.render("new/src-cortex-m/thr.rs", &data)?)
+        Ok(self.0.render("new/src-cortexm/thr.rs", &data)?)
     }
 
-    /// Renders cortex-m `src/tasks/mod.rs`.
-    pub fn new_src_cortex_m_tasks_mod_rs(&self) -> Result<String> {
+    /// Renders cortexm `src/tasks/mod.rs`.
+    pub fn new_src_cortexm_tasks_mod_rs(&self) -> Result<String> {
         helpers::clear_vars();
-        Ok(self.0.render("new/src-cortex-m/tasks/mod.rs", &())?)
+        Ok(self.0.render("new/src-cortexm/tasks/mod.rs", &())?)
     }
 
-    /// Renders cortex-m `src/tasks/root.rs`.
-    pub fn new_src_cortex_m_tasks_root_rs(&self) -> Result<String> {
+    /// Renders cortexm `src/tasks/root.rs`.
+    pub fn new_src_cortexm_tasks_root_rs(&self) -> Result<String> {
         helpers::clear_vars();
-        Ok(self.0.render("new/src-cortex-m/tasks/root.rs", &())?)
+        Ok(self.0.render("new/src-cortexm/tasks/root.rs", &())?)
     }
 
     /// Renders `Cargo.toml`.
     pub fn new_cargo_toml(&self, device: &Device, crate_name: &str) -> Result<String> {
         let data = json!({
             "crate_name": crate_name,
-            "platform_name": device.platform_crate.krate.kebab_name(),
-            "bindings_name": device.bindings_crate.krate.kebab_name(),
+            "platform_name": device.platform_crate.krate.name(),
+            "bindings_name": device.bindings_crate.krate.name(),
             "platform_features": device.platform_crate.features,
             "bindings_features": device.bindings_crate.features,
-            "dso_name": device.log_dso.as_ref().map(|x| x.krate.kebab_name()),
+            "dso_name": device.log_dso.as_ref().map(|x| x.krate.name()),
             "dso_features": device.log_dso.as_ref().map(|x| x.features),
         });
         helpers::clear_vars();

@@ -11,11 +11,12 @@ use std::{
     fs::File,
     io::{stdout, Write},
 };
-use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 /// Runs `drone heap` command.
-pub fn run(cmd: HeapCmd, shell: &mut StandardStream) -> Result<()> {
+pub fn run(cmd: HeapCmd, color: ColorChoice) -> Result<()> {
     let HeapCmd { trace_file, size, heap_sub_cmd } = cmd;
+    let mut shell = StandardStream::stderr(color);
     let size = size.map_or_else(
         || config::Config::read_from_current_dir().map(|config| config.heap.size),
         Ok,
@@ -29,7 +30,7 @@ pub fn run(cmd: HeapCmd, shell: &mut StandardStream) -> Result<()> {
             shell.reset()?;
             writeln!(shell, ": file `{}` is empty.", trace_file.display())?;
         } else {
-            print_stats(&trace, size, shell)?;
+            print_stats(&trace, size, &mut shell)?;
         }
     } else {
         shell.set_color(ColorSpec::new().set_bold(true).set_fg(Some(Color::Yellow)))?;
@@ -38,7 +39,7 @@ pub fn run(cmd: HeapCmd, shell: &mut StandardStream) -> Result<()> {
         writeln!(shell, ": file `{}` not exists.", trace_file.display())?;
     }
     match heap_sub_cmd {
-        Some(HeapSubCmd::Generate(cmd)) => generate(cmd, &trace, size, shell),
+        Some(HeapSubCmd::Generate(cmd)) => generate(cmd, &trace, size, &mut shell),
         None => Ok(()),
     }
 }

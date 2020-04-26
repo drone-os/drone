@@ -1,6 +1,5 @@
 //! Configuration for Drone, an Embedded Operating System.
 
-#![deny(elided_lifetimes_in_paths)]
 #![warn(missing_docs)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::missing_errors_doc, clippy::module_name_repetitions, clippy::must_use_candidate)]

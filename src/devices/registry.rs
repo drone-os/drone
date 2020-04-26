@@ -8,8 +8,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m3_r1p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm3_r1p1",
             features: &["bit-band"],
         },
         bindings_crate: BindingsCrate {
@@ -31,8 +31,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m3_r1p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm3_r1p1",
             features: &["bit-band"],
         },
         bindings_crate: BindingsCrate {
@@ -54,8 +54,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m3_r1p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm3_r1p1",
             features: &["bit-band"],
         },
         bindings_crate: BindingsCrate {
@@ -77,8 +77,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m3_r1p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm3_r1p1",
             features: &["bit-band"],
         },
         bindings_crate: BindingsCrate {
@@ -100,8 +100,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m3_r1p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm3_r1p1",
             features: &["bit-band"],
         },
         bindings_crate: BindingsCrate {
@@ -123,8 +123,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -146,8 +146,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -169,8 +169,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -192,8 +192,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -215,8 +215,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -238,8 +238,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -261,8 +261,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -284,8 +284,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -307,8 +307,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -330,8 +330,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -353,8 +353,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -376,8 +376,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -399,8 +399,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -422,8 +422,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -445,8 +445,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -468,8 +468,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -491,8 +491,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -514,8 +514,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -537,8 +537,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -560,8 +560,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -583,8 +583,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -606,8 +606,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0800_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -629,8 +629,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0000_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -652,8 +652,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0000_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -675,8 +675,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0000_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -698,8 +698,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0000_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m4f_r0p1",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm4f_r0p1",
             features: &["bit-band", "floating-point-unit", "memory-protection-unit"],
         },
         bindings_crate: BindingsCrate {
@@ -721,8 +721,8 @@ pub const REGISTRY: &[Device] = &[
         flash_origin: 0x0000_0000,
         ram_origin: 0x2000_0000,
         platform_crate: PlatformCrate {
-            krate: crates::Platform::CortexM,
-            flag: "cortex_m33f_r0p2",
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm33f_r0p2",
             features: &["floating-point-unit", "memory-protection-unit", "security-extension"],
         },
         bindings_crate: BindingsCrate {

@@ -1,4 +1,3 @@
-#![deny(elided_lifetimes_in_paths)]
 #![warn(clippy::pedantic)]
 
 use drone::{cli::Cli, utils::check_root_result};

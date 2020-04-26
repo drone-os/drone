@@ -10,10 +10,11 @@ use crate::{
 use anyhow::{anyhow, Result};
 use drone_config as config;
 use std::convert::TryFrom;
-use termcolor::StandardStream;
+use termcolor::{ColorChoice, StandardStream};
 
 /// Runs `drone log` command.
-pub fn run(cmd: LogCmd, shell: &mut StandardStream) -> Result<()> {
+pub fn run(cmd: LogCmd, color: ColorChoice) -> Result<()> {
+    let mut shell = StandardStream::stderr(color);
     let signals = register_signals()?;
     let registry = Registry::new()?;
     let config = config::Config::read_from_current_dir()?;
@@ -25,5 +26,5 @@ pub fn run(cmd: LogCmd, shell: &mut StandardStream) -> Result<()> {
             ser_to_string(probe),
             ser_to_string(log)
         )
-    })?(cmd, signals, registry, config, shell)
+    })?(cmd, signals, registry, config, &mut shell)
 }

@@ -18,7 +18,7 @@ lint:
 doc:
 	cargo {{cargo_features}} doc
 
-# Open the docs in a browser
+# Open the docs in the browser
 doc-open: doc
 	cargo {{cargo_features}} doc --open
 
@@ -34,7 +34,7 @@ install:
 readme:
 	cargo {{cargo_features}} readme -o README.md
 
-# Bump crate versions
+# Bump the version
 version-bump version:
 	sed -i "s/\(api\.drone-os\.com\/drone-core\/\)[0-9]\+\(\.[0-9]\+\)\+/\1$(echo {{version}} | sed 's/\(.*\)\.[0-9]\+/\1/')/" \
 		config/Cargo.toml

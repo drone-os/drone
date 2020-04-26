@@ -31,7 +31,7 @@ build:
 doc:
 	drone env \{{target}} -- cargo \{{cargo_features}} doc --features "\{{features}}"
 
-# Open the docs in a browser
+# Open the docs in the browser
 doc-open: doc
 	drone env \{{target}} -- cargo \{{cargo_features}} doc --features "\{{features}}" --open
 

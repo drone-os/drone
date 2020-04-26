@@ -4,7 +4,7 @@
 #[allow(missing_docs)]
 #[derive(Clone, Copy, Debug)]
 pub enum Platform {
-    CortexM,
+    Cortexm,
 }
 
 /// Drone register and interrupt binding crates.
@@ -23,46 +23,31 @@ pub enum Dso {
 }
 
 impl Platform {
-    /// Returns the name in kebab-case.
-    pub fn kebab_name(self) -> &'static str {
+    /// Returns the crate name.
+    pub fn name(self) -> &'static str {
         match self {
-            Self::CortexM => "cortex-m",
+            Self::Cortexm => "cortexm",
         }
     }
 
-    /// Returns the name in underscore-case.
-    pub fn underscore_name(self) -> &'static str {
-        match self {
-            Self::CortexM => "cortex_m",
-        }
-    }
-
-    /// Returns the name of the configuration flag.
+    /// Returns the configuration flag name.
     pub fn flag_name(self) -> &'static str {
         match self {
-            Self::CortexM => "cortex_m_core",
+            Self::Cortexm => "cortexm_core",
         }
     }
 }
 
 impl Bindings {
-    /// Returns the name in kebab-case.
-    pub fn kebab_name(self) -> &'static str {
+    /// Returns the crate name.
+    pub fn name(self) -> &'static str {
         match self {
             Self::Nrf => "nrf",
             Self::Stm32 => "stm32",
         }
     }
 
-    /// Returns the name in underscore-case.
-    pub fn underscore_name(self) -> &'static str {
-        match self {
-            Self::Nrf => "nrf",
-            Self::Stm32 => "stm32",
-        }
-    }
-
-    /// Returns the name of the configuration flag.
+    /// Returns the configuration flag name.
     pub fn flag_name(self) -> &'static str {
         match self {
             Self::Nrf => "nrf_mcu",
@@ -72,15 +57,8 @@ impl Bindings {
 }
 
 impl Dso {
-    /// Returns the name in kebab-case.
-    pub fn kebab_name(self) -> &'static str {
-        match self {
-            Self::Nrf91 => "nrf91",
-        }
-    }
-
-    /// Returns the name in underscore-case.
-    pub fn underscore_name(self) -> &'static str {
+    /// Returns the crate name.
+    pub fn name(self) -> &'static str {
         match self {
             Self::Nrf91 => "nrf91",
         }

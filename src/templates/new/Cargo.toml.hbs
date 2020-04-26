@@ -6,7 +6,15 @@ doc = false
 
 [features]
 default = []
-std = ["drone-core/std", "drone-{{platform_name}}/std"{{#if dso_name}}, "drone-{{dso_name}}-dso/std"{{/if}}, "futures/std"]
+std = [
+    "drone-core/std",
+    "drone-{{platform_name}}/std",
+    "drone-{{bindings_name}}-map/std",
+{{~#if dso_name}}
+    "drone-{{dso_name}}-dso/std",
+{{~/if}}
+    "futures/std",
+]
 heaptrace = ["drone-core/heaptrace"]
 
 [dependencies]
