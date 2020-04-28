@@ -2,6 +2,7 @@
 
 use crate::{
     cli::NewCmd,
+    color::Color,
     crates, devices,
     devices::Device,
     heap, probe,
@@ -9,6 +10,7 @@ use crate::{
     templates::Registry,
     utils::run_command,
 };
+use ansi_term::Color::Green;
 use anyhow::{anyhow, Result};
 use std::{
     fs::{create_dir, read_to_string, remove_file, File},
@@ -16,14 +18,12 @@ use std::{
     path::Path,
     process::Command,
 };
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 const HEAP_POOLS: u32 = 8;
 
 /// Runs `drone new` command.
-pub fn run(cmd: NewCmd, color: ColorChoice) -> Result<()> {
+pub fn run(cmd: NewCmd, color: Color) -> Result<()> {
     let NewCmd { path, device, flash_size, ram_size, probe, log, name, toolchain } = cmd;
-    let mut shell = StandardStream::stderr(color);
     let device = devices::find(&device)?;
     let registry = Registry::new()?;
     let name = name.as_deref().map_or_else(
@@ -48,22 +48,22 @@ pub fn run(cmd: NewCmd, color: ColorChoice) -> Result<()> {
     let (probe, log) = choose_probe_and_log(device, probe, log)?;
 
     cargo_new(&path, &toolchain)?;
-    src_main_rs(&path, &mut shell)?;
+    src_main_rs(&path, color)?;
     match device.platform_crate.krate {
         crates::Platform::Cortexm => {
-            src_cortexm_bin_rs(&path, &underscore_name, &registry, &mut shell)?;
-            src_cortexm_lib_rs(&path, device, log, &registry, &mut shell)?;
-            src_cortexm_thr_rs(&path, device, &registry, &mut shell)?;
-            src_cortexm_tasks_mod_rs(&path, &registry, &mut shell)?;
-            src_cortexm_tasks_root_rs(&path, &registry, &mut shell)?;
+            src_cortexm_bin_rs(&path, &underscore_name, &registry, color)?;
+            src_cortexm_lib_rs(&path, device, log, &registry, color)?;
+            src_cortexm_thr_rs(&path, device, &registry, color)?;
+            src_cortexm_tasks_mod_rs(&path, &registry, color)?;
+            src_cortexm_tasks_root_rs(&path, &registry, color)?;
         }
     }
-    cargo_toml(&path, &name, device, &registry, &mut shell)?;
-    drone_toml(&path, device, flash_size, ram_size, &heap, probe, log, &registry, &mut shell)?;
-    justfile(&path, device, &registry, &mut shell)?;
-    rust_toolchain(&path, &toolchain, &registry, &mut shell)?;
-    cargo_config(&path, &registry, &mut shell)?;
-    gitignore(&path, &registry, &mut shell)?;
+    cargo_toml(&path, &name, device, &registry, color)?;
+    drone_toml(&path, device, flash_size, ram_size, &heap, probe, log, &registry, color)?;
+    justfile(&path, device, &registry, color)?;
+    rust_toolchain(&path, &toolchain, &registry, color)?;
+    cargo_config(&path, &registry, color)?;
+    gitignore(&path, &registry, color)?;
 
     Ok(())
 }
@@ -118,22 +118,24 @@ fn cargo_new(path: &Path, toolchain: &str) -> Result<()> {
     run_command(rustup)
 }
 
-fn src_main_rs(path: &Path, shell: &mut StandardStream) -> Result<()> {
+fn src_main_rs(path: &Path, color: Color) -> Result<()> {
     let path = path.join("src/main.rs");
     remove_file(path)?;
-    print_removed(shell, "src/main.rs")
+    print_removed("src/main.rs", color);
+    Ok(())
 }
 
 fn src_cortexm_bin_rs(
     path: &Path,
     name: &str,
     registry: &Registry<'_>,
-    shell: &mut StandardStream,
+    color: Color,
 ) -> Result<()> {
     let path = path.join("src/bin.rs");
     let mut file = File::create(&path)?;
     file.write_all(registry.new_src_cortexm_bin_rs(name)?.as_bytes())?;
-    print_created(shell, "src/bin.rs")
+    print_created("src/bin.rs", color);
+    Ok(())
 }
 
 fn src_cortexm_lib_rs(
@@ -141,48 +143,44 @@ fn src_cortexm_lib_rs(
     device: &Device,
     log: Log,
     registry: &Registry<'_>,
-    shell: &mut StandardStream,
+    color: Color,
 ) -> Result<()> {
     let path = path.join("src/lib.rs");
     let mut file = File::create(&path)?;
     file.write_all(registry.new_src_cortexm_lib_rs(device, log)?.as_bytes())?;
-    print_created(shell, "src/lib.rs")
+    print_created("src/lib.rs", color);
+    Ok(())
 }
 
 fn src_cortexm_thr_rs(
     path: &Path,
     device: &Device,
     registry: &Registry<'_>,
-    shell: &mut StandardStream,
+    color: Color,
 ) -> Result<()> {
     let path = path.join("src/thr.rs");
     let mut file = File::create(&path)?;
     file.write_all(registry.new_src_cortexm_thr_rs(device)?.as_bytes())?;
-    print_created(shell, "src/thr.rs")
+    print_created("src/thr.rs", color);
+    Ok(())
 }
 
-fn src_cortexm_tasks_mod_rs(
-    path: &Path,
-    registry: &Registry<'_>,
-    shell: &mut StandardStream,
-) -> Result<()> {
+fn src_cortexm_tasks_mod_rs(path: &Path, registry: &Registry<'_>, color: Color) -> Result<()> {
     let path = path.join("src/tasks");
     create_dir(&path)?;
     let path = path.join("mod.rs");
     let mut file = File::create(&path)?;
     file.write_all(registry.new_src_cortexm_tasks_mod_rs()?.as_bytes())?;
-    print_created(shell, "src/tasks/mod.rs")
+    print_created("src/tasks/mod.rs", color);
+    Ok(())
 }
 
-fn src_cortexm_tasks_root_rs(
-    path: &Path,
-    registry: &Registry<'_>,
-    shell: &mut StandardStream,
-) -> Result<()> {
+fn src_cortexm_tasks_root_rs(path: &Path, registry: &Registry<'_>, color: Color) -> Result<()> {
     let path = path.join("src/tasks/root.rs");
     let mut file = File::create(&path)?;
     file.write_all(registry.new_src_cortexm_tasks_root_rs()?.as_bytes())?;
-    print_created(shell, "src/tasks/root.rs")
+    print_created("src/tasks/root.rs", color);
+    Ok(())
 }
 
 fn cargo_toml(
@@ -190,13 +188,14 @@ fn cargo_toml(
     name: &str,
     device: &Device,
     registry: &Registry<'_>,
-    shell: &mut StandardStream,
+    color: Color,
 ) -> Result<()> {
     let path = path.join("Cargo.toml");
     let contents = read_to_string(&path)?;
     let mut file = File::create(&path)?;
     file.write_all(registry.new_cargo_toml(device, name, &contents)?.as_bytes())?;
-    print_patched(shell, "Cargo.toml")
+    print_patched("Cargo.toml", color);
+    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -209,50 +208,49 @@ fn drone_toml(
     probe: Probe,
     log: Log,
     registry: &Registry<'_>,
-    shell: &mut StandardStream,
+    color: Color,
 ) -> Result<()> {
     let path = path.join("Drone.toml");
     let mut file = File::create(&path)?;
     file.write_all(
         registry.new_drone_toml(device, flash_size, ram_size, heap, probe, log)?.as_bytes(),
     )?;
-    print_created(shell, "Drone.toml")
+    print_created("Drone.toml", color);
+    Ok(())
 }
 
-fn justfile(
-    path: &Path,
-    device: &Device,
-    registry: &Registry<'_>,
-    shell: &mut StandardStream,
-) -> Result<()> {
+fn justfile(path: &Path, device: &Device, registry: &Registry<'_>, color: Color) -> Result<()> {
     let path = path.join("Justfile");
     let mut file = File::create(&path)?;
     file.write_all(registry.new_justfile(device)?.as_bytes())?;
-    print_created(shell, "Justfile")
+    print_created("Justfile", color);
+    Ok(())
 }
 
 fn rust_toolchain(
     path: &Path,
     toolchain: &str,
     registry: &Registry<'_>,
-    shell: &mut StandardStream,
+    color: Color,
 ) -> Result<()> {
     let path = path.join("rust-toolchain");
     let mut file = File::create(&path)?;
     file.write_all(registry.new_rust_toolchain(toolchain)?.as_bytes())?;
-    print_created(shell, "rust-toolchain")
+    print_created("rust-toolchain", color);
+    Ok(())
 }
 
-fn cargo_config(path: &Path, registry: &Registry<'_>, shell: &mut StandardStream) -> Result<()> {
+fn cargo_config(path: &Path, registry: &Registry<'_>, color: Color) -> Result<()> {
     let path = path.join(".cargo");
     create_dir(&path)?;
     let path = path.join("config");
     let mut file = File::create(&path)?;
     file.write_all(registry.new_cargo_config()?.as_bytes())?;
-    print_created(shell, ".cargo/config")
+    print_created(".cargo/config", color);
+    Ok(())
 }
 
-fn gitignore(path: &Path, registry: &Registry<'_>, shell: &mut StandardStream) -> Result<()> {
+fn gitignore(path: &Path, registry: &Registry<'_>, color: Color) -> Result<()> {
     let path = path.join(".gitignore");
     if !path.exists() {
         return Ok(());
@@ -260,29 +258,18 @@ fn gitignore(path: &Path, registry: &Registry<'_>, shell: &mut StandardStream) -
     let contents = read_to_string(&path)?;
     let mut file = File::create(&path)?;
     file.write_all(registry.new_gitignore(&contents)?.as_bytes())?;
-    print_patched(shell, ".gitignore")
-}
-
-fn print_created(shell: &mut StandardStream, message: &str) -> Result<()> {
-    shell.set_color(ColorSpec::new().set_bold(true).set_fg(Some(Color::Green)))?;
-    write!(shell, "     Created")?;
-    shell.reset()?;
-    writeln!(shell, " {}", message)?;
+    print_patched(".gitignore", color);
     Ok(())
 }
 
-fn print_patched(shell: &mut StandardStream, message: &str) -> Result<()> {
-    shell.set_color(ColorSpec::new().set_bold(true).set_fg(Some(Color::Green)))?;
-    write!(shell, "     Patched")?;
-    shell.reset()?;
-    writeln!(shell, " {}", message)?;
-    Ok(())
+fn print_created(message: &str, color: Color) {
+    eprintln!("     {} {}", color.bold_fg("Created", Green), message);
 }
 
-fn print_removed(shell: &mut StandardStream, message: &str) -> Result<()> {
-    shell.set_color(ColorSpec::new().set_bold(true).set_fg(Some(Color::Green)))?;
-    write!(shell, "     Removed")?;
-    shell.reset()?;
-    writeln!(shell, " {}", message)?;
-    Ok(())
+fn print_patched(message: &str, color: Color) {
+    eprintln!("     {} {}", color.bold_fg("Patched", Green), message);
+}
+
+fn print_removed(message: &str, color: Color) {
+    eprintln!("     {} {}", color.bold_fg("Removed", Green), message);
 }

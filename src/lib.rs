@@ -48,6 +48,7 @@
 
 pub mod cli;
 pub mod cmd;
+pub mod color;
 pub mod crates;
 pub mod devices;
 pub mod heap;
@@ -84,7 +85,7 @@ impl Cli {
             Cmd::Log(cmd) => cmd::log(cmd, color),
             Cmd::New(cmd) => cmd::new(cmd, color),
             Cmd::Reset(cmd) => cmd::reset(cmd),
-            Cmd::Support => cmd::support(),
+            Cmd::Support => cmd::support(color),
         }
     }
 }

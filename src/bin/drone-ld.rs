@@ -2,6 +2,7 @@
 
 use anyhow::Result;
 use drone::{
+    color::Color,
     templates::Registry,
     utils::{
         block_with_signals, check_root_result, register_signals, run_command, search_rust_tool,
@@ -15,10 +16,9 @@ use std::{
     path::Path,
     process::Command,
 };
-use termcolor::ColorChoice;
 
 fn main() {
-    check_root_result(ColorChoice::Never, || {
+    check_root_result(Color::Never, || {
         let args = env::args_os().skip(1).collect::<Vec<_>>();
         let output = args[args.iter().position(|arg| arg == "-o").unwrap() + 1].clone();
         let config = Config::read_from_current_dir()?;

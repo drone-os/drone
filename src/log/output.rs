@@ -3,7 +3,7 @@ use std::{
     cell::RefCell,
     fs::{File, OpenOptions},
     io,
-    io::{prelude::*, Stdout},
+    io::{prelude::*, stdout, Stdout},
 };
 
 /// Number of ports.
@@ -35,7 +35,7 @@ impl Output {
             .iter()
             .map(|cli::LogOutput { ports, path }| {
                 if path.is_empty() {
-                    Ok(OutputStream::Stdout(io::stdout()))
+                    Ok(OutputStream::Stdout(stdout()))
                 } else {
                     OpenOptions::new().write(true).open(path).map(OutputStream::File)
                 }

@@ -6,6 +6,7 @@ use super::{
 };
 use crate::{
     cli::{FlashCmd, GdbCmd, LogCmd, ResetCmd},
+    color::Color,
     log,
     templates::Registry,
     utils::{block_with_signals, exhaust_fifo, make_fifo, run_command, spawn_command, temp_dir},
@@ -14,7 +15,6 @@ use anyhow::Result;
 use drone_config as config;
 use signal_hook::iterator::Signals;
 use tempfile::tempdir_in;
-use termcolor::StandardStream;
 
 /// Runs `drone reset` command.
 pub fn reset(
@@ -67,7 +67,7 @@ pub fn log_swo_serial(
     signals: Signals,
     registry: Registry<'_>,
     config: config::Config,
-    shell: &mut StandardStream,
+    color: Color,
 ) -> Result<()> {
     let LogCmd { reset, outputs } = cmd;
     let config_log_swo = config.log.as_ref().unwrap().swo.as_ref().unwrap();
@@ -83,7 +83,7 @@ pub fn log_swo_serial(
     setup_serial_endpoint(&signals, serial_endpoint, config_log_swo.baud_rate)?;
     exhaust_fifo(serial_endpoint)?;
     log::capture(serial_endpoint.into(), log::Output::open_all(&outputs)?, log::swo::parser);
-    begin_log_output(shell)?;
+    begin_log_output(color);
     gdb_script_continue(&signals, pipe, packet)?;
 
     block_with_signals(&signals, true, move || {

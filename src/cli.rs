@@ -3,10 +3,11 @@
 #![allow(missing_docs)]
 
 use crate::{
+    color::Color,
     probe::{Log, Probe},
     utils::de_from_str,
 };
-use anyhow::{bail, Error};
+use anyhow::Error;
 use drone_config::parse_size;
 use std::{
     ffi::{OsStr, OsString},
@@ -14,7 +15,6 @@ use std::{
     path::PathBuf,
 };
 use structopt::StructOpt;
-use termcolor::ColorChoice;
 
 /// Drone OS command line utility.
 #[derive(Debug, StructOpt)]
@@ -23,8 +23,8 @@ pub struct Cli {
     #[structopt(long, short, parse(from_occurrences))]
     pub verbosity: u64,
     /// Coloring: auto, always, never
-    #[structopt(long, name = "when", default_value = "auto", parse(try_from_str = parse_color))]
-    pub color: ColorChoice,
+    #[structopt(long, default_value = "auto", parse(try_from_str = de_from_str))]
+    pub color: Color,
     #[structopt(subcommand)]
     pub cmd: Cmd,
 }
@@ -166,15 +166,6 @@ pub struct LogOutput {
     pub ports: Vec<u32>,
     /// Output path.
     pub path: OsString,
-}
-
-fn parse_color(src: &str) -> Result<ColorChoice, Error> {
-    Ok(match src {
-        "always" => ColorChoice::Always,
-        "never" => ColorChoice::Never,
-        "auto" => ColorChoice::Auto,
-        _ => bail!("argument for --color must be auto, always, or never, but found `{}`", src),
-    })
 }
 
 fn parse_log_output(src: &OsStr) -> Result<LogOutput, OsString> {

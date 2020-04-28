@@ -1,5 +1,7 @@
 //! Utility functions.
 
+use crate::color::Color;
+use ansi_term::Color::Red;
 use anyhow::{bail, Result};
 use serde::{de, ser};
 use signal_hook::{iterator::Signals, SIGINT, SIGQUIT, SIGTERM};
@@ -7,7 +9,7 @@ use std::{
     env,
     ffi::CString,
     fs::OpenOptions,
-    io::{ErrorKind, Read, Write},
+    io::{prelude::*, ErrorKind},
     os::unix::{ffi::OsStrExt, io::AsRawFd, process::CommandExt},
     path::PathBuf,
     process::{exit, Child, Command},
@@ -16,7 +18,6 @@ use std::{
     time::Duration,
 };
 use tempfile::TempDir;
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use thiserror::Error;
 use walkdir::WalkDir;
 
@@ -144,7 +145,7 @@ pub fn detach_pgid(command: &mut Command) {
 }
 
 /// Runs the closure and prints the resulting error if any.
-pub fn check_root_result(color_choice: ColorChoice, f: impl FnOnce() -> Result<()>) {
+pub fn check_root_result(color: Color, f: impl FnOnce() -> Result<()>) {
     match f() {
         Ok(()) => {
             exit(0);
@@ -153,10 +154,7 @@ pub fn check_root_result(color_choice: ColorChoice, f: impl FnOnce() -> Result<(
             exit(1);
         }
         Err(err) => {
-            let mut shell = StandardStream::stderr(color_choice);
-            drop(shell.set_color(ColorSpec::new().set_bold(true).set_fg(Some(Color::Red))));
-            drop(writeln!(shell, "Error: {:?}", err));
-            drop(shell.reset());
+            eprintln!("{}: {:?}", color.bold_fg("Error", Red), err);
             exit(1);
         }
     }

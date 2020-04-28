@@ -6,6 +6,7 @@ use super::{
 };
 use crate::{
     cli::{FlashCmd, GdbCmd, LogCmd, ResetCmd},
+    color::Color,
     log,
     templates::Registry,
     utils::{
@@ -18,7 +19,6 @@ use drone_config as config;
 use signal_hook::iterator::Signals;
 use std::{fs, os::unix::fs::PermissionsExt, path::Path, process::Command};
 use tempfile::tempdir_in;
-use termcolor::StandardStream;
 
 /// Runs `drone reset` command.
 pub fn reset(
@@ -93,7 +93,7 @@ pub fn log_dso_serial(
     signals: Signals,
     registry: Registry<'_>,
     config: config::Config,
-    shell: &mut StandardStream,
+    color: Color,
 ) -> Result<()> {
     let LogCmd { reset, outputs } = cmd;
     let config_probe_jlink = config.probe.as_ref().unwrap().jlink.as_ref().unwrap();
@@ -118,7 +118,7 @@ pub fn log_dso_serial(
         log::Output::open_all(&outputs)?,
         log::dso::parser,
     );
-    begin_log_output(shell)?;
+    begin_log_output(color);
     gdb_script_continue(&signals, pipe, packet)?;
 
     block_with_signals(&signals, true, move || {

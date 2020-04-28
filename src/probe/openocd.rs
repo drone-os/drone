@@ -6,6 +6,7 @@ use super::{
 };
 use crate::{
     cli::{FlashCmd, GdbCmd, LogCmd, ResetCmd},
+    color::Color,
     log,
     templates::Registry,
     utils::{block_with_signals, exhaust_fifo, make_fifo, run_command, spawn_command, temp_dir},
@@ -15,7 +16,6 @@ use drone_config as config;
 use signal_hook::iterator::Signals;
 use std::process::Command;
 use tempfile::tempdir_in;
-use termcolor::StandardStream;
 
 /// Runs `drone reset` command.
 pub fn reset(
@@ -82,7 +82,7 @@ pub fn log_swo(
     signals: Signals,
     registry: Registry<'_>,
     config: config::Config,
-    shell: &mut StandardStream,
+    color: Color,
 ) -> Result<()> {
     let LogCmd { reset, outputs } = cmd;
     let config_probe_openocd = config.probe.as_ref().unwrap().openocd.as_ref().unwrap();
@@ -112,7 +112,7 @@ pub fn log_swo(
     let mut gdb = spawn_command(gdb_script_command(&config, None, script.path()))?;
 
     let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
-    begin_log_output(shell)?;
+    begin_log_output(color);
     gdb_script_continue(&signals, pipe, packet)?;
 
     block_with_signals(&signals, true, move || {

@@ -6,9 +6,11 @@ pub mod openocd;
 
 use crate::{
     cli::{FlashCmd, GdbCmd, LogCmd, ResetCmd},
+    color::Color,
     templates::Registry,
     utils::{block_with_signals, detach_pgid, finally, run_command, spawn_command},
 };
+use ansi_term::Color::Cyan;
 use anyhow::{anyhow, bail, Error, Result};
 use drone_config as config;
 use serde::{Deserialize, Serialize};
@@ -22,7 +24,6 @@ use std::{
     process::{Command, Stdio},
     thread,
 };
-use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 
 /// An `enum` of all supported debug probes.
 #[allow(missing_docs)]
@@ -91,7 +92,7 @@ impl<'a> TryFrom<&'a config::Config> for Log {
     }
 }
 
-type LogFn = fn(LogCmd, Signals, Registry<'_>, config::Config, &mut StandardStream) -> Result<()>;
+type LogFn = fn(LogCmd, Signals, Registry<'_>, config::Config, Color) -> Result<()>;
 type ResetFn = fn(ResetCmd, Signals, Registry<'_>, config::Config) -> Result<()>;
 type FlashFn = fn(FlashCmd, Signals, Registry<'_>, config::Config) -> Result<()>;
 type GdbFn = fn(GdbCmd, Signals, Registry<'_>, config::Config) -> Result<()>;
@@ -225,12 +226,9 @@ pub fn gdb_script_continue(signals: &Signals, pipe: PathBuf, packet: [u8; 1]) ->
 }
 
 /// Displays a banner representing beginning of log output.
-pub fn begin_log_output(shell: &mut StandardStream) -> Result<()> {
-    shell.set_color(ColorSpec::new().set_bold(true).set_fg(Some(Color::Cyan)))?;
-    writeln!(shell)?;
-    writeln!(shell, "{:=^80}", " LOG OUTPUT ")?;
-    shell.reset()?;
-    Ok(())
+pub fn begin_log_output(color: Color) {
+    eprintln!();
+    eprintln!("{}", color.bold_fg(&format!("{:=^80}", " LOG OUTPUT "), Cyan));
 }
 
 /// Returns a GDB substitute-path for rustc sources.
