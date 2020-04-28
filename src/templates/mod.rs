@@ -127,8 +127,14 @@ impl Registry<'_> {
     }
 
     /// Renders `Cargo.toml`.
-    pub fn new_cargo_toml(&self, device: &Device, crate_name: &str) -> Result<String> {
+    pub fn new_cargo_toml(
+        &self,
+        device: &Device,
+        crate_name: &str,
+        contents: &str,
+    ) -> Result<String> {
         let data = json!({
+            "contents": contents,
             "crate_name": crate_name,
             "platform_name": device.platform_crate.krate.name(),
             "bindings_name": device.bindings_crate.krate.name(),
@@ -195,9 +201,10 @@ impl Registry<'_> {
     }
 
     /// Renders `.gitignore`.
-    pub fn new_gitignore(&self) -> Result<String> {
+    pub fn new_gitignore(&self, contents: &str) -> Result<String> {
+        let data = json!({ "contents": contents });
         helpers::clear_vars();
-        Ok(self.0.render("new/_gitignore", &())?)
+        Ok(self.0.render("new/_gitignore", &data)?)
     }
 
     /// Renders BMP `reset` command script.

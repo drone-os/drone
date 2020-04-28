@@ -1,5 +1,3 @@
-cargo_features := '-Z features=itarget,build_dep,dev_dep -Z package-features'
-
 # Install dependencies
 deps:
 	rustup component add clippy
@@ -8,31 +6,31 @@ deps:
 
 # Reformat the source code
 fmt:
-	cargo {{cargo_features}} fmt
+	cargo fmt
 
-# Check for mistakes
+# Check the source code for mistakes
 lint:
-	cargo {{cargo_features}} clippy
+	cargo clippy
 
-# Generate the docs
+# Build the documentation
 doc:
-	cargo {{cargo_features}} doc
+	cargo doc
 
-# Open the docs in the browser
+# Open the documentation in a browser
 doc-open: doc
-	cargo {{cargo_features}} doc --open
+	cargo doc --open
 
 # Run the tests
 test:
-	cargo {{cargo_features}} test
+	cargo test
 
 # Install the binaries
 install:
-	cargo {{cargo_features}} install --path . --debug --force
+	cargo install --path . --debug --force
 
 # Update README.md
 readme:
-	cargo {{cargo_features}} readme -o README.md
+	cargo readme -o README.md
 
 # Bump the version
 version-bump version:
@@ -45,6 +43,6 @@ version-bump version:
 
 # Publish to crates.io
 publish:
-	cd config && cargo {{cargo_features}} publish
+	cd config && cargo publish
 	sleep 5
-	cargo {{cargo_features}} publish
+	cargo publish

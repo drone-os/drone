@@ -1,3 +1,5 @@
+cargo-features = ["resolver"]
+
 [workspace]
 members = ["config"]
 
@@ -6,6 +8,7 @@ name = "drone"
 version = "0.12.0"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 edition = "2018"
+resolver = "2"
 default-run = "drone"
 repository = "https://github.com/drone-os/drone"
 homepage = "https://www.drone-os.com/"
@@ -43,6 +46,7 @@ handlebars = "3"
 libc = "0.2"
 log = "0.4"
 prettytable-rs = "0.8"
+regex = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 signal-hook = "0.1"

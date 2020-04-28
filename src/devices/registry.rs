@@ -130,7 +130,7 @@ pub const REGISTRY: &[Device] = &[
         bindings_crate: BindingsCrate {
             krate: crates::Bindings::Stm32,
             flag: "stm32f401",
-            features: &["adc", "dma", "exti", "gpio", "tim"],
+            features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
         probe_bmp: Some(ProbeBmp { device: "stm32f401" }),
         probe_openocd: Some(ProbeOpenocd {
@@ -153,7 +153,7 @@ pub const REGISTRY: &[Device] = &[
         bindings_crate: BindingsCrate {
             krate: crates::Bindings::Stm32,
             flag: "stm32f405",
-            features: &["adc", "dma", "exti", "gpio", "tim"],
+            features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
         probe_bmp: Some(ProbeBmp { device: "stm32f405" }),
         probe_openocd: Some(ProbeOpenocd {
@@ -176,7 +176,7 @@ pub const REGISTRY: &[Device] = &[
         bindings_crate: BindingsCrate {
             krate: crates::Bindings::Stm32,
             flag: "stm32f407",
-            features: &["adc", "dma", "exti", "gpio", "tim"],
+            features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
         probe_bmp: Some(ProbeBmp { device: "stm32f407" }),
         probe_openocd: Some(ProbeOpenocd {
@@ -199,7 +199,7 @@ pub const REGISTRY: &[Device] = &[
         bindings_crate: BindingsCrate {
             krate: crates::Bindings::Stm32,
             flag: "stm32f410",
-            features: &["adc", "dma", "exti", "gpio", "tim"],
+            features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
         probe_bmp: Some(ProbeBmp { device: "stm32f410" }),
         probe_openocd: Some(ProbeOpenocd {
@@ -222,7 +222,7 @@ pub const REGISTRY: &[Device] = &[
         bindings_crate: BindingsCrate {
             krate: crates::Bindings::Stm32,
             flag: "stm32f411",
-            features: &["adc", "dma", "exti", "gpio", "tim"],
+            features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
         probe_bmp: Some(ProbeBmp { device: "stm32f411" }),
         probe_openocd: Some(ProbeOpenocd {
@@ -245,7 +245,7 @@ pub const REGISTRY: &[Device] = &[
         bindings_crate: BindingsCrate {
             krate: crates::Bindings::Stm32,
             flag: "stm32f412",
-            features: &["adc", "dma", "exti", "gpio", "tim"],
+            features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
         probe_bmp: Some(ProbeBmp { device: "stm32f412" }),
         probe_openocd: Some(ProbeOpenocd {
@@ -268,7 +268,7 @@ pub const REGISTRY: &[Device] = &[
         bindings_crate: BindingsCrate {
             krate: crates::Bindings::Stm32,
             flag: "stm32f413",
-            features: &["adc", "dma", "exti", "gpio", "tim"],
+            features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
         probe_bmp: Some(ProbeBmp { device: "stm32f413" }),
         probe_openocd: Some(ProbeOpenocd {
@@ -291,7 +291,7 @@ pub const REGISTRY: &[Device] = &[
         bindings_crate: BindingsCrate {
             krate: crates::Bindings::Stm32,
             flag: "stm32f427",
-            features: &["adc", "dma", "exti", "gpio", "tim"],
+            features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
         probe_bmp: Some(ProbeBmp { device: "stm32f427" }),
         probe_openocd: Some(ProbeOpenocd {
@@ -314,7 +314,7 @@ pub const REGISTRY: &[Device] = &[
         bindings_crate: BindingsCrate {
             krate: crates::Bindings::Stm32,
             flag: "stm32f429",
-            features: &["adc", "dma", "exti", "gpio", "tim"],
+            features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
         probe_bmp: Some(ProbeBmp { device: "stm32f429" }),
         probe_openocd: Some(ProbeOpenocd {
@@ -337,7 +337,7 @@ pub const REGISTRY: &[Device] = &[
         bindings_crate: BindingsCrate {
             krate: crates::Bindings::Stm32,
             flag: "stm32f446",
-            features: &["adc", "dma", "exti", "gpio", "tim"],
+            features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
         probe_bmp: Some(ProbeBmp { device: "stm32f446" }),
         probe_openocd: Some(ProbeOpenocd {
@@ -360,7 +360,7 @@ pub const REGISTRY: &[Device] = &[
         bindings_crate: BindingsCrate {
             krate: crates::Bindings::Stm32,
             flag: "stm32f469",
-            features: &["adc", "dma", "exti", "gpio", "tim"],
+            features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
         probe_bmp: Some(ProbeBmp { device: "stm32f469" }),
         probe_openocd: Some(ProbeOpenocd {

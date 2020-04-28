@@ -33,19 +33,19 @@ pub struct Cli {
 pub enum Cmd {
     /// Fixes cross-compile environment for cargo
     Env(EnvCmd),
-    /// Flash the firmware to the attached device
+    /// Write the binary to ROM
     Flash(FlashCmd),
-    /// Run a GDB session for the attached device
+    /// Run a GDB session
     Gdb(GdbCmd),
     /// Analyze or modify the heap layout
     Heap(HeapCmd),
-    /// Display standard output from the attached device
+    /// Capture the log output
     Log(LogCmd),
     /// Create a new Drone project
     New(NewCmd),
-    /// Reset the attached device
+    /// Assert the reset signal
     Reset(ResetCmd),
-    /// Print the list of supported devices and debug probes
+    /// Print a list of supported target devices, debug probes, and log types
     Support,
 }
 
@@ -77,14 +77,14 @@ pub struct NewCmd {
     /// list of all available options)
     #[structopt(short, long, parse(try_from_str = de_from_str))]
     pub probe: Option<Probe>,
-    /// Debug log type for the target device (run `drone support` for the list
-    /// of all available options)
+    /// Log type to use for the project (run `drone support` for the list of all
+    /// available options)
     #[structopt(long, short, parse(try_from_str = de_from_str))]
     pub log: Option<Log>,
     /// Set the resulting package name, defaults to the directory name
     #[structopt(long)]
     pub name: Option<String>,
-    /// Toolchain name, such as 'nightly' or 'nightly-2019-09-05'
+    /// Toolchain name, such as 'nightly' or 'nightly-2020-04-23'
     #[structopt(long, default_value = "nightly")]
     pub toolchain: String,
 }
@@ -135,7 +135,7 @@ pub struct GdbCmd {
     /// Path to the compiled firmware file
     #[structopt(parse(from_os_str))]
     pub firmware: Option<PathBuf>,
-    /// Reset the attached device
+    /// Reset before the operation
     #[structopt(short, long)]
     pub reset: bool,
     /// Select a specific interpreter / user interface
@@ -148,7 +148,7 @@ pub struct GdbCmd {
 
 #[derive(Debug, StructOpt)]
 pub struct LogCmd {
-    /// Reset the attached device
+    /// Reset before the operation
     #[structopt(short, long)]
     pub reset: bool,
     /// Log output (format: [path][:port]...)

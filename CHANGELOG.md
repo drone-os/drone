@@ -32,6 +32,7 @@ Possible log types:
   `Drone.toml`
 - [changed] Rename `probe.itm.uart-endpoint` to `log.swo.serial-endpoint` in
   `Drone.toml`
+- [changed] Use cargo resolver v2 for newly generated projects
 
 ### v0.11.1 (2019-11-27)
 

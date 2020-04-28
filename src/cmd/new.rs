@@ -9,9 +9,9 @@ use crate::{
     templates::Registry,
     utils::run_command,
 };
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, Result};
 use std::{
-    fs::{create_dir, read_to_string, remove_file, File, OpenOptions},
+    fs::{create_dir, read_to_string, remove_file, File},
     io::Write,
     path::Path,
     process::Command,
@@ -192,16 +192,10 @@ fn cargo_toml(
     registry: &Registry<'_>,
     shell: &mut StandardStream,
 ) -> Result<()> {
-    const TAIL: &str = "[dependencies]\n";
     let path = path.join("Cargo.toml");
-    let text = read_to_string(&path)?;
-    if text.ends_with(TAIL) {
-        let mut file = File::create(&path)?;
-        file.write_all(text[..text.len() - TAIL.len()].as_bytes())?;
-        file.write_all(registry.new_cargo_toml(device, name)?.as_bytes())?;
-    } else {
-        bail!("`Cargo.toml` has unexpected contents");
-    }
+    let contents = read_to_string(&path)?;
+    let mut file = File::create(&path)?;
+    file.write_all(registry.new_cargo_toml(device, name, &contents)?.as_bytes())?;
     print_patched(shell, "Cargo.toml")
 }
 
@@ -263,8 +257,9 @@ fn gitignore(path: &Path, registry: &Registry<'_>, shell: &mut StandardStream) -
     if !path.exists() {
         return Ok(());
     }
-    let mut file = OpenOptions::new().append(true).open(&path)?;
-    file.write_all(registry.new_gitignore()?.as_bytes())?;
+    let contents = read_to_string(&path)?;
+    let mut file = File::create(&path)?;
+    file.write_all(registry.new_gitignore(&contents)?.as_bytes())?;
     print_patched(shell, ".gitignore")
 }
 
