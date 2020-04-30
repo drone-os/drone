@@ -67,10 +67,11 @@ pub struct NewCmd {
     /// available options)
     #[structopt(short, long)]
     pub device: String,
-    /// Flash memory size
+    /// Flash memory size in bytes (e.g. 1M for 1 megabyte, 512K for 512 kilobyte, or hexadecimal
+    /// 0xffK)
     #[structopt(short, long, parse(try_from_str = parse_size))]
     pub flash_size: u32,
-    /// RAM size
+    /// RAM size in bytes (e.g. 256K for 256 kilobyte, or hexadecimal 0xffK)
     #[structopt(short, long, parse(try_from_str = parse_size))]
     pub ram_size: u32,
     /// Debug probe connected to the target device (run `drone support` for the
