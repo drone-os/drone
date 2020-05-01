@@ -151,7 +151,7 @@ pub struct LogCmd {
     /// Reset before the operation
     #[structopt(short, long)]
     pub reset: bool,
-    /// Log output (format: [path][:port]...)
+    /// Log output (format: \[path\]\[:port\]...)
     #[structopt(
         name = "OUTPUT",
         parse(try_from_os_str = parse_log_output)
