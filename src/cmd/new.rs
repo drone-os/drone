@@ -51,7 +51,7 @@ pub fn run(cmd: NewCmd, color: Color) -> Result<()> {
     src_main_rs(&path, color)?;
     match device.platform_crate.krate {
         crates::Platform::Cortexm => {
-            src_cortexm_bin_rs(&path, &underscore_name, &registry, color)?;
+            src_cortexm_bin_rs(&path, device, &underscore_name, &registry, color)?;
             src_cortexm_lib_rs(&path, device, log, &registry, color)?;
             src_cortexm_thr_rs(&path, device, &registry, color)?;
             src_cortexm_tasks_mod_rs(&path, &registry, color)?;
@@ -127,13 +127,16 @@ fn src_main_rs(path: &Path, color: Color) -> Result<()> {
 
 fn src_cortexm_bin_rs(
     path: &Path,
+    device: &Device,
     name: &str,
     registry: &Registry<'_>,
     color: Color,
 ) -> Result<()> {
     let path = path.join("src/bin.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_cortexm_bin_rs(name)?.as_bytes())?;
+    file.write_all(
+        registry.new_src_cortexm_bin_rs(name, device.platform_crate.features)?.as_bytes(),
+    )?;
     print_created("src/bin.rs", color);
     Ok(())
 }

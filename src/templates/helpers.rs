@@ -79,25 +79,45 @@ impl HelperDef for Replace {
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         let text = h
             .param(0)
-            .ok_or_else(|| RenderError::new(format!("missing parameter {}", 0)))?
+            .ok_or_else(|| RenderError::new("missing parameter 1"))?
             .value()
             .as_str()
-            .ok_or_else(|| RenderError::new(format!("parameter {} must be a string", 0)))?;
+            .ok_or_else(|| RenderError::new("parameter 1 must be a string"))?;
         let regex = h
             .param(1)
-            .ok_or_else(|| RenderError::new(format!("missing parameter {}", 1)))?
+            .ok_or_else(|| RenderError::new("missing parameter 2"))?
             .value()
             .as_str()
-            .ok_or_else(|| RenderError::new(format!("parameter {} must be a string", 1)))?;
+            .ok_or_else(|| RenderError::new("parameter 2 must be a string"))?;
         let replace = h
             .param(2)
-            .ok_or_else(|| RenderError::new(format!("missing parameter {}", 2)))?
+            .ok_or_else(|| RenderError::new("missing parameter 3"))?
             .value()
             .as_str()
-            .ok_or_else(|| RenderError::new(format!("parameter {} must be a string", 2)))?;
+            .ok_or_else(|| RenderError::new("parameter 3 must be a string"))?;
         let regex = Regex::new(regex).expect("invalid regex");
         let text = regex.replace(text, replace);
         Ok(Some(ScopedJson::Derived(JsonValue::from(text))))
+    }
+}
+
+pub struct IfAnyOf;
+
+impl HelperDef for IfAnyOf {
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'reg, 'rc>,
+        r: &'reg Handlebars<'_>,
+        ctx: &'rc Context,
+        rc: &mut RenderContext<'reg, 'rc>,
+        out: &mut dyn Output,
+    ) -> HelperResult {
+        let value = h.param(0).ok_or_else(|| RenderError::new("missing parameter 1"))?.render();
+        let result = h.params().iter().skip(1).map(PathAndJson::render).any(|param| param == value);
+        match if result { h.template() } else { h.inverse() } {
+            Some(t) => t.render(r, ctx, rc, out),
+            None => Ok(()),
+        }
     }
 }
 
@@ -112,8 +132,14 @@ impl HelperDef for IfIncludes {
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        let value = h.param(0).ok_or_else(|| RenderError::new("missing parameter"))?.render();
-        let result = h.params().iter().skip(1).map(PathAndJson::render).any(|param| param == value);
+        let array = h
+            .param(0)
+            .ok_or_else(|| RenderError::new("missing parameter 1"))?
+            .value()
+            .as_array()
+            .ok_or_else(|| RenderError::new("parameter 1 must be an array"))?;
+        let value = h.param(1).ok_or_else(|| RenderError::new("missing parameter 2"))?.value();
+        let result = array.iter().any(|x| x == value);
         match if result { h.template() } else { h.inverse() } {
             Some(t) => t.render(r, ctx, rc, out),
             None => Ok(()),
@@ -128,6 +154,7 @@ pub fn register(handlebars: &mut Handlebars<'_>) {
     handlebars.register_helper("addr", Box::new(addr));
     handlebars.register_helper("size", Box::new(size));
     handlebars.register_helper("replace", Box::new(Replace));
+    handlebars.register_helper("if-any-of", Box::new(IfAnyOf));
     handlebars.register_helper("if-includes", Box::new(IfIncludes));
 }
 

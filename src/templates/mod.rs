@@ -68,8 +68,15 @@ impl Registry<'_> {
     }
 
     /// Renders cortexm `src/bin.rs`.
-    pub fn new_src_cortexm_bin_rs(&self, crate_name: &str) -> Result<String> {
-        let data = json!({ "crate_name": crate_name });
+    pub fn new_src_cortexm_bin_rs(
+        &self,
+        crate_name: &str,
+        cortexm_features: &[&str],
+    ) -> Result<String> {
+        let data = json!({
+            "crate_name": crate_name,
+            "cortexm_features": cortexm_features,
+        });
         helpers::clear_vars();
         Ok(self.0.render("new/src-cortexm/bin.rs", &data)?)
     }

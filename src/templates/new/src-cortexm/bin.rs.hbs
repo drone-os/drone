@@ -24,6 +24,9 @@ pub static VTABLE: Vtable = Vtable::new(Handlers { reset });
 pub unsafe extern "C" fn reset() -> ! {
     mem::bss_init();
     mem::data_init();
+{{~#if-includes cortexm_features "floating-point-unit" }}
+    processor::fpu_init(true);
+{{~/if-includes}}
     tasks::root(Regs::take(), ThrsInit::take());
     loop {
         processor::wait_for_int();

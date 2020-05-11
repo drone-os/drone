@@ -11,6 +11,10 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
+### Unreleased
+
+- [added] Project templates enable FPU if it's present in the target device
+
 ### v0.12.0 (2020-05-01)
 
 - [added] Added Nordic's nRF9160 MCU support
