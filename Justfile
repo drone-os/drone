@@ -44,5 +44,5 @@ version-bump version:
 # Publish to crates.io
 publish:
 	cd config && cargo publish
-	sleep 10
+	sleep 30
 	cargo publish
