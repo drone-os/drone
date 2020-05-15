@@ -136,11 +136,11 @@ fn parser<R: Read>(
     static move || {
         loop {
             reader.read_exact(&mut frame)?;
-            frame = (u32::from_be_bytes(frame) ^ KEY).to_be_bytes();
+            frame = (u32::from_le_bytes(frame) ^ KEY).to_be_bytes();
             let header = frame[0];
             let payload = &frame[1..];
             log::trace!(
-                "FRAME: (0x{:02X})0x{:02X}{:02X}{:02X}",
+                "FRAME: 0x({:02X}){:02X}{:02X}{:02X}",
                 header,
                 payload[0],
                 payload[1],

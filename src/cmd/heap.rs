@@ -56,11 +56,15 @@ pub fn generate(cmd: HeapGenerateCmd, trace: &TraceMap, size: u32, color: Color)
     } else {
         let (layout, frag) = heap::layout::optimize(&trace, size, pools)?;
         eprintln!();
-        eprintln!("{}", color.bold_fg(&format!("{:=^80}", " SUGGESTED LAYOUT "), Cyan));
+        eprintln!("{}", color.bold_fg(&format!("{:=^80}", " OPTIMIZED LAYOUT "), Cyan));
         heap::layout::render(&mut stdout(), &layout)?;
         eprintln!(
-            "# Fragmentation: {}",
+            "# fragmentation: {}",
             color.bold(&format!("{} / {:.2}%", frag, f64::from(frag) / f64::from(size) * 100.0))
+        );
+        eprintln!(
+            "# {}: replace the existing [heap] section in Drone.toml",
+            color.bold_fg("hint", Cyan)
         );
     }
     Ok(())
@@ -86,7 +90,7 @@ fn print_table(trace: &TraceMap, size: u32, color: Color) -> Result<()> {
     table.print(&mut stderr())?;
     eprintln!();
     eprintln!(
-        "Maximum memory usage: {}",
+        "Maximum heap load: {}",
         color.bold(&format!("{} / {:.2}%", used, f64::from(used) / f64::from(size) * 100.0))
     );
     Ok(())
