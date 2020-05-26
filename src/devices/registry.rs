@@ -749,7 +749,7 @@ pub const REGISTRY: &[Device] = &[
         bindings_crate: BindingsCrate {
             krate: crates::Bindings::TiSl,
             flag: "cc2538",
-            features: &[],
+            features: &["uart"],
         },
         probe_bmp: None,
         probe_openocd: Some(ProbeOpenocd {
