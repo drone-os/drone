@@ -736,4 +736,34 @@ pub const REGISTRY: &[Device] = &[
         log_swo: None,
         log_dso: Some(LogDso { krate: crates::Dso::Nrf91, features: &[] }),
     },
+    Device {
+        name: "cc2538",
+        target: "thumbv7m-none-eabi",
+        flash_origin: 0x0020_0000,
+        ram_origin: 0x2000_0000,
+        platform_crate: PlatformCrate {
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm3_r1p0",
+            features: &[],
+        },
+        bindings_crate: BindingsCrate {
+            krate: crates::Bindings::TiSl,
+            flag: "cc2538",
+            features: &[],
+        },
+        probe_bmp: None,
+        probe_openocd: Some(ProbeOpenocd {
+            arguments: &[
+                "-f",
+                "interface/xds110.cfg",
+                "-c",
+                "target select jtag",
+                "-f",
+                "target/cc2538.cfg",
+            ],
+        }),
+        probe_jlink: None,
+        log_swo: Some(LogSwo { reset_freq: 32_000_000 }),
+        log_dso: None,
+    },
 ];

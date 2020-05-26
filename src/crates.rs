@@ -13,6 +13,7 @@ pub enum Platform {
 pub enum Bindings {
     Nrf,
     Stm32,
+    TiSl,
 }
 
 /// Drone Serial Output implementation crates.
@@ -44,6 +45,7 @@ impl Bindings {
         match self {
             Self::Nrf => "nrf",
             Self::Stm32 => "stm32",
+            Self::TiSl => "tisl",
         }
     }
 
@@ -52,6 +54,7 @@ impl Bindings {
         match self {
             Self::Nrf => "nrf_mcu",
             Self::Stm32 => "stm32_mcu",
+            Self::TiSl => "tisl_mcu",
         }
     }
 }
