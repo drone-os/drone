@@ -32,6 +32,10 @@ description = """
 CLI utility for Drone, an Embedded Operating System.
 """
 
+[features]
+default = []
+no-rustup = []
+
 [badges]
 maintenance = { status = "actively-developed" }
 
