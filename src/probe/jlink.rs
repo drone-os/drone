@@ -111,13 +111,9 @@ pub fn log_dso_serial(
     let mut gdb = spawn_command(gdb_script_command(&config, None, script.path()))?;
 
     let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
-    setup_serial_endpoint(&signals, &config_log_dso.serial_endpoint, config_log_dso.baud_rate)?;
-    exhaust_fifo(&config_log_dso.serial_endpoint)?;
-    log::capture(
-        config_log_dso.serial_endpoint.clone().into(),
-        log::Output::open_all(&outputs)?,
-        log::dso::parser,
-    );
+    let port = setup_serial_endpoint(&config_log_dso.serial_endpoint, config_log_dso.baud_rate)?;
+    exhaust_fifo(&port)?;
+    log::capture(port, log::Output::open_all(&outputs)?, log::dso::parser);
     begin_log_output(color);
     gdb_script_continue(&signals, pipe, packet)?;
 

@@ -9,10 +9,8 @@ pub use self::output::{Output, OutputMap, OutputStream};
 
 use anyhow::Result;
 use std::{
-    fs::File,
-    io::prelude::*,
+    io::Read,
     ops::{Generator, GeneratorState},
-    path::PathBuf,
     pin::Pin,
     thread,
 };
@@ -20,10 +18,9 @@ use std::{
 type ParserFn = fn(&[Output]) -> Pin<Box<dyn Generator<u8, Yield = (), Return = Result<!>> + '_>>;
 
 /// Runs log capture thread.
-pub fn capture(input: PathBuf, outputs: Vec<Output>, parser: ParserFn) {
+pub fn capture(input: Box<dyn Read + Send>, outputs: Vec<Output>, parser: ParserFn) {
     thread::spawn(move || {
         (|| -> Result<()> {
-            let input = File::open(input)?;
             let mut parser = Box::pin(parser(&outputs));
             for byte in input.bytes() {
                 let byte = byte?;
