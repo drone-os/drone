@@ -11,6 +11,8 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
+### Unreleased
+
 ### v0.12.3 (2020-09-05)
 
 - [fixed] Fixed incorrectly generated `Cargo.toml` files for new projects

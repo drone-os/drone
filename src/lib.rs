@@ -30,6 +30,7 @@
 #![feature(generator_trait)]
 #![feature(generators)]
 #![feature(never_type)]
+#![feature(or_patterns)]
 #![warn(missing_docs)]
 #![warn(clippy::pedantic)]
 #![allow(
