@@ -129,9 +129,7 @@ pub fn log(probe: Probe, log: Log) -> Option<LogFn> {
     match (probe, log) {
         (Probe::Bmp, Log::SwoSerial) => Some(bmp::log_swo_serial),
         (Probe::Jlink, Log::DsoSerial) => Some(jlink::log_dso_serial),
-        (Probe::Openocd, Log::SwoProbe) | (Probe::Openocd, Log::SwoSerial) => {
-            Some(openocd::log_swo)
-        }
+        (Probe::Openocd, Log::SwoProbe | Log::SwoSerial) => Some(openocd::log_swo),
         _ => None,
     }
 }
