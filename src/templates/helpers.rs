@@ -156,6 +156,7 @@ pub fn register(handlebars: &mut Handlebars<'_>) {
     handlebars.register_helper("replace", Box::new(Replace));
     handlebars.register_helper("if-any-of", Box::new(IfAnyOf));
     handlebars.register_helper("if-includes", Box::new(IfIncludes));
+    handlebars.register_escape_fn(handlebars::no_escape);
 }
 
 /// Clears all variables.
