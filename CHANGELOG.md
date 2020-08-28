@@ -13,6 +13,9 @@ Possible log types:
 
 ### Unreleased
 
+- [added] Added mandatory option `linker.platform` to `Drone.toml`
+- [added] Added option `probe.jlink.interface` to `Drone.toml`
+
 ### v0.12.3 (2020-09-05)
 
 - [fixed] Fixed incorrectly generated `Cargo.toml` files for new projects

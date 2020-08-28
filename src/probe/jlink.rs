@@ -46,7 +46,7 @@ pub fn flash(
     let FlashCmd { firmware } = cmd;
     let config_probe_jlink = config.probe.as_ref().unwrap().jlink.as_ref().unwrap();
     let firmware_bin = &firmware.with_extension("bin");
-    let script = registry.jlink_flash(firmware_bin)?;
+    let script = registry.jlink_flash(firmware_bin, config.memory.flash.origin)?;
 
     let mut objcopy = Command::new(search_rust_tool("llvm-objcopy")?);
     objcopy.arg(firmware);
@@ -132,7 +132,10 @@ pub fn log_dso_serial(
 fn jlink_args(jlink: &mut Command, config_probe_jlink: &config::ProbeJlink) {
     jlink.arg("-Device").arg(&config_probe_jlink.device);
     jlink.arg("-Speed").arg(config_probe_jlink.speed.to_string());
-    jlink.arg("-If").arg("SWD");
+    jlink.arg("-If").arg(&config_probe_jlink.interface);
+    if config_probe_jlink.interface == "JTAG" {
+        jlink.arg("-JTAGConf").arg("-1,-1");
+    }
 }
 
 fn gdb_server_args(gdb_server: &mut Command, config_probe_jlink: &config::ProbeJlink) {

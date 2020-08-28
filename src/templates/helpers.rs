@@ -5,7 +5,7 @@
 use drone_config::format_size;
 use handlebars::{
     handlebars_helper, no_escape, Context, Handlebars, Helper, HelperDef, HelperResult, JsonValue,
-    Output, PathAndJson, RenderContext, RenderError, Renderable, ScopedJson,
+    Output, RenderContext, RenderError, Renderable, ScopedJson,
 };
 use regex::Regex;
 use std::{collections::HashMap, sync::Mutex};
@@ -101,26 +101,6 @@ impl HelperDef for Replace {
     }
 }
 
-pub struct IfAnyOf;
-
-impl HelperDef for IfAnyOf {
-    fn call<'reg: 'rc, 'rc>(
-        &self,
-        h: &Helper<'reg, 'rc>,
-        r: &'reg Handlebars<'_>,
-        ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
-        out: &mut dyn Output,
-    ) -> HelperResult {
-        let value = h.param(0).ok_or_else(|| RenderError::new("missing parameter 1"))?.render();
-        let result = h.params().iter().skip(1).map(PathAndJson::render).any(|param| param == value);
-        match if result { h.template() } else { h.inverse() } {
-            Some(t) => t.render(r, ctx, rc, out),
-            None => Ok(()),
-        }
-    }
-}
-
 pub struct IfIncludes;
 
 impl HelperDef for IfIncludes {
@@ -154,7 +134,6 @@ pub fn register(handlebars: &mut Handlebars<'_>) {
     handlebars.register_helper("addr", Box::new(addr));
     handlebars.register_helper("size", Box::new(size));
     handlebars.register_helper("replace", Box::new(Replace));
-    handlebars.register_helper("if-any-of", Box::new(IfAnyOf));
     handlebars.register_helper("if-includes", Box::new(IfIncludes));
     handlebars.register_escape_fn(no_escape);
 }

@@ -26,12 +26,14 @@ use std::{
 };
 
 /// An `enum` of all supported debug probes.
-#[allow(missing_docs)]
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Probe {
+    /// Black Magic Probe.
     Bmp,
+    /// SEGGER J-Link.
     Jlink,
+    /// OpenOCD.
     Openocd,
 }
 

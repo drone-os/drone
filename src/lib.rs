@@ -31,7 +31,8 @@
 #![feature(generators)]
 #![feature(never_type)]
 #![feature(or_patterns)]
-#![warn(missing_docs)]
+#![feature(unsafe_block_in_unsafe_fn)]
+#![warn(missing_docs, unsafe_op_in_unsafe_fn)]
 #![warn(clippy::pedantic)]
 #![allow(
     clippy::cast_possible_truncation,

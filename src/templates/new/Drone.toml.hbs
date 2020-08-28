@@ -8,6 +8,9 @@ origin = {{addr device_ram_origin}}
 
 {{heap}}
 
+[linker]
+platform = "{{linker_platform}}"
+
 [probe]
 gdb-client-command = "gdb-multiarch"
 
@@ -20,6 +23,7 @@ gdb-endpoint = "/dev/ttyBmpGdb"
 gdb-server-command = "JLinkGDBServerCLExe"
 commander-command = "JLinkExe"
 device = "{{probe_jlink_device}}"
+interface = "{{probe_jlink_interface}}"
 speed = 4000
 port = 2331
 {{~/if}}{{#if (eq probe_ident "openocd") ~}}

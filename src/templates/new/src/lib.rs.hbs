@@ -24,7 +24,7 @@ drone_nrf91_dso::set_log! {
 }
 {{~/if}}{{#if (or (eq log_ident "swoprobe") (eq log_ident "swoserial"))}}
 
-drone_cortexm::swo::set_log!();
+drone_{{platform_name}}::swo::set_log!();
 {{~/if}}
 
 {{bindings_name}}_reg_tokens! {

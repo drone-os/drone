@@ -28,11 +28,11 @@ impl Registry<'_> {
         }
 
         template!("layout.ld")?;
-        template!("new/src-cortexm/bin.rs")?;
-        template!("new/src-cortexm/lib.rs")?;
-        template!("new/src-cortexm/thr.rs")?;
-        template!("new/src-cortexm/tasks/mod.rs")?;
-        template!("new/src-cortexm/tasks/root.rs")?;
+        template!("new/src/bin.rs")?;
+        template!("new/src/lib.rs")?;
+        template!("new/src/thr.rs")?;
+        template!("new/src/tasks/mod.rs")?;
+        template!("new/src/tasks/root.rs")?;
         template!("new/Cargo.toml")?;
         template!("new/Drone.toml")?;
         template!("new/Justfile")?;
@@ -61,28 +61,25 @@ impl Registry<'_> {
     }
 
     /// Renders linker script.
-    pub fn layout_ld(&self, config: &Config, prelink: bool) -> Result<NamedTempFile> {
-        let data = json!({ "config": config, "prelink": prelink });
+    pub fn layout_ld(&self, config: &Config, stage_two: bool) -> Result<NamedTempFile> {
+        let data = json!({ "config": config, "stage_two": stage_two });
         helpers::clear_vars();
         named_temp_file(|file| self.0.render_to_write("layout.ld", &data, file))
     }
 
     /// Renders cortexm `src/bin.rs`.
-    pub fn new_src_cortexm_bin_rs(
-        &self,
-        crate_name: &str,
-        cortexm_features: &[&str],
-    ) -> Result<String> {
+    pub fn new_src_bin_rs(&self, device: &Device, crate_name: &str) -> Result<String> {
         let data = json!({
             "crate_name": crate_name,
-            "cortexm_features": cortexm_features,
+            "platform_name": device.platform_crate.krate.name(),
+            "platform_features": device.platform_crate.features,
         });
         helpers::clear_vars();
-        Ok(self.0.render("new/src-cortexm/bin.rs", &data)?)
+        Ok(self.0.render("new/src/bin.rs", &data)?)
     }
 
     /// Renders cortexm `src/lib.rs`.
-    pub fn new_src_cortexm_lib_rs(&self, device: &Device, log: Log) -> Result<String> {
+    pub fn new_src_lib_rs(&self, device: &Device, log: Log) -> Result<String> {
         let dso_regs = device.log_dso.as_ref().map(|x| {
             x.krate
                 .used_regs()
@@ -105,32 +102,37 @@ impl Registry<'_> {
                 .join("\n")
         });
         let data = json!({
+            "platform_name": device.platform_crate.krate.name(),
             "bindings_name": device.bindings_crate.krate.name(),
             "log_ident": ser_to_string(log),
             "dso_name": device.log_dso.as_ref().map(|x| x.krate.name()),
             "dso_regs": dso_regs,
         });
         helpers::clear_vars();
-        Ok(self.0.render("new/src-cortexm/lib.rs", &data)?)
+        Ok(self.0.render("new/src/lib.rs", &data)?)
     }
 
     /// Renders cortexm `src/thr.rs`.
-    pub fn new_src_cortexm_thr_rs(&self, device: &Device) -> Result<String> {
-        let data = json!({ "bindings_name": device.bindings_crate.krate.name() });
+    pub fn new_src_thr_rs(&self, device: &Device) -> Result<String> {
+        let data = json!({
+            "platform_name": device.platform_crate.krate.name(),
+            "bindings_name": device.bindings_crate.krate.name(),
+        });
         helpers::clear_vars();
-        Ok(self.0.render("new/src-cortexm/thr.rs", &data)?)
+        Ok(self.0.render("new/src/thr.rs", &data)?)
     }
 
     /// Renders cortexm `src/tasks/mod.rs`.
-    pub fn new_src_cortexm_tasks_mod_rs(&self) -> Result<String> {
+    pub fn new_src_tasks_mod_rs(&self) -> Result<String> {
         helpers::clear_vars();
-        Ok(self.0.render("new/src-cortexm/tasks/mod.rs", &())?)
+        Ok(self.0.render("new/src/tasks/mod.rs", &())?)
     }
 
     /// Renders cortexm `src/tasks/root.rs`.
-    pub fn new_src_cortexm_tasks_root_rs(&self) -> Result<String> {
+    pub fn new_src_tasks_root_rs(&self, device: &Device) -> Result<String> {
+        let data = json!({ "platform_name": device.platform_crate.krate.name() });
         helpers::clear_vars();
-        Ok(self.0.render("new/src-cortexm/tasks/root.rs", &())?)
+        Ok(self.0.render("new/src/tasks/root.rs", &data)?)
     }
 
     /// Renders `Cargo.toml`.
@@ -170,10 +172,12 @@ impl Registry<'_> {
             "device_ram_size": ram_size,
             "device_ram_origin": device.ram_origin,
             "heap": heap.trim_end(),
+            "linker_platform": device.platform_crate.linker_platform(),
             "probe_ident": ser_to_string(probe),
             "probe_bmp_device": device.probe_bmp.as_ref().map(|x| x.device),
             "probe_openocd_arguments": device.probe_openocd.as_ref().map(|x| x.arguments),
             "probe_jlink_device": device.probe_jlink.as_ref().map(|x| x.device),
+            "probe_jlink_interface": device.probe_jlink.as_ref().map(|x| x.interface),
             "log_ident": ser_to_string(log),
             "log_swo_reset_freq": device.log_swo.as_ref().map(|x| x.reset_freq),
         });
@@ -269,8 +273,11 @@ impl Registry<'_> {
     }
 
     /// Renders J-Link `flash` command script.
-    pub fn jlink_flash(&self, firmware: &Path) -> Result<NamedTempFile> {
-        let data = json!({ "firmware": firmware });
+    pub fn jlink_flash(&self, firmware: &Path, address: u32) -> Result<NamedTempFile> {
+        let data = json!({
+            "firmware": firmware,
+            "address": address,
+        });
         helpers::clear_vars();
         named_temp_file(|file| self.0.render_to_write("jlink/flash.jlink", &data, file))
     }
