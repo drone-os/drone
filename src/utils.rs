@@ -21,6 +21,23 @@ use tempfile::TempDir;
 use thiserror::Error;
 use walkdir::WalkDir;
 
+/// Runs the application code inside closure `f`, prints an error using `color`
+/// preference if there is any, and sets the exit code.
+pub fn run_wrapper(color: Color, f: impl FnOnce() -> Result<()>) {
+    match f() {
+        Ok(()) => {
+            exit(0);
+        }
+        Err(err) if err.is::<SignalError>() => {
+            exit(1);
+        }
+        Err(err) => {
+            eprintln!("{}: {:?}", color.bold_fg("Error", Red), err);
+            exit(1);
+        }
+    }
+}
+
 /// Search for the Rust tool `tool` in the sysroot.
 pub fn search_rust_tool(tool: &str) -> Result<PathBuf> {
     let mut rustc = Command::new("rustc");
@@ -141,22 +158,6 @@ pub fn detach_pgid(command: &mut Command) {
             libc::setpgid(0, 0);
             Ok(())
         });
-    }
-}
-
-/// Runs the closure and prints the resulting error if any.
-pub fn check_root_result(color: Color, f: impl FnOnce() -> Result<()>) {
-    match f() {
-        Ok(()) => {
-            exit(0);
-        }
-        Err(err) if err.is::<SignalError>() => {
-            exit(1);
-        }
-        Err(err) => {
-            eprintln!("{}: {:?}", color.bold_fg("Error", Red), err);
-            exit(1);
-        }
     }
 }
 

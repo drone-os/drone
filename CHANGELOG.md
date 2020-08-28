@@ -13,6 +13,9 @@ Possible log types:
 
 ### Unreleased
 
+- [added] Added mandatory option `linker.platform` to `Drone.toml`
+- [added] Added option `probe.jlink.interface` to `Drone.toml`
+
 ### v0.12.2 (2020-05-15)
 
 - [fixed] Fixed incorrect heaptrace parsing in `drone heap` sub-command

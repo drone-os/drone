@@ -8,25 +8,61 @@ ENTRY(reset);
 
 SECTIONS
 {
-    {{#if prelink}}
+{{#unless stage_two}}
     STACK_POINTER = ORIGIN(RAM);
-    {{else}}
+{{else}}
     STACK_POINTER = ORIGIN(RAM) + LENGTH(RAM)
         - _data_section_size
         - _bss_section_size
         - _dronereg_section_size
         - _heap_section_size;
-    {{/if}}
+{{/unless}}
 
+{{#if (eq config.linker.platform "arm") }}
     .vtable ORIGIN(FLASH) :
     {
         LONG(STACK_POINTER);
         KEEP(*(.rodata.VTABLE));
         . = ALIGN(4);
     } > FLASH
+{{/if}}{{#if (eq config.linker.platform "riscv") }}
+    .vtable ORIGIN(FLASH) :
+    {
+        /* assembler instruction: J reset */
+        LONG(
+            0x6F
+            | ((reset & (1 << 20)) << (31 - 20))
+            | ((reset & (((1 << 10) - 1) << 1)) << (21 - 1))
+            | ((reset & (1 << 11)) << (20 - 11))
+            | ((reset & (((1 << 8) - 1) << 12)) << (12 - 12))
+        );
+        KEEP(*(.rodata.VTABLE));
+        . = ALIGN(4);
+    } > FLASH
+{{/if}}{{#if (eq config.linker.platform "riscv-compact") }}
+    .vtable ORIGIN(FLASH) :
+    {
+        /* assembler instruction: C.J reset */
+        SHORT(
+            0xA001
+            | ((reset & (1 << 11)) << (12 - 11))
+            | ((reset & (1 << 4)) << (11 - 4))
+            | ((reset & (((1 << 2) - 1) << 8)) << (9 - 8))
+            | ((reset & (1 << 10)) >> (10 - 8))
+            | ((reset & (1 << 6)) << (7 - 6))
+            | ((reset & (1 << 7)) >> (7 - 6))
+            | ((reset & (((1 << 3) - 1) << 1)) << (3 - 1))
+            | ((reset & (1 << 5)) >> (5 - 2))
+        );
+        . = ALIGN(4);
+        KEEP(*(.rodata.VTABLE));
+        . = ALIGN(4);
+    } > FLASH
+{{/if}}
 
     .text :
     {
+        *(.text.reset);
         *(.text.*);
         . = ALIGN(4);
     } > FLASH
@@ -70,7 +106,12 @@ SECTIONS
 
     /DISCARD/ :
     {
+{{#if (eq config.linker.platform "arm") }}
         *(.ARM.*)
+{{/if}}{{#if (or (eq config.linker.platform "riscv")
+                 (eq config.linker.platform "riscv-compact")) }}
+        *(.eh_frame .eh_frame_hdr)
+{{/if}}
     }
 }
 

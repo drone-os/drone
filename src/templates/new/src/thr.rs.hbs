@@ -1,9 +1,9 @@
 //! The threads.
 
-pub use drone_cortexm::thr::{init, init_extended};
+pub use drone_{{platform_name}}::thr::{init, init_extended};
 pub use drone_{{bindings_name}}_map::thr::*;
 
-use drone_cortexm::thr;
+use drone_{{platform_name}}::thr;
 
 thr::vtable! {
     use Thr;

@@ -69,6 +69,8 @@ pub struct ProbeOpenocd {
 pub struct ProbeJlink {
     /// Device identifier.
     pub device: &'static str,
+    /// Target interface.
+    pub interface: &'static str,
 }
 
 /// ARM® SWO configuration.
@@ -93,4 +95,15 @@ pub fn find(name: &str) -> Result<&'static Device> {
         }
     }
     bail!("Couldn't find device with name `{}`", name);
+}
+
+impl PlatformCrate {
+    /// Returns linker platform option value.
+    pub fn linker_platform(&self) -> &'static str {
+        match self.krate {
+            crates::Platform::Cortexm => "arm",
+            crates::Platform::Riscv if self.features.contains(&"c-extension") => "riscv-compact",
+            crates::Platform::Riscv => "riscv",
+        }
+    }
 }
