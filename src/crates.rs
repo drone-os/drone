@@ -14,6 +14,7 @@ pub enum Platform {
 pub enum Bindings {
     Nrf,
     Stm32,
+    Tisl,
     Gd32V,
     Sifive,
 }
@@ -23,6 +24,7 @@ pub enum Bindings {
 #[derive(Clone, Copy, Debug)]
 pub enum Dso {
     Nrf91,
+    Cc2538,
     Gd32V,
     Sifive,
 }
@@ -51,6 +53,7 @@ impl Bindings {
         match self {
             Self::Nrf => "nrf",
             Self::Stm32 => "stm32",
+            Self::Tisl => "tisl",
             Self::Gd32V => "gd32v",
             Self::Sifive => "sifive",
         }
@@ -61,6 +64,7 @@ impl Bindings {
         match self {
             Self::Nrf => "nrf_mcu",
             Self::Stm32 => "stm32_mcu",
+            Self::Tisl => "tisl_mcu",
             Self::Gd32V => "gd32v_mcu",
             Self::Sifive => "sifive_mcu",
         }
@@ -72,6 +76,7 @@ impl Dso {
     pub fn name(self) -> &'static str {
         match self {
             Self::Nrf91 => "nrf91",
+            Self::Cc2538 => "cc2538",
             Self::Gd32V => "gd32v",
             Self::Sifive => "sifive",
         }
@@ -132,6 +137,7 @@ impl Dso {
                 "uarte0_ns_txd_maxcnt",
                 "uarte0_ns_txd_ptr",
             ],
+            Self::Cc2538 => &[],
             Self::Gd32V | Self::Sifive => &[],
         }
     }
