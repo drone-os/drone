@@ -760,6 +760,27 @@ pub const REGISTRY: &[Device] = &[
         log_dso: Some(LogDso { krate: crates::Dso::Nrf91, features: &[] }),
     },
     Device {
+        name: "cc2538",
+        target: "thumbv8m.main-none-eabihf",
+        flash_origin: 0x0000_0000,
+        ram_origin: 0x0020_0000,
+        platform_crate: PlatformCrate {
+            krate: crates::Platform::Cortexm,
+            flag: "cortexm3_r2p0",
+            features: &["floating-point-unit", "memory-protection-unit", "security-extension"],
+        },
+        bindings_crate: BindingsCrate {
+            krate: crates::Bindings::Tisl,
+            flag: "cc2538",
+            features: &["uart", "ico", "gpio"],
+        },
+        probe_bmp: None,
+        probe_openocd: None,
+        probe_jlink: Some(ProbeJlink { device: "CC2538SF53", interface: "JTAG" }),
+        log_swo: None, 
+        log_dso: Some(LogDso { krate: crates::Dso::Cc2538, features: &[] }),
+    },
+    Device {
         name: "gd32vf103",
         target: "riscv32imac-unknown-none-elf",
         flash_origin: 0x0800_0000,
