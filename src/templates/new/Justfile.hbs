@@ -1,7 +1,7 @@
 export DRONE_RUSTFLAGS := '--cfg {{platform_flag_name}}="{{platform_flag}}" --cfg {{bindings_flag_name}}="{{bindings_flag}}"'
 target := '{{device_target}}'
 features := ''
-name := `basename $(pwd)`
+name := `basename "$(pwd)"`
 release_bin := "target/" + target + "/release/" + name
 
 # Install dependencies
