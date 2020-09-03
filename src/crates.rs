@@ -137,8 +137,7 @@ impl Dso {
                 "uarte0_ns_txd_maxcnt",
                 "uarte0_ns_txd_ptr",
             ],
-            Self::Cc2538 => &[],
-            Self::Gd32V | Self::Sifive => &[],
+            Self::Cc2538 | Self::Gd32V | Self::Sifive => &[],
         }
     }
 }
