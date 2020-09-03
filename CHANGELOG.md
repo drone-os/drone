@@ -15,6 +15,7 @@ Possible log types:
 
 - [added] Added mandatory option `linker.platform` to `Drone.toml`
 - [added] Added option `probe.jlink.interface` to `Drone.toml`
+- [added] Added Texas Instruments cc2538 support
 
 ### v0.12.2 (2020-05-15)
 
