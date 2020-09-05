@@ -4,8 +4,8 @@
 
 use drone_config::format_size;
 use handlebars::{
-    handlebars_helper, Context, Handlebars, Helper, HelperDef, HelperResult, JsonValue, Output,
-    RenderContext, RenderError, Renderable, ScopedJson,
+    handlebars_helper, no_escape, Context, Handlebars, Helper, HelperDef, HelperResult, JsonValue,
+    Output, RenderContext, RenderError, Renderable, ScopedJson,
 };
 use regex::Regex;
 use std::{collections::HashMap, sync::Mutex};
@@ -135,7 +135,7 @@ pub fn register(handlebars: &mut Handlebars<'_>) {
     handlebars.register_helper("size", Box::new(size));
     handlebars.register_helper("replace", Box::new(Replace));
     handlebars.register_helper("if-includes", Box::new(IfIncludes));
-    handlebars.register_escape_fn(handlebars::no_escape);
+    handlebars.register_escape_fn(no_escape);
 }
 
 /// Clears all variables.
