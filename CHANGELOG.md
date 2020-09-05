@@ -11,6 +11,10 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
+### v0.12.3 (2020-09-05)
+
+- [fixed] Fixed incorrectly generated `Cargo.toml` files for new projects
+
 ### v0.12.2 (2020-05-15)
 
 - [fixed] Fixed incorrect heaptrace parsing in `drone heap` sub-command

@@ -193,11 +193,11 @@ dependencies = [
 
 [[package]]
 name = "drone"
-version = "0.12.2"
+version = "0.12.3"
 dependencies = [
  "ansi_term 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "anyhow 1.0.30 (registry+https://github.com/rust-lang/crates.io-index)",
- "drone-config 0.12.2",
+ "drone-config 0.12.3",
  "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "handlebars 3.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.70 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -215,7 +215,7 @@ dependencies = [
 
 [[package]]
 name = "drone-config"
-version = "0.12.2"
+version = "0.12.3"
 dependencies = [
  "anyhow 1.0.30 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.110 (registry+https://github.com/rust-lang/crates.io-index)",
