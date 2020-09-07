@@ -117,6 +117,29 @@ pub const REGISTRY: &[Device] = &[
         log_swo: Some(LogSwo { reset_freq: 8_000_000 }),
         log_dso: None,
     },
+    Device {  
+        name: "stm32f303",
+        target: "thumbv7m-none-eabi",  
+        flash_origin: 0x0800_0000,  
+        ram_origin: 0x2000_0000,  
+        platform_crate: PlatformCrate {  
+            krate: crates::Platform::Cortexm,  
+            flag: "cortexm3_r1p1",  
+            features: &["bit-band"],   
+        },  
+        bindings_crate: BindingsCrate {  
+            krate: crates::Bindings::Stm32,  
+            flag: "stm32f303",  
+            features: &["dma", "gpio", "spi", "tim"],  
+        },  
+        probe_bmp: Some(ProbeBmp { device: "stm32f303" }),  
+        probe_openocd: Some(ProbeOpenocd {  
+            arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f3x.cfg"],  
+        }),  
+        probe_jlink: None,  
+        log_swo: Some(LogSwo { reset_freq: 8_000_000 }),  
+        log_dso: None,  
+    },  
     Device {
         name: "stm32f401",
         target: "thumbv7em-none-eabihf",
