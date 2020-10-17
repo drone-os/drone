@@ -14,6 +14,7 @@ use ansi_term::Color::Cyan;
 use anyhow::{anyhow, bail, Error, Result};
 use drone_config as config;
 use serde::{Deserialize, Serialize};
+use serialport::{posix::TTYPort, SerialPortSettings};
 use signal_hook::iterator::Signals;
 use std::{
     convert::TryFrom,
@@ -23,6 +24,7 @@ use std::{
     path::{Path, PathBuf},
     process::{Command, Stdio},
     thread,
+    time::Duration,
 };
 
 /// An `enum` of all supported debug probes.
@@ -136,14 +138,12 @@ pub fn log(probe: Probe, log: Log) -> Option<LogFn> {
     }
 }
 
-/// Configures the endpoint with `stty` command.
-pub fn setup_serial_endpoint(signals: &Signals, endpoint: &str, baud_rate: u32) -> Result<()> {
-    let mut stty = Command::new("stty");
-    stty.arg(format!("--file={}", endpoint));
-    stty.arg("speed");
-    stty.arg(format!("{}", baud_rate));
-    stty.arg("raw");
-    block_with_signals(signals, true, || run_command(stty))
+/// Opens and configures the serial port endpoint.
+pub fn setup_serial_endpoint(endpoint: &str, baud_rate: u32) -> Result<Box<TTYPort>> {
+    let mut settings: SerialPortSettings = Default::default();
+    settings.baud_rate = baud_rate;
+    settings.timeout = Duration::new(10, 0);
+    Ok(Box::new(TTYPort::open(Path::new(endpoint), &settings)?))
 }
 
 /// Runs a GDB server.

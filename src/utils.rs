@@ -4,13 +4,18 @@ use crate::color::Color;
 use ansi_term::Color::Red;
 use anyhow::{bail, Result};
 use serde::{de, ser};
+use serialport::posix::TTYPort;
 use signal_hook::{iterator::Signals, SIGINT, SIGQUIT, SIGTERM};
 use std::{
     env,
     ffi::CString,
-    fs::OpenOptions,
+    fs::File,
     io::{prelude::*, ErrorKind},
-    os::unix::{ffi::OsStrExt, io::AsRawFd, process::CommandExt},
+    os::unix::{
+        ffi::OsStrExt,
+        io::{AsRawFd, FromRawFd},
+        process::CommandExt,
+    },
     path::PathBuf,
     process::{exit, Child, Command},
     sync::mpsc::{channel, RecvTimeoutError},
@@ -120,9 +125,13 @@ pub fn make_fifo(dir: &TempDir, name: &str) -> Result<PathBuf> {
 }
 
 /// Consumes all remaining data in the fifo.
-pub fn exhaust_fifo(path: &str) -> Result<()> {
-    let mut fifo = OpenOptions::new().read(true).open(path)?;
-    unsafe { libc::fcntl(fifo.as_raw_fd(), libc::F_SETFL, libc::O_NONBLOCK) };
+pub fn exhaust_fifo(port: &TTYPort) -> Result<()> {
+    let mut fifo;
+    unsafe {
+        let fifo_fd = libc::dup(port.as_raw_fd());
+        libc::fcntl(fifo_fd, libc::F_SETFL, libc::O_NONBLOCK);
+        fifo = File::from_raw_fd(fifo_fd);
+    }
     let mut bytes = [0_u8; 1024];
     loop {
         match fifo.read(&mut bytes) {

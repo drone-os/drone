@@ -14,7 +14,7 @@ use crate::{
 use anyhow::Result;
 use drone_config as config;
 use signal_hook::iterator::Signals;
-use std::process::Command;
+use std::{fs::File, io::Read, process::Command};
 use tempfile::tempdir_in;
 
 /// Runs `drone reset` command.
@@ -97,16 +97,17 @@ pub fn log_swo(
     let dir = tempdir_in(temp_dir())?;
     let pipe = make_fifo(&dir, "pipe")?;
     let ports = outputs.iter().flat_map(|output| output.ports.iter().copied()).collect();
-    let input;
+    let input: Box<dyn Read + Send>;
     let script;
     if let Some(serial_endpoint) = &config_log_swo.serial_endpoint {
-        setup_serial_endpoint(&signals, serial_endpoint, config_log_swo.baud_rate)?;
-        exhaust_fifo(serial_endpoint)?;
-        input = serial_endpoint.into();
+        let port = setup_serial_endpoint(serial_endpoint, config_log_swo.baud_rate)?;
+        exhaust_fifo(&port)?;
+        input = port;
         script = registry.openocd_swo(&config, &ports, reset, &pipe, None)?;
     } else {
-        input = make_fifo(&dir, "input")?;
-        script = registry.openocd_swo(&config, &ports, reset, &pipe, Some(&input))?;
+        let fifo_name = make_fifo(&dir, "input")?;
+        script = registry.openocd_swo(&config, &ports, reset, &pipe, Some(&fifo_name))?;
+        input = Box::new(File::open(fifo_name)?);
     }
     log::capture(input, log::Output::open_all(&outputs)?, log::swo::parser);
     let mut gdb = spawn_command(gdb_script_command(&config, None, script.path()))?;

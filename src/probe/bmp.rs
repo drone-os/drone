@@ -80,9 +80,9 @@ pub fn log_swo_serial(
     let mut gdb = spawn_command(gdb_script_command(&config, None, script.path()))?;
 
     let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
-    setup_serial_endpoint(&signals, serial_endpoint, config_log_swo.baud_rate)?;
-    exhaust_fifo(serial_endpoint)?;
-    log::capture(serial_endpoint.into(), log::Output::open_all(&outputs)?, log::swo::parser);
+    let port = setup_serial_endpoint(serial_endpoint, config_log_swo.baud_rate)?;
+    exhaust_fifo(&port)?;
+    log::capture(port, log::Output::open_all(&outputs)?, log::swo::parser);
     begin_log_output(color);
     gdb_script_continue(&signals, pipe, packet)?;
 
