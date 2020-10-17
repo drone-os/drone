@@ -759,4 +759,27 @@ pub const REGISTRY: &[Device] = &[
         log_swo: None,
         log_dso: Some(LogDso { krate: crates::Dso::Nrf91, features: &[] }),
     },
+    Device {
+        name: "stm32wbx5",
+        target: "thumbv7em-none-eabihf",
+        flash_origin: 0x0800_0000,
+        ram_origin: 0x2000_0000,
+        platform_crate: PlatformCrate {
+            krate: crates::Platform::Cortexm,
+            flag: "cortex_m4f_r0p1",
+            features: &["floating-point-unit"],
+        },
+        bindings_crate: BindingsCrate {
+            krate: crates::Bindings::Stm32,
+            flag: "stm32wbx5",
+            features: &[],
+        },
+        probe_bmp: Some(ProbeBmp { device: "stm32wbx5" }),
+        probe_openocd: Some(ProbeOpenocd {
+            arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32wbx5.cfg"],
+        }),
+        probe_jlink: None,
+        log_swo: Some(LogSwo { reset_freq: 4_000_000 }),
+        log_dso: None,
+    },
 ];
