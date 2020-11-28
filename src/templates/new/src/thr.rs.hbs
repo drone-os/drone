@@ -1,0 +1,30 @@
+//! The threads.
+
+pub use drone_{{platform_name}}::thr::{init, init_extended};
+pub use drone_{{bindings_name}}_map::thr::*;
+
+use drone_{{platform_name}}::thr;
+
+thr! {
+    /// The thread data.
+    thread => pub Thr {};
+
+    /// The thread-local storage.
+    local => pub ThrLocal {};
+
+    /// The vector table type.
+    vtable => pub Vtable;
+
+    /// A set of thread tokens.
+    index => pub Thrs;
+
+    /// Threads initialization token.
+    init => pub ThrsInit;
+
+    threads => {
+        exceptions => {
+            /// All classes of faults.
+            pub hard_fault;
+        };
+    };
+}

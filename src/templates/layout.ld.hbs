@@ -8,25 +8,28 @@ ENTRY(reset);
 
 SECTIONS
 {
-    {{#if prelink}}
+{{#unless stage_two}}
     STACK_POINTER = ORIGIN(RAM);
-    {{else}}
+{{else}}
     STACK_POINTER = ORIGIN(RAM) + LENGTH(RAM)
         - _data_section_size
         - _bss_section_size
         - _dronereg_section_size
         - _heap_section_size;
-    {{/if}}
+{{/unless}}
 
+{{#if (eq config.linker.platform "arm") }}
     .vtable ORIGIN(FLASH) :
     {
         LONG(STACK_POINTER);
         KEEP(*(.rodata.VTABLE));
         . = ALIGN(4);
     } > FLASH
+{{/if}}
 
     .text :
     {
+        *(.text.reset);
         *(.text.*);
         . = ALIGN(4);
     } > FLASH
@@ -70,7 +73,11 @@ SECTIONS
 
     /DISCARD/ :
     {
+{{#if (eq config.linker.platform "arm") }}
         *(.ARM.*)
+{{/if}}{{#if (eq config.linker.platform "riscv") }}
+        *(.eh_frame .eh_frame_hdr)
+{{/if}}
     }
 }
 

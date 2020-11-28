@@ -3,7 +3,7 @@
 use crate::{
     cli::NewCmd,
     color::Color,
-    crates, devices,
+    devices,
     devices::Device,
     heap, probe,
     probe::{Log, Probe},
@@ -49,15 +49,11 @@ pub fn run(cmd: NewCmd, color: Color) -> Result<()> {
 
     cargo_new(&path, &toolchain)?;
     src_main_rs(&path, color)?;
-    match device.platform_crate.krate {
-        crates::Platform::Cortexm => {
-            src_cortexm_bin_rs(&path, device, &underscore_name, &registry, color)?;
-            src_cortexm_lib_rs(&path, device, log, &registry, color)?;
-            src_cortexm_thr_rs(&path, device, &registry, color)?;
-            src_cortexm_tasks_mod_rs(&path, &registry, color)?;
-            src_cortexm_tasks_root_rs(&path, &registry, color)?;
-        }
-    }
+    src_bin_name_rs(&path, device, &name, &underscore_name, &registry, color)?;
+    src_lib_rs(&path, device, log, &registry, color)?;
+    src_thr_rs(&path, device, &registry, color)?;
+    src_tasks_mod_rs(&path, &registry, color)?;
+    src_tasks_root_rs(&path, device, &registry, color)?;
     cargo_toml(&path, &name, device, &registry, color)?;
     drone_toml(&path, device, flash_size, ram_size, &heap, probe, log, &registry, color)?;
     justfile(&path, device, &registry, color)?;
@@ -125,23 +121,24 @@ fn src_main_rs(path: &Path, color: Color) -> Result<()> {
     Ok(())
 }
 
-fn src_cortexm_bin_rs(
+fn src_bin_name_rs(
     path: &Path,
     device: &Device,
     name: &str,
+    underscore_name: &str,
     registry: &Registry<'_>,
     color: Color,
 ) -> Result<()> {
-    let path = path.join("src/bin.rs");
+    let path = path.join("src/bin");
+    create_dir(&path)?;
+    let path = path.join(format!("{}.rs", name));
     let mut file = File::create(&path)?;
-    file.write_all(
-        registry.new_src_cortexm_bin_rs(name, device.platform_crate.features)?.as_bytes(),
-    )?;
-    print_created("src/bin.rs", color);
+    file.write_all(registry.new_src_bin_name_rs(device, underscore_name)?.as_bytes())?;
+    print_created(&format!("src/bin/{}.rs", name), color);
     Ok(())
 }
 
-fn src_cortexm_lib_rs(
+fn src_lib_rs(
     path: &Path,
     device: &Device,
     log: Log,
@@ -150,38 +147,38 @@ fn src_cortexm_lib_rs(
 ) -> Result<()> {
     let path = path.join("src/lib.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_cortexm_lib_rs(device, log)?.as_bytes())?;
+    file.write_all(registry.new_src_lib_rs(device, log)?.as_bytes())?;
     print_created("src/lib.rs", color);
     Ok(())
 }
 
-fn src_cortexm_thr_rs(
+fn src_thr_rs(path: &Path, device: &Device, registry: &Registry<'_>, color: Color) -> Result<()> {
+    let path = path.join("src/thr.rs");
+    let mut file = File::create(&path)?;
+    file.write_all(registry.new_src_thr_rs(device)?.as_bytes())?;
+    print_created("src/thr.rs", color);
+    Ok(())
+}
+
+fn src_tasks_mod_rs(path: &Path, registry: &Registry<'_>, color: Color) -> Result<()> {
+    let path = path.join("src/tasks");
+    create_dir(&path)?;
+    let path = path.join("mod.rs");
+    let mut file = File::create(&path)?;
+    file.write_all(registry.new_src_tasks_mod_rs()?.as_bytes())?;
+    print_created("src/tasks/mod.rs", color);
+    Ok(())
+}
+
+fn src_tasks_root_rs(
     path: &Path,
     device: &Device,
     registry: &Registry<'_>,
     color: Color,
 ) -> Result<()> {
-    let path = path.join("src/thr.rs");
-    let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_cortexm_thr_rs(device)?.as_bytes())?;
-    print_created("src/thr.rs", color);
-    Ok(())
-}
-
-fn src_cortexm_tasks_mod_rs(path: &Path, registry: &Registry<'_>, color: Color) -> Result<()> {
-    let path = path.join("src/tasks");
-    create_dir(&path)?;
-    let path = path.join("mod.rs");
-    let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_cortexm_tasks_mod_rs()?.as_bytes())?;
-    print_created("src/tasks/mod.rs", color);
-    Ok(())
-}
-
-fn src_cortexm_tasks_root_rs(path: &Path, registry: &Registry<'_>, color: Color) -> Result<()> {
     let path = path.join("src/tasks/root.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_cortexm_tasks_root_rs()?.as_bytes())?;
+    file.write_all(registry.new_src_tasks_root_rs(device)?.as_bytes())?;
     print_created("src/tasks/root.rs", color);
     Ok(())
 }

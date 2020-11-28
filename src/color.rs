@@ -42,8 +42,8 @@ impl Color {
             Self::Auto => match env::var_os("TERM") {
                 None => false,
                 Some(k) if k == "dumb" => false,
-                _ if env::var_os("NO_COLOR").is_some() => false,
-                _ => true,
+                Some(_) if env::var_os("NO_COLOR").is_some() => false,
+                Some(_) => true,
             },
         }
     }

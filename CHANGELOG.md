@@ -11,6 +11,12 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
+### v0.13.0 (2020-11-28)
+
+- [added] Added mandatory option `linker.platform` to `Drone.toml`
+- [added] Added option `probe.jlink.interface` to `Drone.toml`
+- [added] Added Texas Instruments cc2538 support
+
 ### v0.12.3 (2020-09-05)
 
 - [fixed] Fixed incorrectly generated `Cargo.toml` files for new projects

@@ -5,7 +5,7 @@ members = ["config"]
 
 [package]
 name = "drone"
-version = "0.12.4"
+version = "0.13.0"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 edition = "2018"
 resolver = "2"
@@ -36,13 +36,13 @@ CLI utility for Drone, an Embedded Operating System.
 maintenance = { status = "actively-developed" }
 
 [dependencies.drone-config]
-version = "=0.12.4"
+version = "=0.13.0"
 path = "config"
 
 [dependencies]
 ansi_term = "0.12"
 anyhow = "1"
-env_logger = "0.7"
+env_logger = "0.8"
 handlebars = "3"
 libc = "0.2"
 log = "0.4"
@@ -50,7 +50,7 @@ prettytable-rs = "0.8"
 regex = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-signal-hook = "0.1"
+signal-hook = "0.2"
 structopt = "0.3"
 tempfile = "3"
 thiserror = "1"

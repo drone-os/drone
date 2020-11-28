@@ -4,9 +4,7 @@ use anyhow::Result;
 use drone::{
     color::Color,
     templates::Registry,
-    utils::{
-        block_with_signals, check_root_result, register_signals, run_command, search_rust_tool,
-    },
+    utils::{block_with_signals, register_signals, run_command, run_wrapper, search_rust_tool},
 };
 use drone_config::Config;
 use std::{
@@ -18,29 +16,31 @@ use std::{
 };
 
 fn main() {
-    check_root_result(Color::Never, || {
-        let args = env::args_os().skip(1).collect::<Vec<_>>();
-        let output = args[args.iter().position(|arg| arg == "-o").unwrap() + 1].clone();
-        let config = Config::read_from_current_dir()?;
-        let registry = Registry::new()?;
-        let signals = register_signals()?;
-        {
-            let script = registry.layout_ld(&config, true)?;
-            let linker = linker_command(script.as_ref(), &args, &[])?;
-            block_with_signals(&signals, true, || run_command(linker))?;
-        }
-        let size = size_command(&output)?;
-        let syms = block_with_signals(&signals, true, || run_size(size))?
-            .into_iter()
-            .map(|(name, size)| format!("--defsym=_{}_section_size={}", name, size))
-            .collect::<Vec<_>>();
-        {
-            let script = registry.layout_ld(&config, false)?;
-            let linker = linker_command(script.as_ref(), &args, &syms)?;
-            block_with_signals(&signals, true, || run_command(linker))?;
-        }
-        Ok(())
-    });
+    run_wrapper(Color::Never, run);
+}
+
+fn run() -> Result<()> {
+    let args = env::args_os().skip(1).collect::<Vec<_>>();
+    let output = args[args.iter().position(|arg| arg == "-o").unwrap() + 1].clone();
+    let config = Config::read_from_current_dir()?;
+    let registry = Registry::new()?;
+    let mut signals = register_signals()?;
+    {
+        let script = registry.layout_ld(&config, false)?;
+        let linker = linker_command(script.as_ref(), &args, &[])?;
+        block_with_signals(&mut signals, true, || run_command(linker))?;
+    }
+    let size = size_command(&output)?;
+    let syms = block_with_signals(&mut signals, true, || run_size(size))?
+        .into_iter()
+        .map(|(name, size)| format!("--defsym=_{}_section_size={}", name, size))
+        .collect::<Vec<_>>();
+    {
+        let script = registry.layout_ld(&config, true)?;
+        let linker = linker_command(script.as_ref(), &args, &syms)?;
+        block_with_signals(&mut signals, true, || run_command(linker))?;
+    }
+    Ok(())
 }
 
 fn linker_command(script: &Path, args: &[OsString], syms: &[String]) -> Result<Command> {

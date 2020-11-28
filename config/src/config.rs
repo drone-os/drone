@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub memory: Memory,
     pub heap: Heap,
-    pub linker: Option<Linker>,
+    pub linker: Linker,
     pub probe: Option<Probe>,
     pub log: Option<Log>,
 }
@@ -54,6 +54,7 @@ pub struct Heap {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Linker {
+    pub platform: String,
     #[serde(default)]
     pub include: Vec<String>,
 }
@@ -92,6 +93,7 @@ pub struct ProbeJlink {
     pub gdb_server_command: String,
     pub commander_command: String,
     pub device: String,
+    pub interface: String,
     pub speed: u32,
     pub port: u32,
 }

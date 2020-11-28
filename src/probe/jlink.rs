@@ -23,7 +23,7 @@ use tempfile::tempdir_in;
 /// Runs `drone reset` command.
 pub fn reset(
     cmd: ResetCmd,
-    signals: Signals,
+    mut signals: Signals,
     registry: Registry<'_>,
     config: config::Config,
 ) -> Result<()> {
@@ -33,38 +33,38 @@ pub fn reset(
     let mut commander = Command::new(&config_probe_jlink.commander_command);
     jlink_args(&mut commander, config_probe_jlink);
     commander_script(&mut commander, script.path());
-    block_with_signals(&signals, true, || run_command(commander))
+    block_with_signals(&mut signals, true, || run_command(commander))
 }
 
 /// Runs the command.
 pub fn flash(
     cmd: FlashCmd,
-    signals: Signals,
+    mut signals: Signals,
     registry: Registry<'_>,
     config: config::Config,
 ) -> Result<()> {
     let FlashCmd { firmware } = cmd;
     let config_probe_jlink = config.probe.as_ref().unwrap().jlink.as_ref().unwrap();
     let firmware_bin = &firmware.with_extension("bin");
-    let script = registry.jlink_flash(firmware_bin)?;
+    let script = registry.jlink_flash(firmware_bin, config.memory.flash.origin)?;
 
     let mut objcopy = Command::new(search_rust_tool("llvm-objcopy")?);
     objcopy.arg(firmware);
     objcopy.arg(firmware_bin);
     objcopy.arg("--output-target=binary");
-    block_with_signals(&signals, true, || run_command(objcopy))?;
+    block_with_signals(&mut signals, true, || run_command(objcopy))?;
     fs::set_permissions(firmware_bin, fs::Permissions::from_mode(0o644))?;
 
     let mut commander = Command::new(&config_probe_jlink.commander_command);
     jlink_args(&mut commander, config_probe_jlink);
     commander_script(&mut commander, script.path());
-    block_with_signals(&signals, true, || run_command(commander))
+    block_with_signals(&mut signals, true, || run_command(commander))
 }
 
 /// Runs `drone gdb` command.
 pub fn gdb(
     cmd: GdbCmd,
-    signals: Signals,
+    mut signals: Signals,
     registry: Registry<'_>,
     config: config::Config,
 ) -> Result<()> {
@@ -78,7 +78,7 @@ pub fn gdb(
 
     let script = registry.jlink_gdb(&config, reset, &rustc_substitute_path()?)?;
     run_gdb_client(
-        &signals,
+        &mut signals,
         &config,
         &gdb_args,
         firmware.as_deref(),
@@ -90,7 +90,7 @@ pub fn gdb(
 /// Runs `drone log` command.
 pub fn log_dso_serial(
     cmd: LogCmd,
-    signals: Signals,
+    mut signals: Signals,
     registry: Registry<'_>,
     config: config::Config,
     color: Color,
@@ -110,8 +110,8 @@ pub fn log_dso_serial(
     let script = registry.jlink_dso(&config, &ports, reset, &pipe)?;
     let mut gdb = spawn_command(gdb_script_command(&config, None, script.path()))?;
 
-    let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
-    setup_serial_endpoint(&signals, &config_log_dso.serial_endpoint, config_log_dso.baud_rate)?;
+    let (pipe, packet) = gdb_script_wait(&mut signals, pipe)?;
+    setup_serial_endpoint(&mut signals, &config_log_dso.serial_endpoint, config_log_dso.baud_rate)?;
     exhaust_fifo(&config_log_dso.serial_endpoint)?;
     log::capture(
         config_log_dso.serial_endpoint.clone().into(),
@@ -119,9 +119,9 @@ pub fn log_dso_serial(
         log::dso::parser,
     );
     begin_log_output(color);
-    gdb_script_continue(&signals, pipe, packet)?;
+    gdb_script_continue(&mut signals, pipe, packet)?;
 
-    block_with_signals(&signals, true, move || {
+    block_with_signals(&mut signals, true, move || {
         gdb.wait()?;
         Ok(())
     })?;
@@ -132,7 +132,10 @@ pub fn log_dso_serial(
 fn jlink_args(jlink: &mut Command, config_probe_jlink: &config::ProbeJlink) {
     jlink.arg("-Device").arg(&config_probe_jlink.device);
     jlink.arg("-Speed").arg(config_probe_jlink.speed.to_string());
-    jlink.arg("-If").arg("SWD");
+    jlink.arg("-If").arg(&config_probe_jlink.interface);
+    if config_probe_jlink.interface == "JTAG" {
+        jlink.arg("-JTAGConf").arg("-1,-1");
+    }
 }
 
 fn gdb_server_args(gdb_server: &mut Command, config_probe_jlink: &config::ProbeJlink) {

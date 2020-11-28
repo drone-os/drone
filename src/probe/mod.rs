@@ -26,12 +26,14 @@ use std::{
 };
 
 /// An `enum` of all supported debug probes.
-#[allow(missing_docs)]
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Probe {
+    /// Black Magic Probe.
     Bmp,
+    /// SEGGER J-Link.
     Jlink,
+    /// OpenOCD.
     Openocd,
 }
 
@@ -129,15 +131,13 @@ pub fn log(probe: Probe, log: Log) -> Option<LogFn> {
     match (probe, log) {
         (Probe::Bmp, Log::SwoSerial) => Some(bmp::log_swo_serial),
         (Probe::Jlink, Log::DsoSerial) => Some(jlink::log_dso_serial),
-        (Probe::Openocd, Log::SwoProbe) | (Probe::Openocd, Log::SwoSerial) => {
-            Some(openocd::log_swo)
-        }
+        (Probe::Openocd, Log::SwoProbe | Log::SwoSerial) => Some(openocd::log_swo),
         _ => None,
     }
 }
 
 /// Configures the endpoint with `stty` command.
-pub fn setup_serial_endpoint(signals: &Signals, endpoint: &str, baud_rate: u32) -> Result<()> {
+pub fn setup_serial_endpoint(signals: &mut Signals, endpoint: &str, baud_rate: u32) -> Result<()> {
     let mut stty = Command::new("stty");
     stty.arg(format!("--file={}", endpoint));
     stty.arg("speed");
@@ -170,7 +170,7 @@ pub fn run_gdb_server(mut gdb: Command, interpreter: Option<&str>) -> Result<imp
 
 /// Runs a GDB client.
 pub fn run_gdb_client(
-    signals: &Signals,
+    signals: &mut Signals,
     config: &config::Config,
     gdb_args: &[OsString],
     firmware: Option<&Path>,
@@ -209,8 +209,8 @@ pub fn gdb_script_command(
 }
 
 /// Waits for the other side of `pipe`.
-pub fn gdb_script_wait(signals: &Signals, pipe: PathBuf) -> Result<(PathBuf, [u8; 1])> {
-    block_with_signals(&signals, false, move || {
+pub fn gdb_script_wait(signals: &mut Signals, pipe: PathBuf) -> Result<(PathBuf, [u8; 1])> {
+    block_with_signals(signals, false, move || {
         let mut packet = [0];
         OpenOptions::new().read(true).open(&pipe)?.read_exact(&mut packet)?;
         Ok((pipe, packet))
@@ -218,8 +218,8 @@ pub fn gdb_script_wait(signals: &Signals, pipe: PathBuf) -> Result<(PathBuf, [u8
 }
 
 /// Signals the other size of `pipe`.
-pub fn gdb_script_continue(signals: &Signals, pipe: PathBuf, packet: [u8; 1]) -> Result<()> {
-    block_with_signals(&signals, false, move || {
+pub fn gdb_script_continue(signals: &mut Signals, pipe: PathBuf, packet: [u8; 1]) -> Result<()> {
+    block_with_signals(signals, false, move || {
         OpenOptions::new().write(true).open(&pipe)?.write_all(&packet)?;
         Ok(())
     })

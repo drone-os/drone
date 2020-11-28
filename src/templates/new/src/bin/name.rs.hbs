@@ -3,16 +3,16 @@
 #![no_std]
 
 use drone_core::{mem, token::Token};
-use drone_cortexm::processor;
+use drone_{{platform_name}}::processor;
 use {{crate_name}}::{
     tasks,
-    thr::{Handlers, ThrsInit, Vtable},
+    thr::{ThrsInit, Vtable},
     Regs,
 };
 
 /// The vector table.
 #[no_mangle]
-pub static VTABLE: Vtable = Vtable::new(Handlers { reset });
+pub static VTABLE: Vtable = Vtable::new(reset);
 
 /// The entry point.
 ///
@@ -24,7 +24,7 @@ pub static VTABLE: Vtable = Vtable::new(Handlers { reset });
 pub unsafe extern "C" fn reset() -> ! {
     mem::bss_init();
     mem::data_init();
-{{~#if-includes cortexm_features "floating-point-unit" }}
+{{~#if-includes platform_features "floating-point-unit" }}
     processor::fpu_init(true);
 {{~/if-includes}}
     tasks::root(Regs::take(), ThrsInit::take());
