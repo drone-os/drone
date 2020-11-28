@@ -28,26 +28,26 @@ pub fn run(color: Color) -> Result<()> {
                 log_swo.is_some(),
                 log_dso.is_some(),
                 color,
-            )?,
+            ),
             probe_cell(
                 probe_jlink.as_ref().map(|_| Probe::Jlink),
                 log_swo.is_some(),
                 log_dso.is_some(),
                 color,
-            )?,
+            ),
             probe_cell(
                 probe_openocd.as_ref().map(|_| Probe::Openocd),
                 log_swo.is_some(),
                 log_dso.is_some(),
                 color,
-            )?,
+            ),
         ]);
     }
     table.print(&mut stdout())?;
     Ok(())
 }
 
-fn probe_cell(probe: Option<Probe>, log_swo: bool, log_dso: bool, color: Color) -> Result<String> {
+fn probe_cell(probe: Option<Probe>, log_swo: bool, log_dso: bool, color: Color) -> String {
     if let Some(probe) = probe {
         let mut logs = Vec::new();
         if log_swo && probe::log(probe, Log::SwoProbe).is_some() {
@@ -59,8 +59,8 @@ fn probe_cell(probe: Option<Probe>, log_swo: bool, log_dso: bool, color: Color) 
         if log_dso && probe::log(probe, Log::DsoSerial).is_some() {
             logs.push(color.bold("dsoserial"));
         }
-        Ok(format!("--log {}", logs.join("/")))
+        format!("--log {}", logs.join("/"))
     } else {
-        Ok("--".into())
+        "--".into()
     }
 }

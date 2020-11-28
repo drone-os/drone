@@ -82,7 +82,7 @@ pub fn register_signals() -> Result<Signals> {
 
 /// Run the closure in a different thread, periodically checking the signals.
 #[allow(clippy::never_loop)]
-pub fn block_with_signals<F, R>(signals: &Signals, ignore_sigint: bool, f: F) -> Result<R>
+pub fn block_with_signals<F, R>(signals: &mut Signals, ignore_sigint: bool, f: F) -> Result<R>
 where
     F: Send + 'static + FnOnce() -> Result<R>,
     R: Send + 'static,

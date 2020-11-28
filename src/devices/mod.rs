@@ -102,7 +102,6 @@ impl PlatformCrate {
     pub fn linker_platform(&self) -> &'static str {
         match self.krate {
             crates::Platform::Cortexm => "arm",
-            crates::Platform::Riscv if self.features.contains(&"c-extension") => "riscv-compact",
             crates::Platform::Riscv => "riscv",
         }
     }

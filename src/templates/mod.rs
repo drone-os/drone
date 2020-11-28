@@ -28,7 +28,7 @@ impl Registry<'_> {
         }
 
         template!("layout.ld")?;
-        template!("new/src/bin.rs")?;
+        template!("new/src/bin/name.rs")?;
         template!("new/src/lib.rs")?;
         template!("new/src/thr.rs")?;
         template!("new/src/tasks/mod.rs")?;
@@ -67,27 +67,29 @@ impl Registry<'_> {
         named_temp_file(|file| self.0.render_to_write("layout.ld", &data, file))
     }
 
-    /// Renders cortexm `src/bin.rs`.
-    pub fn new_src_bin_rs(&self, device: &Device, crate_name: &str) -> Result<String> {
+    /// Renders cortexm `src/bin/name.rs`.
+    pub fn new_src_bin_name_rs(&self, device: &Device, crate_name: &str) -> Result<String> {
         let data = json!({
             "crate_name": crate_name,
             "platform_name": device.platform_crate.krate.name(),
             "platform_features": device.platform_crate.features,
         });
         helpers::clear_vars();
-        Ok(self.0.render("new/src/bin.rs", &data)?)
+        Ok(self.0.render("new/src/bin/name.rs", &data)?)
     }
 
     /// Renders cortexm `src/lib.rs`.
     pub fn new_src_lib_rs(&self, device: &Device, log: Log) -> Result<String> {
+        const IDENT: usize = 8;
+        const LENGTH: usize = 100;
         let dso_regs = device.log_dso.as_ref().map(|x| {
             x.krate
                 .used_regs()
                 .iter()
-                .map(|reg| format!("!{};", reg))
+                .map(|reg| format!("{},", reg))
                 .fold::<Vec<(usize, Vec<_>)>, _>(Vec::new(), |mut acc, x| {
                     if let Some((len, line)) = acc.last_mut() {
-                        if *len + x.len() < 96 {
+                        if *len + x.len() < LENGTH - IDENT {
                             *len += x.len() + 1;
                             line.push(x);
                             return acc;
@@ -97,7 +99,7 @@ impl Registry<'_> {
                     acc
                 })
                 .iter()
-                .map(|(_, line)| format!("    {}", line.join(" ")))
+                .map(|(_, line)| format!("{:ident$}{}", line.join(" "), "", ident = IDENT))
                 .collect::<Vec<_>>()
                 .join("\n")
         });

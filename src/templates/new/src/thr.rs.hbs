@@ -5,36 +5,26 @@ pub use drone_{{bindings_name}}_map::thr::*;
 
 use drone_{{platform_name}}::thr;
 
-thr::vtable! {
-    use Thr;
-
-    /// The vector table type.
-    pub struct Vtable;
-
-    /// Explicit vector table handlers.
-    pub struct Handlers;
-
-    /// A set of thread tokens.
-    pub struct Thrs;
-
-    /// Threads initialization token.
-    pub struct ThrsInit;
-
-    /// The array of thread data.
-    static THREADS;
-
-    // --- Allocated threads ---
-
-    /// All classes of faults.
-    pub HARD_FAULT;
-}
-
 thr! {
-    use THREADS;
-
     /// The thread data.
-    pub struct Thr {}
+    thread => pub Thr {};
 
     /// The thread-local storage.
-    pub struct ThrLocal {}
+    local => pub ThrLocal {};
+
+    /// The vector table type.
+    vtable => pub Vtable;
+
+    /// A set of thread tokens.
+    index => pub Thrs;
+
+    /// Threads initialization token.
+    init => pub ThrsInit;
+
+    threads => {
+        exceptions => {
+            /// All classes of faults.
+            pub hard_fault;
+        };
+    };
 }

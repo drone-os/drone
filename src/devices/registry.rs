@@ -777,7 +777,7 @@ pub const REGISTRY: &[Device] = &[
         probe_bmp: None,
         probe_openocd: None,
         probe_jlink: Some(ProbeJlink { device: "CC2538SF53", interface: "JTAG" }),
-        log_swo: None, 
+        log_swo: None,
         log_dso: Some(LogDso { krate: crates::Dso::Cc2538, features: &[] }),
     },
     Device {

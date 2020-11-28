@@ -20,7 +20,7 @@ use tempfile::tempdir_in;
 /// Runs `drone reset` command.
 pub fn reset(
     cmd: ResetCmd,
-    signals: Signals,
+    mut signals: Signals,
     registry: Registry<'_>,
     config: config::Config,
 ) -> Result<()> {
@@ -30,13 +30,13 @@ pub fn reset(
     let mut openocd = Command::new(&config_probe_openocd.command);
     openocd_arguments(&mut openocd, config_probe_openocd);
     openocd_commands(&mut openocd, &commands);
-    block_with_signals(&signals, true, || run_command(openocd))
+    block_with_signals(&mut signals, true, || run_command(openocd))
 }
 
 /// Runs `drone flash` command.
 pub fn flash(
     cmd: FlashCmd,
-    signals: Signals,
+    mut signals: Signals,
     registry: Registry<'_>,
     config: config::Config,
 ) -> Result<()> {
@@ -46,13 +46,13 @@ pub fn flash(
     let mut openocd = Command::new(&config_probe_openocd.command);
     openocd_arguments(&mut openocd, config_probe_openocd);
     openocd_commands(&mut openocd, &commands);
-    block_with_signals(&signals, true, || run_command(openocd))
+    block_with_signals(&mut signals, true, || run_command(openocd))
 }
 
 /// Runs `drone gdb` command.
 pub fn gdb(
     cmd: GdbCmd,
-    signals: Signals,
+    mut signals: Signals,
     registry: Registry<'_>,
     config: config::Config,
 ) -> Result<()> {
@@ -67,7 +67,7 @@ pub fn gdb(
 
     let script = registry.openocd_gdb_gdb(&config, reset, &rustc_substitute_path()?)?;
     run_gdb_client(
-        &signals,
+        &mut signals,
         &config,
         &gdb_args,
         firmware.as_deref(),
@@ -79,7 +79,7 @@ pub fn gdb(
 /// Runs `drone log` command.
 pub fn log_swo(
     cmd: LogCmd,
-    signals: Signals,
+    mut signals: Signals,
     registry: Registry<'_>,
     config: config::Config,
     color: Color,
@@ -100,7 +100,7 @@ pub fn log_swo(
     let input;
     let script;
     if let Some(serial_endpoint) = &config_log_swo.serial_endpoint {
-        setup_serial_endpoint(&signals, serial_endpoint, config_log_swo.baud_rate)?;
+        setup_serial_endpoint(&mut signals, serial_endpoint, config_log_swo.baud_rate)?;
         exhaust_fifo(serial_endpoint)?;
         input = serial_endpoint.into();
         script = registry.openocd_swo(&config, &ports, reset, &pipe, None)?;
@@ -111,11 +111,11 @@ pub fn log_swo(
     log::capture(input, log::Output::open_all(&outputs)?, log::swo::parser);
     let mut gdb = spawn_command(gdb_script_command(&config, None, script.path()))?;
 
-    let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
+    let (pipe, packet) = gdb_script_wait(&mut signals, pipe)?;
     begin_log_output(color);
-    gdb_script_continue(&signals, pipe, packet)?;
+    gdb_script_continue(&mut signals, pipe, packet)?;
 
-    block_with_signals(&signals, true, move || {
+    block_with_signals(&mut signals, true, move || {
         gdb.wait()?;
         Ok(())
     })?;

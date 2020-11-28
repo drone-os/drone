@@ -19,40 +19,40 @@ use tempfile::tempdir_in;
 /// Runs `drone reset` command.
 pub fn reset(
     cmd: ResetCmd,
-    signals: Signals,
+    mut signals: Signals,
     registry: Registry<'_>,
     config: config::Config,
 ) -> Result<()> {
     let ResetCmd {} = cmd;
     let script = registry.bmp_reset(&config)?;
     let gdb = gdb_script_command(&config, None, script.path());
-    block_with_signals(&signals, true, || run_command(gdb))
+    block_with_signals(&mut signals, true, || run_command(gdb))
 }
 
 /// Runs `drone flash` command.
 pub fn flash(
     cmd: FlashCmd,
-    signals: Signals,
+    mut signals: Signals,
     registry: Registry<'_>,
     config: config::Config,
 ) -> Result<()> {
     let FlashCmd { firmware } = cmd;
     let script = registry.bmp_flash(&config)?;
     let gdb = gdb_script_command(&config, Some(&firmware), script.path());
-    block_with_signals(&signals, true, || run_command(gdb))
+    block_with_signals(&mut signals, true, || run_command(gdb))
 }
 
 /// Runs `drone gdb` command.
 pub fn gdb(
     cmd: GdbCmd,
-    signals: Signals,
+    mut signals: Signals,
     registry: Registry<'_>,
     config: config::Config,
 ) -> Result<()> {
     let GdbCmd { firmware, reset, interpreter, gdb_args } = cmd;
     let script = registry.bmp_gdb(&config, reset, &rustc_substitute_path()?)?;
     run_gdb_client(
-        &signals,
+        &mut signals,
         &config,
         &gdb_args,
         firmware.as_deref(),
@@ -64,7 +64,7 @@ pub fn gdb(
 /// Runs `drone log` command.
 pub fn log_swo_serial(
     cmd: LogCmd,
-    signals: Signals,
+    mut signals: Signals,
     registry: Registry<'_>,
     config: config::Config,
     color: Color,
@@ -79,14 +79,14 @@ pub fn log_swo_serial(
     let script = registry.bmp_swo(&config, &ports, reset, &pipe)?;
     let mut gdb = spawn_command(gdb_script_command(&config, None, script.path()))?;
 
-    let (pipe, packet) = gdb_script_wait(&signals, pipe)?;
-    setup_serial_endpoint(&signals, serial_endpoint, config_log_swo.baud_rate)?;
+    let (pipe, packet) = gdb_script_wait(&mut signals, pipe)?;
+    setup_serial_endpoint(&mut signals, serial_endpoint, config_log_swo.baud_rate)?;
     exhaust_fifo(serial_endpoint)?;
     log::capture(serial_endpoint.into(), log::Output::open_all(&outputs)?, log::swo::parser);
     begin_log_output(color);
-    gdb_script_continue(&signals, pipe, packet)?;
+    gdb_script_continue(&mut signals, pipe, packet)?;
 
-    block_with_signals(&signals, true, move || {
+    block_with_signals(&mut signals, true, move || {
         gdb.wait()?;
         Ok(())
     })?;

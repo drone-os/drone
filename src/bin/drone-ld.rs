@@ -24,21 +24,21 @@ fn run() -> Result<()> {
     let output = args[args.iter().position(|arg| arg == "-o").unwrap() + 1].clone();
     let config = Config::read_from_current_dir()?;
     let registry = Registry::new()?;
-    let signals = register_signals()?;
+    let mut signals = register_signals()?;
     {
         let script = registry.layout_ld(&config, false)?;
         let linker = linker_command(script.as_ref(), &args, &[])?;
-        block_with_signals(&signals, true, || run_command(linker))?;
+        block_with_signals(&mut signals, true, || run_command(linker))?;
     }
     let size = size_command(&output)?;
-    let syms = block_with_signals(&signals, true, || run_size(size))?
+    let syms = block_with_signals(&mut signals, true, || run_size(size))?
         .into_iter()
         .map(|(name, size)| format!("--defsym=_{}_section_size={}", name, size))
         .collect::<Vec<_>>();
     {
         let script = registry.layout_ld(&config, true)?;
         let linker = linker_command(script.as_ref(), &args, &syms)?;
-        block_with_signals(&signals, true, || run_command(linker))?;
+        block_with_signals(&mut signals, true, || run_command(linker))?;
     }
     Ok(())
 }

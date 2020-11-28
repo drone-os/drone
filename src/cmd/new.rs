@@ -49,7 +49,7 @@ pub fn run(cmd: NewCmd, color: Color) -> Result<()> {
 
     cargo_new(&path, &toolchain)?;
     src_main_rs(&path, color)?;
-    src_bin_rs(&path, device, &underscore_name, &registry, color)?;
+    src_bin_name_rs(&path, device, &name, &underscore_name, &registry, color)?;
     src_lib_rs(&path, device, log, &registry, color)?;
     src_thr_rs(&path, device, &registry, color)?;
     src_tasks_mod_rs(&path, &registry, color)?;
@@ -121,17 +121,20 @@ fn src_main_rs(path: &Path, color: Color) -> Result<()> {
     Ok(())
 }
 
-fn src_bin_rs(
+fn src_bin_name_rs(
     path: &Path,
     device: &Device,
     name: &str,
+    underscore_name: &str,
     registry: &Registry<'_>,
     color: Color,
 ) -> Result<()> {
-    let path = path.join("src/bin.rs");
+    let path = path.join("src/bin");
+    create_dir(&path)?;
+    let path = path.join(format!("{}.rs", name));
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_bin_rs(device, name)?.as_bytes())?;
-    print_created("src/bin.rs", color);
+    file.write_all(registry.new_src_bin_name_rs(device, underscore_name)?.as_bytes())?;
+    print_created(&format!("src/bin/{}.rs", name), color);
     Ok(())
 }
 
