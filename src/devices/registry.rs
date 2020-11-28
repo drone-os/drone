@@ -761,7 +761,7 @@ pub const REGISTRY: &[Device] = &[
     },
     Device {
         name: "cc2538",
-        target: "thumbv8m.main-none-eabihf",
+        target: "thumbv7m-none-eabi",
         flash_origin: 0x0000_0000,
         ram_origin: 0x0020_0000,
         platform_crate: PlatformCrate {
