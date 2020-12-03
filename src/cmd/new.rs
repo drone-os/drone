@@ -58,7 +58,7 @@ pub fn run(cmd: NewCmd, color: Color) -> Result<()> {
     drone_toml(&path, device, flash_size, ram_size, &heap, probe, log, &registry, color)?;
     justfile(&path, device, &registry, color)?;
     rust_toolchain(&path, &toolchain, &registry, color)?;
-    cargo_config(&path, &registry, color)?;
+    cargo_config(&path, device, &registry, color)?;
     gitignore(&path, &registry, color)?;
 
     Ok(())
@@ -240,12 +240,12 @@ fn rust_toolchain(
     Ok(())
 }
 
-fn cargo_config(path: &Path, registry: &Registry<'_>, color: Color) -> Result<()> {
+fn cargo_config(path: &Path, device: &Device, registry: &Registry<'_>, color: Color) -> Result<()> {
     let path = path.join(".cargo");
     create_dir(&path)?;
     let path = path.join("config");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_cargo_config()?.as_bytes())?;
+    file.write_all(registry.new_cargo_config(device)?.as_bytes())?;
     print_created(".cargo/config", color);
     Ok(())
 }

@@ -1,3 +1,12 @@
+[build]
+target = "{{device_target}}"
+
+[target.{{device_target}}]
+rustflags = [
+    '--cfg', '{{platform_flag_name}}="{{platform_flag}}"',
+    '--cfg', '{{bindings_flag_name}}="{{bindings_flag}}"'
+]
+
 [target.'cfg(target_os = "none")']
 rustflags = [
     "-C", "linker=drone-ld",
