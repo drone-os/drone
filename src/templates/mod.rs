@@ -189,13 +189,7 @@ impl Registry<'_> {
 
     /// Renders `Justfile`.
     pub fn new_justfile(&self, device: &Device) -> Result<String> {
-        let data = json!({
-            "device_target": device.target,
-            "platform_flag_name": device.platform_crate.krate.flag_name(),
-            "bindings_flag_name": device.bindings_crate.krate.flag_name(),
-            "platform_flag": device.platform_crate.flag,
-            "bindings_flag": device.bindings_crate.flag,
-        });
+        let data = json!({ "device_target": device.target });
         helpers::clear_vars();
         Ok(self.0.render("new/Justfile", &data)?)
     }
@@ -208,9 +202,16 @@ impl Registry<'_> {
     }
 
     /// Renders `.cargo/config`.
-    pub fn new_cargo_config(&self) -> Result<String> {
+    pub fn new_cargo_config(&self, device: &Device) -> Result<String> {
+        let data = json!({
+            "device_target": device.target,
+            "platform_flag_name": device.platform_crate.krate.flag_name(),
+            "bindings_flag_name": device.bindings_crate.krate.flag_name(),
+            "platform_flag": device.platform_crate.flag,
+            "bindings_flag": device.bindings_crate.flag,
+        });
         helpers::clear_vars();
-        Ok(self.0.render("new/_cargo/config", &())?)
+        Ok(self.0.render("new/_cargo/config", &data)?)
     }
 
     /// Renders `.gitignore`.
