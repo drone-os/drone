@@ -15,6 +15,7 @@ Possible log types:
 
 - [changed] `drone new` generates a more IDE-friendly project with all rustflags
   stored in `.cargo/config`
+- [deprecated] `drone env` command is now deprecated
 
 ### v0.13.0 (2020-11-28)
 

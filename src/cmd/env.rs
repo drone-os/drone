@@ -1,11 +1,13 @@
 //! `drone env` command.
 
-use crate::cli::EnvCmd;
+use crate::{cli::EnvCmd, color::Color};
+use ansi_term::Color::Yellow;
 use anyhow::{anyhow, bail, Result};
 use std::{env, os::unix::process::CommandExt, process::Command};
 
 /// Runs `drone env` command.
-pub fn run(cmd: EnvCmd) -> Result<()> {
+pub fn run(cmd: EnvCmd, color: Color) -> Result<()> {
+    eprintln!("{}: `drone env` command is deprecated", color.bold_fg("warning", Yellow));
     let EnvCmd { target, command } = cmd;
     let mut iter = command.iter();
     if let Some(command) = iter.next() {
