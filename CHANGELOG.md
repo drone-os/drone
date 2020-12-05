@@ -11,6 +11,11 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
+### v0.13.1 (2020-12-05)
+
+- [changed] `drone new` generates a more IDE-friendly project with all rustflags
+  stored in `.cargo/config`
+
 ### v0.13.0 (2020-11-28)
 
 - [added] Added mandatory option `linker.platform` to `Drone.toml`
