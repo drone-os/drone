@@ -13,6 +13,8 @@ Possible log types:
 
 ### Unreleased
 
+- [added] Generated linker scripts are now available at
+  `target/<target>/layout.ld.<stage>` paths
 - [added] Added `drone print target` command
 - [changed] `drone support` command renamed to `drone print supported-devices`
 - [removed] Previously deprecated `drone env` command has been removed

@@ -11,7 +11,7 @@ use anyhow::Result;
 use drone_config::Config;
 use handlebars::Handlebars;
 use serde_json::json;
-use std::{collections::BTreeSet, error::Error, fs::File, path::Path};
+use std::{collections::BTreeSet, error::Error, fs::File, io::Write, path::Path};
 use tempfile::NamedTempFile;
 
 /// Templates registry.
@@ -61,10 +61,10 @@ impl Registry<'_> {
     }
 
     /// Renders linker script.
-    pub fn layout_ld(&self, config: &Config, stage_two: bool) -> Result<NamedTempFile> {
+    pub fn layout_ld<W: Write>(&self, config: &Config, stage_two: bool, writer: W) -> Result<()> {
         let data = json!({ "config": config, "stage_two": stage_two });
         helpers::clear_vars();
-        named_temp_file(|file| self.0.render_to_write("layout.ld", &data, file))
+        Ok(self.0.render_to_write("layout.ld", &data, writer)?)
     }
 
     /// Renders cortexm `src/bin/name.rs`.
