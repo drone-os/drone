@@ -72,7 +72,7 @@ gdb:
 log:
 	drone log --reset :0:1
 
-# Record `heaptrace` file (the target should be running a binary with `heaptrace` feature)
+# Record `heaptrace` file (`trace_port` option in `heap!` macro should be enabled)
 heaptrace:
 	truncate -s0 heaptrace
 	drone log --reset :0:1 heaptrace:31
