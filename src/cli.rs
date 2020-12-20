@@ -31,8 +31,6 @@ pub struct Cli {
 
 #[derive(Debug, StructOpt)]
 pub enum Cmd {
-    /// Fixes cross-compile environment for cargo
-    Env(EnvCmd),
     /// Write the binary to ROM
     Flash(FlashCmd),
     /// Run a GDB session
@@ -47,15 +45,6 @@ pub enum Cmd {
     Reset(ResetCmd),
     /// Print a list of supported target devices, debug probes, and log types
     Support,
-}
-
-#[derive(Debug, StructOpt)]
-pub struct EnvCmd {
-    /// Target triple for which the code is compiled
-    pub target: Option<String>,
-    /// Cargo command
-    #[structopt(parse(from_os_str), last(true))]
-    pub command: Vec<OsString>,
 }
 
 #[derive(Debug, StructOpt)]

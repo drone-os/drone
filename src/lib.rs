@@ -80,7 +80,6 @@ impl Cli {
             .filter(None, Level::Warn.to_level_filter())
             .try_init()?;
         match cmd {
-            Cmd::Env(cmd) => cmd::env(cmd, color),
             Cmd::Flash(cmd) => cmd::flash(cmd),
             Cmd::Gdb(cmd) => cmd::gdb(cmd),
             Cmd::Heap(cmd) => cmd::heap(cmd, color),

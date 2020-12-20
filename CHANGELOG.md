@@ -13,6 +13,8 @@ Possible log types:
 
 ### Unreleased
 
+- [removed] Previously deprecated `drone env` command has been removed
+
 ### v0.13.1 (2020-12-05)
 
 - [changed] `drone new` generates a more IDE-friendly project with all rustflags
