@@ -7,6 +7,7 @@ use handlebars::{
     handlebars_helper, no_escape, Context, Handlebars, Helper, HelperDef, HelperResult, JsonValue,
     Output, RenderContext, RenderError, Renderable, ScopedJson,
 };
+use inflector::Inflector;
 use regex::Regex;
 use std::{collections::HashMap, sync::Mutex};
 
@@ -17,6 +18,8 @@ thread_local! {
 handlebars_helper!(addr: |num: u64| format!("0x{:08x}", num));
 
 handlebars_helper!(size: |num: u64| format_size(num as u32));
+
+handlebars_helper!(upcase: |value: str| value.to_screaming_snake_case());
 
 pub struct Set;
 
@@ -133,6 +136,7 @@ pub fn register(handlebars: &mut Handlebars<'_>) {
     handlebars.register_helper("get", Box::new(Get));
     handlebars.register_helper("addr", Box::new(addr));
     handlebars.register_helper("size", Box::new(size));
+    handlebars.register_helper("upcase", Box::new(upcase));
     handlebars.register_helper("replace", Box::new(Replace));
     handlebars.register_helper("if-includes", Box::new(IfIncludes));
     handlebars.register_escape_fn(no_escape);

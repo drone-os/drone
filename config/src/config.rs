@@ -2,6 +2,7 @@
 
 use crate::deserialize_size;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Config object.
 #[non_exhaustive]
@@ -19,23 +20,16 @@ pub struct Config {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Memory {
-    pub flash: MemoryFlash,
-    pub ram: MemoryRam,
+    pub flash: MemoryBlock,
+    pub ram: MemoryBlock,
+    #[serde(flatten)]
+    pub extra: HashMap<String, MemoryBlock>,
 }
 
 #[non_exhaustive]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub struct MemoryFlash {
-    #[serde(deserialize_with = "deserialize_size")]
-    pub size: u32,
-    pub origin: u32,
-}
-
-#[non_exhaustive]
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct MemoryRam {
+pub struct MemoryBlock {
     #[serde(deserialize_with = "deserialize_size")]
     pub size: u32,
     pub origin: u32,

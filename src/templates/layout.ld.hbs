@@ -2,30 +2,33 @@ MEMORY
 {
     FLASH (rx) : ORIGIN = {{addr config.memory.flash.origin}}, LENGTH = {{size config.memory.flash.size}}
     RAM (wx) : ORIGIN = {{addr config.memory.ram.origin}}, LENGTH = {{size config.memory.ram.size}}
+{{~ #each config.memory}}{{#if (and (ne @key "flash") (ne @key "ram"))}}
+    {{upcase @key}} (wx) : ORIGIN = {{addr this.origin}}, LENGTH = {{size this.size}}
+{{~ /if}}{{/each}}
 }
 
 ENTRY(reset);
 
 SECTIONS
 {
-{{#unless stage_two}}
+{{~ #unless stage_two}}
     STACK_POINTER = ORIGIN(RAM);
-{{else}}
+{{~ else}}
     STACK_POINTER = ORIGIN(RAM) + LENGTH(RAM)
         - _data_section_size
         - _bss_section_size
         - _dronereg_section_size
         - _heap_section_size;
-{{/unless}}
+{{~ /unless}}
+{{~ #if (eq config.linker.platform "arm") }}
 
-{{#if (eq config.linker.platform "arm") }}
     .vtable ORIGIN(FLASH) :
     {
         LONG(STACK_POINTER);
         KEEP(*(.rodata.VTABLE));
         . = ALIGN(4);
     } > FLASH
-{{/if}}
+{{~ /if}}
 
     .text :
     {
@@ -73,14 +76,14 @@ SECTIONS
 
     /DISCARD/ :
     {
-{{#if (eq config.linker.platform "arm") }}
+{{~ #if (eq config.linker.platform "arm") }}
         *(.ARM.*)
-{{/if}}{{#if (eq config.linker.platform "riscv") }}
+{{~ /if}}{{#if (eq config.linker.platform "riscv") }}
         *(.eh_frame .eh_frame_hdr)
-{{/if}}
+{{~ /if}}
     }
 }
 
-{{#each config.linker.include}}
+{{~ #each config.linker.include}}
 INCLUDE {{this}};
-{{/each}}
+{{~ /each}}
