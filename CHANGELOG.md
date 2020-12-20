@@ -11,6 +11,8 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
+### Unreleased
+
 ### v0.13.1 (2020-12-05)
 
 - [changed] `drone new` generates a more IDE-friendly project with all rustflags

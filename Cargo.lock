@@ -218,7 +218,7 @@ dependencies = [
 
 [[package]]
 name = "drone"
-version = "0.13.1"
+version = "0.14.0"
 dependencies = [
  "ansi_term 0.12.1",
  "anyhow",
@@ -240,7 +240,7 @@ dependencies = [
 
 [[package]]
 name = "drone-config"
-version = "0.13.1"
+version = "0.14.0"
 dependencies = [
  "anyhow",
  "serde",
