@@ -166,6 +166,8 @@ pub struct PrintCmd {
 
 #[derive(Debug, StructOpt)]
 pub enum PrintSubCmd {
+    /// Print the target triple of the current Drone project
+    Target,
     /// Print a list of supported target devices, debug probes, and log types
     SupportedDevices,
 }

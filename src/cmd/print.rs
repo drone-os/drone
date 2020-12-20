@@ -6,17 +6,57 @@ use crate::{
     devices::{Device, REGISTRY},
     probe,
     probe::{Log, Probe},
+    utils::crate_root,
 };
-use anyhow::Result;
+use anyhow::{anyhow, bail, Result};
 use prettytable::{cell, format, row, Table};
-use std::io::stdout;
+use serde::Deserialize;
+use std::{
+    fs::File,
+    io::{prelude::*, stdout},
+};
+
+const CARGO_CONFIG_PATH: &str = ".cargo/config";
+
+#[non_exhaustive]
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct CargoConfig {
+    build: Option<CargoConfigBuild>,
+}
+
+#[non_exhaustive]
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct CargoConfigBuild {
+    target: Option<String>,
+}
 
 /// Runs `drone print` command.
 pub fn run(cmd: PrintCmd, color: Color) -> Result<()> {
     let PrintCmd { print_sub_cmd } = cmd;
     match print_sub_cmd {
+        PrintSubCmd::Target => target(),
         PrintSubCmd::SupportedDevices => supported_devices(color),
     }
+}
+
+fn target() -> Result<()> {
+    let crate_root = crate_root()?.canonicalize()?;
+    let path = crate_root.join(CARGO_CONFIG_PATH);
+    if !path.exists() {
+        bail!("`{}` not exists in `{}", CARGO_CONFIG_PATH, crate_root.display());
+    }
+    let mut buffer = String::new();
+    let mut file = File::open(&path)?;
+    file.read_to_string(&mut buffer)?;
+    let config = toml::from_str::<CargoConfig>(&buffer)?;
+    let target = config
+        .build
+        .and_then(|build| build.target)
+        .ok_or_else(|| anyhow!("No [build.target] configuration in {}", CARGO_CONFIG_PATH))?;
+    println!("{}", target);
+    Ok(())
 }
 
 fn supported_devices(color: Color) -> Result<()> {

@@ -1,17 +1,17 @@
-target := '{{device_target}}'
 features := ''
 name := `basename "$(pwd)"`
+target := `drone print target 2>/dev/null || echo ""`
 release_bin := "target/" + target + "/release/" + name
 
 # Install dependencies
 deps:
-	rustup target add \{{target}}
+	type cargo-objdump >/dev/null || cargo +stable install cargo-binutils
+	type drone >/dev/null || cargo install drone
+	rustup target add $(drone print target)
 	rustup component add rust-src
 	rustup component add rustfmt
 	rustup component add clippy
 	rustup component add llvm-tools-preview
-	type cargo-objdump >/dev/null || cargo +stable install cargo-binutils
-	type drone >/dev/null || cargo install drone
 
 # Reformat the source code
 fmt:

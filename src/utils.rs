@@ -38,7 +38,16 @@ pub fn run_wrapper(color: Color, f: impl FnOnce() -> Result<()>) {
     }
 }
 
-/// Search for the Rust tool `tool` in the sysroot.
+/// Returns the current crate root.
+pub fn crate_root() -> Result<PathBuf> {
+    let mut cargo = Command::new("cargo");
+    cargo.arg("locate-project").arg("--message-format=plain");
+    let mut root = PathBuf::from(String::from_utf8(cargo.output()?.stdout)?);
+    root.pop();
+    Ok(root)
+}
+
+/// Searches for the Rust tool `tool` in the sysroot.
 pub fn search_rust_tool(tool: &str) -> Result<PathBuf> {
     let mut rustc = Command::new("rustc");
     rustc.arg("--print").arg("sysroot");

@@ -11,7 +11,7 @@ mod format;
 pub use crate::{config::*, format::*};
 
 use anyhow::{anyhow, bail, Result};
-use std::{env, fs::File, io::Read, path::Path};
+use std::{env, fs::File, io::prelude::*, path::Path};
 
 /// The name of the Drone configuration file.
 pub const CONFIG_NAME: &str = "Drone.toml";
