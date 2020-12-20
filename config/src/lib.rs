@@ -57,12 +57,23 @@ impl Config {
     /// Parses config from the `string`.
     pub fn parse(string: &str) -> Result<Self> {
         let config = toml::from_str::<Self>(&string)?;
-        config.check_heap()?;
+        config.check_heaps()?;
         Ok(config)
     }
 
-    fn check_heap(&self) -> Result<()> {
-        let Self { heap: Heap { size, pools }, .. } = self;
+    fn check_heaps(&self) -> Result<()> {
+        let Self { heap: Heap { main, extra }, .. } = self;
+        main.check_pools()?;
+        for heap in extra.values() {
+            heap.block.check_pools()?;
+        }
+        Ok(())
+    }
+}
+
+impl HeapBlock {
+    fn check_pools(&self) -> Result<()> {
+        let Self { size, pools } = self;
         let used: u32 = pools.iter().map(|pool| pool.block * pool.capacity).sum();
         if used != *size {
             bail!("{}: `heap.pools` adds up to {}, but `heap.size = {}", CONFIG_NAME, used, size);

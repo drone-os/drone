@@ -57,10 +57,10 @@ pub fn optimize(trace: &TraceMap, size: u32, mut pools: u32) -> Result<(Vec<(u32
     Ok((output, frag))
 }
 
-/// Renders `[heap]` section for `Drone.toml`.
-pub fn render(w: &mut impl Write, layout: &[(u32, u32)]) -> Result<()> {
+/// Renders `[heap.<key>]` section for `Drone.toml`.
+pub fn render(w: &mut impl Write, key: &str, layout: &[(u32, u32)]) -> Result<()> {
     let size = layout.iter().map(|(size, count)| size * count).sum::<u32>();
-    writeln!(w, "[heap]")?;
+    writeln!(w, "[heap.{}]", key)?;
     writeln!(w, "size = \"{}\"", format_size(size))?;
     writeln!(w, "pools = [")?;
     for (block, capacity) in layout {

@@ -103,7 +103,7 @@ fn choose_probe_and_log(
 fn new_heap(size: u32, pools: u32) -> Result<String> {
     let layout = heap::layout::empty(size, pools);
     let mut output = Vec::new();
-    heap::layout::render(&mut output, &layout)?;
+    heap::layout::render(&mut output, "main", &layout)?;
     Ok(String::from_utf8(output)?)
 }
 

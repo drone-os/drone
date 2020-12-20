@@ -13,6 +13,7 @@ Possible log types:
 
 ### Unreleased
 
+- [added] Added support for multiple heaps
 - [added] Extra memory blocks can be added to generated linker scripts by
   providing custom blocks in form of `[memory.foo]` in `Drone.toml`
 - [added] Generated linker scripts are now available at

@@ -69,7 +69,7 @@ SECTIONS
     .heap ADDR(.dronereg) + SIZEOF(.dronereg) (NOLOAD) :
     {
         HEAP_START = .;
-        . += {{size config.heap.size}};
+        . += {{size config.heap.main.size}};
         . = ALIGN(4);
         HEAP_END = .;
     } > RAM

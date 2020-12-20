@@ -90,6 +90,9 @@ pub struct HeapCmd {
         parse(from_os_str)
     )]
     pub trace_file: PathBuf,
+    /// Heap configuration key.
+    #[structopt(short, long, default_value = "main")]
+    pub config: String,
     /// Maximum size of the heap
     #[structopt(short, long, parse(try_from_str = parse_size))]
     pub size: Option<u32>,

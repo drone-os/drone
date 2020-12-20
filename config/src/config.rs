@@ -39,6 +39,15 @@ pub struct MemoryBlock {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Heap {
+    pub main: HeapBlock,
+    #[serde(flatten)]
+    pub extra: HashMap<String, HeapExtra>,
+}
+
+#[non_exhaustive]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct HeapBlock {
     #[serde(deserialize_with = "deserialize_size")]
     pub size: u32,
     pub pools: Vec<HeapPool>,
@@ -47,10 +56,10 @@ pub struct Heap {
 #[non_exhaustive]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub struct Linker {
-    pub platform: String,
-    #[serde(default)]
-    pub include: Vec<String>,
+pub struct HeapExtra {
+    pub origin: u32,
+    #[serde(flatten)]
+    pub block: HeapBlock,
 }
 
 #[non_exhaustive]
@@ -60,6 +69,15 @@ pub struct HeapPool {
     #[serde(deserialize_with = "deserialize_size")]
     pub block: u32,
     pub capacity: u32,
+}
+
+#[non_exhaustive]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct Linker {
+    pub platform: String,
+    #[serde(default)]
+    pub include: Vec<String>,
 }
 
 #[non_exhaustive]

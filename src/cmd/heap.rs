@@ -7,7 +7,7 @@ use crate::{
     heap::TraceMap,
 };
 use ansi_term::Color::{Cyan, Yellow};
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use drone_config::{self as config, format_size};
 use prettytable::{cell, format, row, Table};
 use std::{
@@ -17,9 +17,22 @@ use std::{
 
 /// Runs `drone heap` command.
 pub fn run(cmd: HeapCmd, color: Color) -> Result<()> {
-    let HeapCmd { trace_file, size, heap_sub_cmd } = cmd;
+    let HeapCmd { trace_file, config: heap_config, size, heap_sub_cmd } = cmd;
     let size = size.map_or_else(
-        || config::Config::read_from_current_dir().map(|config| config.heap.size),
+        || {
+            config::Config::read_from_current_dir().and_then(|config| {
+                if heap_config == "main" {
+                    Ok(config.heap.main.size)
+                } else {
+                    config
+                        .heap
+                        .extra
+                        .get(&heap_config)
+                        .map(|heap| heap.block.size)
+                        .ok_or_else(|| anyhow!("Unknown `{}` heap configuration", heap_config))
+                }
+            })
+        },
         Ok,
     )?;
     let mut trace = TraceMap::new();
@@ -42,29 +55,36 @@ pub fn run(cmd: HeapCmd, color: Color) -> Result<()> {
         );
     }
     match heap_sub_cmd {
-        Some(HeapSubCmd::Generate(cmd)) => generate(cmd, &trace, size, color),
+        Some(HeapSubCmd::Generate(cmd)) => generate(cmd, &heap_config, &trace, size, color),
         None => Ok(()),
     }
 }
 
 /// Runs `drone heap generate` command.
-pub fn generate(cmd: HeapGenerateCmd, trace: &TraceMap, size: u32, color: Color) -> Result<()> {
+pub fn generate(
+    cmd: HeapGenerateCmd,
+    config: &str,
+    trace: &TraceMap,
+    size: u32,
+    color: Color,
+) -> Result<()> {
     let HeapGenerateCmd { pools } = cmd;
     if trace.is_empty() {
         let layout = heap::layout::empty(size, pools);
-        heap::layout::render(&mut stdout(), &layout)?;
+        heap::layout::render(&mut stdout(), config, &layout)?;
     } else {
         let (layout, frag) = heap::layout::optimize(&trace, size, pools)?;
         eprintln!();
         eprintln!("{}", color.bold_fg(&format!("{:=^80}", " OPTIMIZED LAYOUT "), Cyan));
-        heap::layout::render(&mut stdout(), &layout)?;
+        heap::layout::render(&mut stdout(), config, &layout)?;
         eprintln!(
             "# fragmentation: {}",
             color.bold(&format!("{} / {:.2}%", frag, f64::from(frag) / f64::from(size) * 100.0))
         );
         eprintln!(
-            "# {}: replace the existing [heap] section in Drone.toml",
-            color.bold_fg("hint", Cyan)
+            "# {}: replace the existing [heap.{}] section in Drone.toml",
+            color.bold_fg("hint", Cyan),
+            config
         );
     }
     Ok(())
