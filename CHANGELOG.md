@@ -13,6 +13,7 @@ Possible log types:
 
 ### Unreleased
 
+- [changed] `drone support` command renamed to `drone print supported-devices`
 - [removed] Previously deprecated `drone env` command has been removed
 
 ### v0.13.1 (2020-12-05)

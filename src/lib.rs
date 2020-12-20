@@ -86,7 +86,7 @@ impl Cli {
             Cmd::Log(cmd) => cmd::log(cmd, color),
             Cmd::New(cmd) => cmd::new(cmd, color),
             Cmd::Reset(cmd) => cmd::reset(cmd),
-            Cmd::Support => cmd::support(color),
+            Cmd::Print(cmd) => cmd::print(cmd, color),
         }
     }
 }

@@ -43,8 +43,8 @@ pub enum Cmd {
     New(NewCmd),
     /// Assert the reset signal
     Reset(ResetCmd),
-    /// Print a list of supported target devices, debug probes, and log types
-    Support,
+    /// Print requested information on stdout
+    Print(PrintCmd),
 }
 
 #[derive(Debug, StructOpt)]
@@ -52,8 +52,8 @@ pub struct NewCmd {
     /// Where to create a new cargo package
     #[structopt(parse(from_os_str))]
     pub path: PathBuf,
-    /// The target device for the project (run `drone support` for the list of
-    /// available options)
+    /// The target device for the project (run `drone print supported-devices`
+    /// for the list of available options)
     #[structopt(short, long)]
     pub device: String,
     /// Flash memory size in bytes (e.g. 1M for 1 megabyte, 512K for 512 kilobyte, or hexadecimal
@@ -63,12 +63,12 @@ pub struct NewCmd {
     /// RAM size in bytes (e.g. 256K for 256 kilobyte, or hexadecimal 0xffK)
     #[structopt(short, long, parse(try_from_str = parse_size))]
     pub ram_size: u32,
-    /// Debug probe connected to the target device (run `drone support` for the
-    /// list of all available options)
+    /// Debug probe connected to the target device (run `drone print
+    /// supported-devices` for the list of all available options)
     #[structopt(short, long, parse(try_from_str = de_from_str))]
     pub probe: Option<Probe>,
-    /// Log type to use for the project (run `drone support` for the list of all
-    /// available options)
+    /// Log type to use for the project (run `drone print supported-devices` for
+    /// the list of all available options)
     #[structopt(long, short, parse(try_from_str = de_from_str))]
     pub log: Option<Log>,
     /// Set the resulting package name, defaults to the directory name
@@ -156,6 +156,18 @@ pub struct LogOutput {
     pub ports: Vec<u32>,
     /// Output path.
     pub path: OsString,
+}
+
+#[derive(Debug, StructOpt)]
+pub struct PrintCmd {
+    #[structopt(subcommand)]
+    pub print_sub_cmd: PrintSubCmd,
+}
+
+#[derive(Debug, StructOpt)]
+pub enum PrintSubCmd {
+    /// Print a list of supported target devices, debug probes, and log types
+    SupportedDevices,
 }
 
 fn parse_log_output(src: &OsStr) -> Result<LogOutput, OsString> {

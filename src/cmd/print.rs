@@ -1,6 +1,7 @@
-//! `drone support` command.
+//! `drone print` command.
 
 use crate::{
+    cli::{PrintCmd, PrintSubCmd},
     color::Color,
     devices::{Device, REGISTRY},
     probe,
@@ -10,8 +11,15 @@ use anyhow::Result;
 use prettytable::{cell, format, row, Table};
 use std::io::stdout;
 
-/// Runs `drone support` command.
-pub fn run(color: Color) -> Result<()> {
+/// Runs `drone print` command.
+pub fn run(cmd: PrintCmd, color: Color) -> Result<()> {
+    let PrintCmd { print_sub_cmd } = cmd;
+    match print_sub_cmd {
+        PrintSubCmd::SupportedDevices => supported_devices(color),
+    }
+}
+
+fn supported_devices(color: Color) -> Result<()> {
     let mut table = Table::new();
     table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
     table.set_titles(row![
