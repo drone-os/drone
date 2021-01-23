@@ -1,5 +1,3 @@
-cargo-features = ["resolver"]
-
 {{replace (replace contents
     "edition = \"2018\"" "$0\nresolver = \"2\"")
     "\\n\\n\\[dependencies\\]\\n" ""}}

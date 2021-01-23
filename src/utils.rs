@@ -68,9 +68,8 @@ pub fn run_command(mut command: Command) -> Result<()> {
         Ok(status) => {
             if let Some(code) = status.code() {
                 bail!("`{:?}` exited with status code: {}", command, code)
-            } else {
-                bail!("`{:?}` terminated by signal", command,)
             }
+            bail!("`{:?}` terminated by signal", command,)
         }
         Err(err) => bail!("`{:?}` failed to execute: {}", command, err),
     }
@@ -102,7 +101,7 @@ where
     });
     loop {
         match rx.recv_timeout(Duration::from_millis(100)) {
-            Ok(value) => return Ok(value?),
+            Ok(value) => return value,
             Err(RecvTimeoutError::Disconnected) => bail!("channel is broken"),
             Err(RecvTimeoutError::Timeout) => {
                 for signal in signals.pending() {
