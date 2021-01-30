@@ -1,4 +1,5 @@
-#![feature(naked_functions)]
+#![feature(unsafe_block_in_unsafe_fn)]
+#![warn(unsafe_op_in_unsafe_fn)]
 #![no_main]
 #![no_std]
 
@@ -18,16 +19,32 @@ pub static VTABLE: Vtable = Vtable::new(reset);
 ///
 /// # Safety
 ///
-/// This function should not be called by software.
+/// This function should only be called by hardware.
 #[no_mangle]
-#[naked]
 pub unsafe extern "C" fn reset() -> ! {
-    mem::bss_init();
-    mem::data_init();
+    // Fill the memory region allocated for initially zeroed mutable static
+    // variables with zeros. This is safe because none of these variables have
+    // been in use before this line.
+    unsafe { mem::bss_init() };
+    // Fill the memory region for other mutable static variables with initial
+    // values from flash memory. This is safe because none of these variables
+    // have been in use before this line.
+    unsafe { mem::data_init() };
 {{~#if-includes platform_features "floating-point-unit" }}
-    processor::fpu_init(true);
+    // Initialize the Floating Point Unit. This is safe because the unit has not
+    // been in use before this line.
+    unsafe { processor::fpu_init(true) };
 {{~/if-includes}}
-    tasks::root(Regs::take(), ThrsInit::take());
+    // Run the root task.
+    tasks::root(
+        // Instantiate a zero-sized collection of tokens for memory-mapped
+        // registers. Safe only if this is the only instance.
+        unsafe { Regs::take() },
+        // Instantiate a zero-sized token needed to initialize the threading
+        // system later. Safe only if this is the only instance.
+        unsafe { ThrsInit::take() },
+    );
+    // If the root task returned, always sleep between interrupts.
     loop {
         processor::wait_for_int();
     }
