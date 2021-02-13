@@ -11,6 +11,10 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
+### v0.13.2 (2021-02-13)
+
+- [fixed] Fix broken SWO logger for Black Magic Probe
+
 ### v0.13.1 (2020-12-05)
 
 - [changed] `drone new` generates a more IDE-friendly project with all rustflags
