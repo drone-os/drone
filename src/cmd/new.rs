@@ -56,7 +56,7 @@ pub fn run(cmd: NewCmd, color: Color) -> Result<()> {
     src_tasks_root_rs(&path, device, &registry, color)?;
     cargo_toml(&path, &name, device, &registry, color)?;
     drone_toml(&path, device, flash_size, ram_size, &heap, probe, log, &registry, color)?;
-    justfile(&path, device, &registry, color)?;
+    justfile(&path, &registry, color)?;
     rust_toolchain(&path, &toolchain, &registry, color)?;
     cargo_config(&path, device, &registry, color)?;
     gitignore(&path, &registry, color)?;
@@ -219,10 +219,10 @@ fn drone_toml(
     Ok(())
 }
 
-fn justfile(path: &Path, device: &Device, registry: &Registry<'_>, color: Color) -> Result<()> {
+fn justfile(path: &Path, registry: &Registry<'_>, color: Color) -> Result<()> {
     let path = path.join("Justfile");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_justfile(device)?.as_bytes())?;
+    file.write_all(registry.new_justfile()?.as_bytes())?;
     print_created("Justfile", color);
     Ok(())
 }

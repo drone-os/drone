@@ -188,10 +188,9 @@ impl Registry<'_> {
     }
 
     /// Renders `Justfile`.
-    pub fn new_justfile(&self, device: &Device) -> Result<String> {
-        let data = json!({ "device_target": device.target });
+    pub fn new_justfile(&self) -> Result<String> {
         helpers::clear_vars();
-        Ok(self.0.render("new/Justfile", &data)?)
+        Ok(self.0.render("new/Justfile", &())?)
     }
 
     /// Renders `rust-toolchain`.

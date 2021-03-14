@@ -5,17 +5,17 @@ pub use drone_{{bindings_name}}_map::thr::*;
 
 use drone_{{platform_name}}::thr;
 
-thr! {
-    /// The thread data.
+thr::nvic! {
+    /// Thread-safe storage.
     thread => pub Thr {};
 
-    /// The thread-local storage.
+    /// Thread-local storage.
     local => pub ThrLocal {};
 
-    /// The vector table type.
+    /// Vector table.
     vtable => pub Vtable;
 
-    /// A set of thread tokens.
+    /// Thread token set.
     index => pub Thrs;
 
     /// Threads initialization token.
