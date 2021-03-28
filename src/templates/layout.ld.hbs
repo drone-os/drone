@@ -46,6 +46,7 @@ SECTIONS
     .bss STACK_POINTER (NOLOAD) :
     {
         BSS_START = .;
+        *(.sbss);
         *(.bss.*);
         *(COMMON);
         . = ALIGN(4);
