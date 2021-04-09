@@ -11,8 +11,10 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
-### Unreleased
+### v0.14.0 (2021-04-09)
 
+- [removed] `heaptrace` feature for the generated `Cargo.toml` has been removed
+  in favor of `trace_port` option in `drone_core::heap!` macro
 - [added] Added support for multiple heaps
 - [added] Extra memory blocks can be added to generated linker scripts by
   providing custom blocks in form of `[memory.foo]` in `Drone.toml`
