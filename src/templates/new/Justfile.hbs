@@ -8,10 +8,6 @@ deps:
 	type cargo-objdump >/dev/null || cargo +stable install cargo-binutils
 	type drone >/dev/null || cargo install drone
 	rustup target add $(drone print target)
-	rustup component add rust-src
-	rustup component add rustfmt
-	rustup component add clippy
-	rustup component add llvm-tools-preview
 
 # Reformat the source code
 fmt:
