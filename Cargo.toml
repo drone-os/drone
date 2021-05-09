@@ -1,5 +1,5 @@
 [workspace]
-members = ["config"]
+members = ["config", "openocd-sys"]
 
 [package]
 name = "drone"
@@ -36,6 +36,10 @@ maintenance = { status = "actively-developed" }
 [dependencies.drone-config]
 version = "=0.14.0"
 path = "config"
+
+[dependencies.drone-openocd-sys]
+version = "=0.14.0"
+path = "openocd-sys"
 
 [dependencies]
 Inflector = "0.11"

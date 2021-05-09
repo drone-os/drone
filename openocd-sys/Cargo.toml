@@ -1,0 +1,17 @@
+[package]
+name = "drone-openocd-sys"
+version = "0.14.0"
+authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
+edition = "2018"
+resolver = "2"
+links = "libopenocd"
+repository = "https://github.com/drone-os/drone"
+homepage = "https://www.drone-os.com/"
+documentation = "https://api.drone-os.com/drone-core/0.14/drone_openocd_sys/"
+license = "MIT OR Apache-2.0"
+description = """
+OpenOCD bindings for Drone, an Embedded Operating System.
+"""
+
+[build-dependencies]
+bindgen = "0.58"
