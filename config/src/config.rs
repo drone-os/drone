@@ -12,6 +12,7 @@ pub struct Config {
     pub memory: Memory,
     pub heap: Heap,
     pub linker: Linker,
+    pub text: Option<Text>,
     pub probe: Option<Probe>,
     pub log: Option<Log>,
 }
@@ -69,6 +70,13 @@ pub struct HeapPool {
     #[serde(deserialize_with = "deserialize_size")]
     pub block: u32,
     pub capacity: u32,
+}
+
+#[non_exhaustive]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct Text {
+    pub start: u32,
 }
 
 #[non_exhaustive]

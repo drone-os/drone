@@ -30,7 +30,13 @@ SECTIONS
     } > FLASH
 {{~ /if}}
 
-    .text :
+{{~ #if config.text.start }}
+    _stext = {{addr config.text.start}};
+{{~ else}}
+    _stext = ADDR(.vtable) + SIZEOF(.vtable);
+{{~ /if}}
+
+    .text _stext:
     {
         *(.text.reset);
         *(.text.*);
