@@ -45,6 +45,8 @@ pub enum Cmd {
     Reset(ResetCmd),
     /// Print requested information on stdout
     Print(PrintCmd),
+    /// Run default OpenOCD server
+    Openocd(OpenocdCmd),
 }
 
 #[derive(Debug, StructOpt)]
@@ -165,6 +167,13 @@ pub struct LogOutput {
 pub struct PrintCmd {
     #[structopt(subcommand)]
     pub print_sub_cmd: PrintSubCmd,
+}
+
+#[derive(Debug, StructOpt)]
+pub struct OpenocdCmd {
+    /// Arguments for OpenOCD
+    #[structopt(parse(from_os_str), last(true))]
+    pub args: Vec<OsString>,
 }
 
 #[derive(Debug, StructOpt)]

@@ -11,7 +11,10 @@ fn main() {
 
     println!("cargo:rerun-if-changed=wrapper.h");
     println!("cargo:rustc-link-lib=static=openocd");
+    println!("cargo:rustc-link-lib=static=jim");
+    println!("cargo:rustc-link-lib=usb-1.0");
     println!("cargo:rustc-link-search=native={}", build_path.join("src/.libs").display());
+    println!("cargo:rustc-link-search=native={}", build_path.join("jimtcl").display());
 
     Command::new("./bootstrap")
         .current_dir(&openocd_path)

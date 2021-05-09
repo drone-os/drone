@@ -86,6 +86,7 @@ impl Cli {
             Cmd::New(cmd) => cmd::new(cmd, color),
             Cmd::Reset(cmd) => cmd::reset(cmd),
             Cmd::Print(cmd) => cmd::print(cmd, color),
+            Cmd::Openocd(cmd) => cmd::openocd(cmd),
         }
     }
 }
