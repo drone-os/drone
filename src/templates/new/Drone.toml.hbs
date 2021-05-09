@@ -14,19 +14,7 @@ platform = "{{linker_platform}}"
 [probe]
 gdb-client-command = "gdb-multiarch"
 
-{{#if (eq probe_ident "bmp") ~}}
-[probe.bmp]
-device = "{{probe_bmp_device}}"
-gdb-endpoint = "/dev/ttyBmpGdb"
-{{~/if}}{{#if (eq probe_ident "jlink") ~}}
-[probe.jlink]
-gdb-server-command = "JLinkGDBServerCLExe"
-commander-command = "JLinkExe"
-device = "{{probe_jlink_device}}"
-interface = "{{probe_jlink_interface}}"
-speed = 4000
-port = 2331
-{{~/if}}{{#if (eq probe_ident "openocd") ~}}
+{{#if (eq probe_ident "openocd") ~}}
 [probe.openocd]
 command = "openocd"
 port = 3333

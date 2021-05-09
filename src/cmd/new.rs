@@ -69,29 +69,16 @@ fn choose_probe_and_log(
     mut probe: Option<Probe>,
     mut log: Option<Log>,
 ) -> Result<(Probe, Log)> {
-    if probe.is_none() {
-        if device.probe_bmp.is_some()
-            && log.map_or(true, |log| probe::log(Probe::Bmp, log).is_some())
-        {
-            probe = Some(Probe::Bmp);
-        } else if device.probe_jlink.is_some()
-            && log.map_or(true, |log| probe::log(Probe::Jlink, log).is_some())
-        {
-            probe = Some(Probe::Jlink);
-        } else if device.probe_openocd.is_some()
-            && log.map_or(true, |log| probe::log(Probe::Openocd, log).is_some())
-        {
-            probe = Some(Probe::Openocd);
-        }
+    if probe.is_none()
+        && device.probe_openocd.is_some()
+        && log.map_or(true, |log| probe::log(Probe::Openocd, log).is_some())
+    {
+        probe = Some(Probe::Openocd);
     }
     if log.is_none() {
         if let Some(probe) = probe {
             if device.log_swo.is_some() && probe::log(probe, Log::SwoProbe).is_some() {
                 log = Some(Log::SwoProbe);
-            } else if device.log_swo.is_some() && probe::log(probe, Log::SwoSerial).is_some() {
-                log = Some(Log::SwoSerial);
-            } else if device.log_dso.is_some() && probe::log(probe, Log::DsoSerial).is_some() {
-                log = Some(Log::DsoSerial);
             }
         }
     }

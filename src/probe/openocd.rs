@@ -2,14 +2,14 @@
 
 use super::{
     begin_log_output, gdb_script_command, gdb_script_continue, gdb_script_wait, run_gdb_client,
-    run_gdb_server, rustc_substitute_path, setup_serial_endpoint,
+    run_gdb_server, rustc_substitute_path,
 };
 use crate::{
     cli::{FlashCmd, GdbCmd, LogCmd, ResetCmd},
     color::Color,
     log,
     templates::Registry,
-    utils::{block_with_signals, exhaust_fifo, make_fifo, run_command, spawn_command, temp_dir},
+    utils::{block_with_signals, make_fifo, run_command, spawn_command, temp_dir},
 };
 use anyhow::Result;
 use drone_config as config;
@@ -86,7 +86,6 @@ pub fn log_swo(
 ) -> Result<()> {
     let LogCmd { reset, outputs } = cmd;
     let config_probe_openocd = config.probe.as_ref().unwrap().openocd.as_ref().unwrap();
-    let config_log_swo = config.log.as_ref().unwrap().swo.as_ref().unwrap();
 
     let commands = registry.openocd_gdb_openocd(&config)?;
     let mut openocd = Command::new(&config_probe_openocd.command);
@@ -99,15 +98,8 @@ pub fn log_swo(
     let ports = outputs.iter().flat_map(|output| output.ports.iter().copied()).collect();
     let input;
     let script;
-    if let Some(serial_endpoint) = &config_log_swo.serial_endpoint {
-        setup_serial_endpoint(&mut signals, serial_endpoint, config_log_swo.baud_rate)?;
-        exhaust_fifo(serial_endpoint)?;
-        input = serial_endpoint.into();
-        script = registry.openocd_swo(&config, &ports, reset, &pipe, None)?;
-    } else {
-        input = make_fifo(&dir, "input")?;
-        script = registry.openocd_swo(&config, &ports, reset, &pipe, Some(&input))?;
-    }
+    input = make_fifo(&dir, "input")?;
+    script = registry.openocd_swo(&config, &ports, reset, &pipe, Some(&input))?;
     log::capture(input, log::Output::open_all(&outputs)?, log::swo::parser);
     let mut gdb = spawn_command(gdb_script_command(&config, None, script.path()))?;
 

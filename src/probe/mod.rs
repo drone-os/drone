@@ -1,7 +1,5 @@
 //! Debug probe interface.
 
-pub mod bmp;
-pub mod jlink;
 pub mod openocd;
 
 use crate::{
@@ -29,10 +27,6 @@ use std::{
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Probe {
-    /// Black Magic Probe.
-    Bmp,
-    /// SEGGER J-Link.
-    Jlink,
     /// OpenOCD.
     Openocd,
 }
@@ -43,10 +37,6 @@ pub enum Probe {
 pub enum Log {
     /// ARM® SWO through debug probe.
     SwoProbe,
-    /// ARM® SWO through USB-serial adapter.
-    SwoSerial,
-    /// Drone Serial Output through USB-serial adapter.
-    DsoSerial,
 }
 
 impl<'a> TryFrom<&'a config::Config> for Probe {
@@ -57,17 +47,10 @@ impl<'a> TryFrom<&'a config::Config> for Probe {
             .probe
             .as_ref()
             .ok_or_else(|| anyhow!("Missing `probe` section in `{}`", config::CONFIG_NAME))?;
-        if config_probe.bmp.is_some() {
-            Ok(Self::Bmp)
-        } else if config_probe.jlink.is_some() {
-            Ok(Self::Jlink)
-        } else if config_probe.openocd.is_some() {
+        if config_probe.openocd.is_some() {
             Ok(Self::Openocd)
         } else {
-            bail!(
-                "Missing one of `probe.bmp`, `probe.jlink`, `probe.openocd` sections in `{}`",
-                config::CONFIG_NAME
-            );
+            bail!("Missing one of `probe.openocd` sections in `{}`", config::CONFIG_NAME);
         }
     }
 }
@@ -80,16 +63,10 @@ impl<'a> TryFrom<&'a config::Config> for Log {
             .log
             .as_ref()
             .ok_or_else(|| anyhow!("Missing `log` section in `{}`", config::CONFIG_NAME))?;
-        if let Some(config_log_swo) = &config_log.swo {
-            if config_log_swo.serial_endpoint.is_some() {
-                Ok(Self::SwoSerial)
-            } else {
-                Ok(Self::SwoProbe)
-            }
-        } else if config_log.dso.is_some() {
-            Ok(Self::DsoSerial)
+        if config_log.swo.is_some() {
+            Ok(Self::SwoProbe)
         } else {
-            bail!("Missing one of `log.swo`, `log.dso` sections in `{}`", config::CONFIG_NAME);
+            bail!("Missing one of `log.swo` sections in `{}`", config::CONFIG_NAME);
         }
     }
 }
@@ -102,8 +79,6 @@ type GdbFn = fn(GdbCmd, Signals, Registry<'_>, config::Config) -> Result<()>;
 /// Returns a function to serve `drone reset` command.
 pub fn reset(probe: Probe) -> ResetFn {
     match probe {
-        Probe::Bmp => bmp::reset,
-        Probe::Jlink => jlink::reset,
         Probe::Openocd => openocd::reset,
     }
 }
@@ -111,8 +86,6 @@ pub fn reset(probe: Probe) -> ResetFn {
 /// Returns a function to serve `drone flash` command.
 pub fn flash(probe: Probe) -> FlashFn {
     match probe {
-        Probe::Bmp => bmp::flash,
-        Probe::Jlink => jlink::flash,
         Probe::Openocd => openocd::flash,
     }
 }
@@ -120,8 +93,6 @@ pub fn flash(probe: Probe) -> FlashFn {
 /// Returns a function to serve `drone gdb` command.
 pub fn gdb(probe: Probe) -> GdbFn {
     match probe {
-        Probe::Bmp => bmp::gdb,
-        Probe::Jlink => jlink::gdb,
         Probe::Openocd => openocd::gdb,
     }
 }
@@ -129,21 +100,8 @@ pub fn gdb(probe: Probe) -> GdbFn {
 /// Returns a function to serve `drone log` command.
 pub fn log(probe: Probe, log: Log) -> Option<LogFn> {
     match (probe, log) {
-        (Probe::Bmp, Log::SwoSerial) => Some(bmp::log_swo_serial),
-        (Probe::Jlink, Log::DsoSerial) => Some(jlink::log_dso_serial),
-        (Probe::Openocd, Log::SwoProbe | Log::SwoSerial) => Some(openocd::log_swo),
-        _ => None,
+        (Probe::Openocd, Log::SwoProbe) => Some(openocd::log_swo),
     }
-}
-
-/// Configures the endpoint with `stty` command.
-pub fn setup_serial_endpoint(signals: &mut Signals, endpoint: &str, baud_rate: u32) -> Result<()> {
-    let mut stty = Command::new("stty");
-    stty.arg(format!("--file={}", endpoint));
-    stty.arg("speed");
-    stty.arg(format!("{}", baud_rate));
-    stty.arg("raw");
-    block_with_signals(signals, true, || run_command(stty))
 }
 
 /// Runs a GDB server.

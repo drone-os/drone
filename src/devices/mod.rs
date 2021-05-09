@@ -21,16 +21,10 @@ pub struct Device {
     pub platform_crate: PlatformCrate,
     /// Drone bindings crate configuration.
     pub bindings_crate: BindingsCrate,
-    /// Black Magic Probe configuration.
-    pub probe_bmp: Option<ProbeBmp>,
     /// OpenOCD configuration.
     pub probe_openocd: Option<ProbeOpenocd>,
-    /// Segger J-Link configuration.
-    pub probe_jlink: Option<ProbeJlink>,
     /// ARM® SWO configuration.
     pub log_swo: Option<LogSwo>,
-    /// Drone Serial Output configuration.
-    pub log_dso: Option<LogDso>,
 }
 
 /// Drone platform crate configuration.

@@ -1,6 +1,5 @@
 //! Debug log interface.
 
-pub mod dso;
 pub mod swo;
 
 mod output;

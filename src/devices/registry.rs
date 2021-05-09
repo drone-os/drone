@@ -17,13 +17,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f100",
             features: &["dma", "gpio", "spi", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f100" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f1x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 8_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32f101",
@@ -40,13 +37,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f101",
             features: &["dma", "gpio", "spi", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f101" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f1x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 8_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32f102",
@@ -63,13 +57,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f102",
             features: &["dma", "gpio", "spi", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f102" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f1x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 8_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32f103",
@@ -86,13 +77,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f103",
             features: &["dma", "gpio", "spi", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f103" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f1x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 8_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32f107",
@@ -109,13 +97,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f107",
             features: &["dma", "gpio", "spi", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f107" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f1x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 8_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32f303",
@@ -132,13 +117,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f303",
             features: &["dma", "gpio", "spi", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f303" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f3x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 8_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32f401",
@@ -155,13 +137,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f401",
             features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f401" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 16_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32f405",
@@ -178,13 +157,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f405",
             features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f405" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 16_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32f407",
@@ -201,13 +177,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f407",
             features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f407" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 16_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32f410",
@@ -224,13 +197,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f410",
             features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f410" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 16_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32f411",
@@ -247,13 +217,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f411",
             features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f411" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 16_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32f412",
@@ -270,13 +237,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f412",
             features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f412" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 16_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32f413",
@@ -293,13 +257,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f413",
             features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f413" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 16_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32f427",
@@ -316,13 +277,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f427",
             features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f427" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 16_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32f429",
@@ -339,13 +297,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f429",
             features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f429" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 16_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32f446",
@@ -362,13 +317,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f446",
             features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f446" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 16_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32f469",
@@ -385,13 +337,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32f469",
             features: &["adc", "dma", "exti", "gpio", "i2c", "tim"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32f469" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32f4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 16_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32l4x1",
@@ -408,13 +357,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32l4x1",
             features: &["dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32l4x1" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32l4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 4_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32l4x2",
@@ -431,13 +377,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32l4x2",
             features: &["dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32l4x2" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32l4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 4_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32l4x3",
@@ -454,13 +397,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32l4x3",
             features: &["dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32l4x3" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32l4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 4_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32l4x5",
@@ -477,13 +417,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32l4x5",
             features: &["dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32l4x5" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32l4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 4_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32l4x6",
@@ -500,13 +437,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32l4x6",
             features: &["dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32l4x6" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32l4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 4_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32l4r5",
@@ -523,13 +457,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32l4r5",
             features: &["adc", "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32l4r5" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32l4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 4_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32l4s5",
@@ -546,13 +477,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32l4s5",
             features: &["adc", "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32l4s5" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32l4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 4_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32l4r7",
@@ -569,13 +497,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32l4r7",
             features: &["adc", "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32l4r7" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32l4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 4_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32l4s7",
@@ -592,13 +517,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32l4s7",
             features: &["adc", "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32l4s7" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32l4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 4_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32l4r9",
@@ -615,13 +537,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32l4r9",
             features: &["adc", "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32l4r9" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32l4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 4_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "stm32l4s9",
@@ -638,13 +557,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "stm32l4s9",
             features: &["adc", "dma", "exti", "gpio", "i2c", "rtc", "spi", "tim", "uart"],
         },
-        probe_bmp: Some(ProbeBmp { device: "stm32l4s9" }),
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/stm32l4x.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 4_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "nrf52810",
@@ -661,13 +577,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "nrf52810",
             features: &[],
         },
-        probe_bmp: None,
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/nrf52.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 32_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "nrf52811",
@@ -684,13 +597,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "nrf52811",
             features: &[],
         },
-        probe_bmp: None,
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/nrf52.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 32_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "nrf52832",
@@ -707,13 +617,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "nrf52832",
             features: &[],
         },
-        probe_bmp: None,
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/nrf52.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 32_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "nrf52840",
@@ -730,13 +637,10 @@ pub const REGISTRY: &[Device] = &[
             flag: "nrf52840",
             features: &[],
         },
-        probe_bmp: None,
         probe_openocd: Some(ProbeOpenocd {
             arguments: &["-f", "interface/stlink.cfg", "-f", "target/nrf52.cfg"],
         }),
-        probe_jlink: None,
         log_swo: Some(LogSwo { reset_freq: 32_000_000 }),
-        log_dso: None,
     },
     Device {
         name: "nrf9160",
@@ -753,11 +657,8 @@ pub const REGISTRY: &[Device] = &[
             flag: "nrf9160",
             features: &["uarte"],
         },
-        probe_bmp: None,
         probe_openocd: None,
-        probe_jlink: Some(ProbeJlink { device: "NRF9160", interface: "SWD" }),
         log_swo: None,
-        log_dso: Some(LogDso { krate: crates::Dso::Nrf91, features: &[] }),
     },
     Device {
         name: "cc2538",
@@ -774,11 +675,8 @@ pub const REGISTRY: &[Device] = &[
             flag: "cc2538",
             features: &["uart", "ico", "gpio"],
         },
-        probe_bmp: None,
         probe_openocd: None,
-        probe_jlink: Some(ProbeJlink { device: "CC2538SF53", interface: "JTAG" }),
         log_swo: None,
-        log_dso: Some(LogDso { krate: crates::Dso::Cc2538, features: &[] }),
     },
     Device {
         name: "gd32vf103",
@@ -795,11 +693,8 @@ pub const REGISTRY: &[Device] = &[
             flag: "gd32vf103",
             features: &[],
         },
-        probe_bmp: None,
         probe_openocd: None,
-        probe_jlink: Some(ProbeJlink { device: "GD32VF103CBT6", interface: "JTAG" }),
         log_swo: None,
-        log_dso: Some(LogDso { krate: crates::Dso::Gd32V, features: &[] }),
     },
     Device {
         name: "fe310",
@@ -816,10 +711,7 @@ pub const REGISTRY: &[Device] = &[
             flag: "fe310",
             features: &[],
         },
-        probe_bmp: None,
         probe_openocd: None,
-        probe_jlink: Some(ProbeJlink { device: "FE310", interface: "JTAG" }),
         log_swo: None,
-        log_dso: Some(LogDso { krate: crates::Dso::Sifive, features: &[] }),
     },
 ];

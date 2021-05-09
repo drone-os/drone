@@ -11,9 +11,7 @@ use signal_hook::{
 use std::{
     env,
     ffi::CString,
-    fs::OpenOptions,
-    io::{prelude::*, ErrorKind},
-    os::unix::{ffi::OsStrExt, io::AsRawFd, process::CommandExt},
+    os::unix::{ffi::OsStrExt, process::CommandExt},
     path::PathBuf,
     process::{exit, Child, Command},
     sync::mpsc::{channel, RecvTimeoutError},
@@ -145,21 +143,6 @@ pub fn make_fifo(dir: &TempDir, name: &str) -> Result<PathBuf> {
         return Err(std::io::Error::last_os_error().into());
     }
     Ok(pipe)
-}
-
-/// Consumes all remaining data in the fifo.
-pub fn exhaust_fifo(path: &str) -> Result<()> {
-    let mut fifo = OpenOptions::new().read(true).open(path)?;
-    unsafe { libc::fcntl(fifo.as_raw_fd(), libc::F_SETFL, libc::O_NONBLOCK) };
-    let mut bytes = [0_u8; 1024];
-    loop {
-        match fifo.read(&mut bytes) {
-            Ok(_) => continue,
-            Err(ref err) if err.kind() == ErrorKind::Interrupted => continue,
-            Err(ref err) if err.kind() == ErrorKind::WouldBlock => break Ok(()),
-            Err(err) => break Err(err.into()),
-        }
-    }
 }
 
 /// Moves the process to a new process group.

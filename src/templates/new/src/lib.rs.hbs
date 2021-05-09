@@ -16,14 +16,7 @@ use drone_core::prelude::*;
 
 use drone_core::heap;
 use drone_{{bindings_name}}_map::{{bindings_name}}_reg_tokens;
-{{~#if (eq dso_name "nrf91")}}
-
-drone_nrf91_dso::set_log! {
-    periph: Uarte0S,
-    pin_number: 29,
-    buf_size: 64,
-}
-{{~/if}}{{#if (or (eq log_ident "swoprobe") (eq log_ident "swoserial"))}}
+{{#if (or (eq log_ident "swoprobe") (eq log_ident "swoserial"))}}
 
 drone_{{platform_name}}::swo::set_log!();
 {{~/if}}
@@ -33,10 +26,6 @@ drone_{{platform_name}}::swo::set_log!();
     index => pub Regs;
 
     exclude => {
-
-{{~#if dso_regs}}
-{{dso_regs}}
-{{/if ~}}
 
 {{~ #if (or (eq log_ident "swoprobe") (eq log_ident "swoserial"))}}
         dwt_cyccnt,

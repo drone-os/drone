@@ -39,17 +39,6 @@ impl Registry<'_> {
         template!("new/rust-toolchain")?;
         template!("new/_cargo/config")?;
         template!("new/_gitignore")?;
-        template!("bmp/flash.gdb")?;
-        template!("bmp/gdb.gdb")?;
-        template!("bmp/reset.gdb")?;
-        template!("bmp/swo.gdb")?;
-        template!("bmp/target.gdb")?;
-        template!("bmp/target/cortexm.gdb")?;
-        template!("bmp/target/stm32.gdb")?;
-        template!("jlink/reset.jlink")?;
-        template!("jlink/flash.jlink")?;
-        template!("jlink/gdb.gdb")?;
-        template!("jlink/dso.gdb")?;
         template!("openocd/flash.openocd")?;
         template!("openocd/gdb.gdb")?;
         template!("openocd/gdb.openocd")?;
@@ -80,35 +69,10 @@ impl Registry<'_> {
 
     /// Renders cortexm `src/lib.rs`.
     pub fn new_src_lib_rs(&self, device: &Device, log: Log) -> Result<String> {
-        const IDENT: usize = 8;
-        const LENGTH: usize = 100;
-        let dso_regs = device.log_dso.as_ref().map(|x| {
-            x.krate
-                .used_regs()
-                .iter()
-                .map(|reg| format!("{},", reg))
-                .fold::<Vec<(usize, Vec<_>)>, _>(Vec::new(), |mut acc, x| {
-                    if let Some((len, line)) = acc.last_mut() {
-                        if *len + x.len() < LENGTH - IDENT {
-                            *len += x.len() + 1;
-                            line.push(x);
-                            return acc;
-                        }
-                    }
-                    acc.push((x.len(), vec![x]));
-                    acc
-                })
-                .iter()
-                .map(|(_, line)| format!("{:ident$}{}", line.join(" "), "", ident = IDENT))
-                .collect::<Vec<_>>()
-                .join("\n")
-        });
         let data = json!({
             "platform_name": device.platform_crate.krate.name(),
             "bindings_name": device.bindings_crate.krate.name(),
             "log_ident": ser_to_string(log),
-            "dso_name": device.log_dso.as_ref().map(|x| x.krate.name()),
-            "dso_regs": dso_regs,
         });
         helpers::clear_vars();
         Ok(self.0.render("new/src/lib.rs", &data)?)
@@ -151,8 +115,6 @@ impl Registry<'_> {
             "bindings_name": device.bindings_crate.krate.name(),
             "platform_features": device.platform_crate.features,
             "bindings_features": device.bindings_crate.features,
-            "dso_name": device.log_dso.as_ref().map(|x| x.krate.name()),
-            "dso_features": device.log_dso.as_ref().map(|x| x.features),
         });
         helpers::clear_vars();
         Ok(self.0.render("new/Cargo.toml", &data)?)
@@ -176,10 +138,7 @@ impl Registry<'_> {
             "heap": heap.trim_end(),
             "linker_platform": device.platform_crate.linker_platform(),
             "probe_ident": ser_to_string(probe),
-            "probe_bmp_device": device.probe_bmp.as_ref().map(|x| x.device),
             "probe_openocd_arguments": device.probe_openocd.as_ref().map(|x| x.arguments),
-            "probe_jlink_device": device.probe_jlink.as_ref().map(|x| x.device),
-            "probe_jlink_interface": device.probe_jlink.as_ref().map(|x| x.interface),
             "log_ident": ser_to_string(log),
             "log_swo_reset_freq": device.log_swo.as_ref().map(|x| x.reset_freq),
         });
@@ -218,104 +177,6 @@ impl Registry<'_> {
         let data = json!({ "contents": contents });
         helpers::clear_vars();
         Ok(self.0.render("new/_gitignore", &data)?)
-    }
-
-    /// Renders BMP `reset` command script.
-    pub fn bmp_reset(&self, config: &Config) -> Result<NamedTempFile> {
-        let data = json!({ "config": config });
-        helpers::clear_vars();
-        named_temp_file(|file| self.0.render_to_write("bmp/reset.gdb", &data, file))
-    }
-
-    /// Renders BMP `flash` command script.
-    pub fn bmp_flash(&self, config: &Config) -> Result<NamedTempFile> {
-        let data = json!({ "config": config });
-        helpers::clear_vars();
-        named_temp_file(|file| self.0.render_to_write("bmp/flash.gdb", &data, file))
-    }
-
-    /// Renders BMP `gdb` command script.
-    pub fn bmp_gdb(
-        &self,
-        config: &Config,
-        reset: bool,
-        rustc_substitute_path: &str,
-    ) -> Result<NamedTempFile> {
-        let data = json!({
-            "config": config,
-            "reset": reset,
-            "rustc-substitute-path": rustc_substitute_path,
-        });
-        helpers::clear_vars();
-        named_temp_file(|file| self.0.render_to_write("bmp/gdb.gdb", &data, file))
-    }
-
-    /// Renders BMP `swo` command script.
-    pub fn bmp_swo(
-        &self,
-        config: &Config,
-        ports: &BTreeSet<u32>,
-        reset: bool,
-        pipe: &Path,
-    ) -> Result<NamedTempFile> {
-        let data = json!({
-            "config": config,
-            "ports": ports,
-            "reset": reset,
-            "pipe": pipe,
-        });
-        helpers::clear_vars();
-        named_temp_file(|file| self.0.render_to_write("bmp/swo.gdb", &data, file))
-    }
-
-    /// Renders J-Link `reset` command script.
-    pub fn jlink_reset(&self) -> Result<NamedTempFile> {
-        helpers::clear_vars();
-        named_temp_file(|file| self.0.render_to_write("jlink/reset.jlink", &(), file))
-    }
-
-    /// Renders J-Link `flash` command script.
-    pub fn jlink_flash(&self, firmware: &Path, address: u32) -> Result<NamedTempFile> {
-        let data = json!({
-            "firmware": firmware,
-            "address": address,
-        });
-        helpers::clear_vars();
-        named_temp_file(|file| self.0.render_to_write("jlink/flash.jlink", &data, file))
-    }
-
-    /// Renders J-Link `gdb` command script.
-    pub fn jlink_gdb(
-        &self,
-        config: &Config,
-        reset: bool,
-        rustc_substitute_path: &str,
-    ) -> Result<NamedTempFile> {
-        let data = json!({
-            "config": config,
-            "reset": reset,
-            "rustc-substitute-path": rustc_substitute_path,
-        });
-        helpers::clear_vars();
-        named_temp_file(|file| self.0.render_to_write("jlink/gdb.gdb", &data, file))
-    }
-
-    /// Renders J-Link `dso` command script.
-    pub fn jlink_dso(
-        &self,
-        config: &Config,
-        ports: &BTreeSet<u32>,
-        reset: bool,
-        pipe: &Path,
-    ) -> Result<NamedTempFile> {
-        let data = json!({
-            "config": config,
-            "ports": ports,
-            "reset": reset,
-            "pipe": pipe,
-        });
-        helpers::clear_vars();
-        named_temp_file(|file| self.0.render_to_write("jlink/dso.gdb", &data, file))
     }
 
     /// Renders OpenOCD `reset` command script.

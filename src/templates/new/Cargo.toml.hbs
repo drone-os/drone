@@ -13,9 +13,6 @@ std = [
     "drone-core/std",
     "drone-{{platform_name}}/std",
     "drone-{{bindings_name}}-map/std",
-{{~#if dso_name}}
-    "drone-{{dso_name}}-dso/std",
-{{~/if}}
     "futures/std",
 ]
 
@@ -23,9 +20,6 @@ std = [
 drone-core = { version = "0.14.0" }
 drone-{{platform_name}} = { version = "0.14.0"{{#each platform_features}}{{#if @first}}, features = [{{/if}}"{{this}}"{{#if @last}}]{{else}}, {{/if}}{{/each}} }
 drone-{{bindings_name}}-map = { version = "0.14.0"{{#each bindings_features}}{{#if @first}}, features = [{{/if}}"{{this}}"{{#if @last}}]{{else}}, {{/if}}{{/each}} }
-{{~#if dso_name}}
-drone-{{dso_name}}-dso = { version = "0.14.0"{{#each dso_features}}{{#if @first}}, features = [{{/if}}"{{this}}"{{#if @last}}]{{else}}, {{/if}}{{/each}} }
-{{~/if}}
 futures = { version = "0.3.0", default-features = false }
 
 [profile.release]

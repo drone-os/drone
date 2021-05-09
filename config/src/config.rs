@@ -85,29 +85,7 @@ pub struct Linker {
 #[serde(rename_all = "kebab-case")]
 pub struct Probe {
     pub gdb_client_command: String,
-    pub bmp: Option<ProbeBmp>,
-    pub jlink: Option<ProbeJlink>,
     pub openocd: Option<ProbeOpenocd>,
-}
-
-#[non_exhaustive]
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct ProbeBmp {
-    pub device: String,
-    pub gdb_endpoint: String,
-}
-
-#[non_exhaustive]
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct ProbeJlink {
-    pub gdb_server_command: String,
-    pub commander_command: String,
-    pub device: String,
-    pub interface: String,
-    pub speed: u32,
-    pub port: u32,
 }
 
 #[non_exhaustive]
@@ -124,7 +102,6 @@ pub struct ProbeOpenocd {
 #[serde(rename_all = "kebab-case")]
 pub struct Log {
     pub swo: Option<LogSwo>,
-    pub dso: Option<LogDso>,
 }
 
 #[non_exhaustive]
@@ -133,13 +110,4 @@ pub struct Log {
 pub struct LogSwo {
     pub reset_freq: u32,
     pub baud_rate: u32,
-    pub serial_endpoint: Option<String>,
-}
-
-#[non_exhaustive]
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct LogDso {
-    pub baud_rate: u32,
-    pub serial_endpoint: String,
 }
