@@ -3,10 +3,10 @@
 pub mod openocd;
 
 use crate::{
-    cli::{GdbCmd, LogCmd},
+    cli::LogCmd,
     color::Color,
     templates::Registry,
-    utils::{block_with_signals, detach_pgid, finally, run_command, spawn_command},
+    utils::{block_with_signals, detach_pgid, finally, spawn_command},
 };
 use ansi_term::Color::Cyan;
 use anyhow::{anyhow, bail, Error, Result};
@@ -15,7 +15,6 @@ use serde::{Deserialize, Serialize};
 use signal_hook::iterator::Signals;
 use std::{
     convert::TryFrom,
-    ffi::OsString,
     fs::OpenOptions,
     io::{prelude::*, BufRead, BufReader},
     path::{Path, PathBuf},
@@ -72,14 +71,6 @@ impl<'a> TryFrom<&'a config::Config> for Log {
 }
 
 type LogFn = fn(LogCmd, Signals, Registry<'_>, config::Config, Color) -> Result<()>;
-type GdbFn = fn(GdbCmd, Signals, Registry<'_>, config::Config) -> Result<()>;
-
-/// Returns a function to serve `drone gdb` command.
-pub fn gdb(probe: Probe) -> GdbFn {
-    match probe {
-        Probe::Openocd => openocd::gdb,
-    }
-}
 
 /// Returns a function to serve `drone log` command.
 pub fn log(probe: Probe, log: Log) -> Option<LogFn> {
@@ -108,29 +99,6 @@ pub fn run_gdb_server(mut gdb: Command, interpreter: Option<&str>) -> Result<imp
         }
     }
     Ok(finally(move || gdb.kill().expect("gdb-server wasn't running")))
-}
-
-/// Runs a GDB client.
-pub fn run_gdb_client(
-    signals: &mut Signals,
-    config: &config::Config,
-    gdb_args: &[OsString],
-    firmware: Option<&Path>,
-    interpreter: Option<&str>,
-    script: &Path,
-) -> Result<()> {
-    let mut gdb = Command::new(&config.probe.as_ref().unwrap().gdb_client_command);
-    for arg in gdb_args {
-        gdb.arg(arg);
-    }
-    if let Some(firmware) = firmware {
-        gdb.arg(firmware);
-    }
-    gdb.arg("--command").arg(script);
-    if let Some(interpreter) = interpreter {
-        gdb.arg("--interpreter").arg(interpreter);
-    }
-    block_with_signals(signals, true, || run_command(gdb))
 }
 
 /// Creates a GDB script command.
@@ -171,22 +139,4 @@ pub fn gdb_script_continue(signals: &mut Signals, pipe: PathBuf, packet: [u8; 1]
 pub fn begin_log_output(color: Color) {
     eprintln!();
     eprintln!("{}", color.bold_fg(&format!("{:=^80}", " LOG OUTPUT "), Cyan));
-}
-
-/// Returns a GDB substitute-path for rustc sources.
-pub fn rustc_substitute_path() -> Result<String> {
-    let mut rustc = Command::new("rustc");
-    rustc.arg("--print").arg("sysroot");
-    let sysroot = String::from_utf8(rustc.output()?.stdout)?.trim().to_string();
-    let mut rustc = Command::new("rustc");
-    rustc.arg("--verbose");
-    rustc.arg("--version");
-    let commit_hash = String::from_utf8(rustc.output()?.stdout)?
-        .lines()
-        .find_map(|line| {
-            line.starts_with("commit-hash: ").then(|| line.splitn(2, ": ").nth(1).unwrap())
-        })
-        .ok_or_else(|| anyhow!("parsing of rustc output failed"))?
-        .to_string();
-    Ok(format!("/rustc/{} {}/lib/rustlib/src/rust", commit_hash, sysroot))
 }

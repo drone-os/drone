@@ -82,6 +82,7 @@ impl Cli {
         match cmd {
             Cmd::Flash(cmd) => cmd::flash(cmd),
             Cmd::Gdb(cmd) => cmd::gdb(cmd),
+            Cmd::Server(cmd) => cmd::server(cmd),
             Cmd::Heap(cmd) => cmd::heap(cmd, color),
             Cmd::Log(cmd) => cmd::log(cmd, color),
             Cmd::New(cmd) => cmd::new(cmd, color),

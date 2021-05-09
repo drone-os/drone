@@ -1,11 +1,10 @@
 //! OpenOCD.
 
 use super::{
-    begin_log_output, gdb_script_command, gdb_script_continue, gdb_script_wait, run_gdb_client,
-    run_gdb_server, rustc_substitute_path,
+    begin_log_output, gdb_script_command, gdb_script_continue, gdb_script_wait, run_gdb_server,
 };
 use crate::{
-    cli::{GdbCmd, LogCmd},
+    cli::LogCmd,
     color::Color,
     log,
     templates::Registry,
@@ -16,33 +15,6 @@ use drone_config as config;
 use signal_hook::iterator::Signals;
 use std::process::Command;
 use tempfile::tempdir_in;
-
-/// Runs `drone gdb` command.
-pub fn gdb(
-    cmd: GdbCmd,
-    mut signals: Signals,
-    registry: Registry<'_>,
-    config: config::Config,
-) -> Result<()> {
-    let GdbCmd { firmware, reset, interpreter, gdb_args } = cmd;
-    let config_probe_openocd = config.probe.as_ref().unwrap().openocd.as_ref().unwrap();
-
-    let commands = registry.openocd_gdb_openocd(&config)?;
-    let mut openocd = Command::new(&config_probe_openocd.command);
-    openocd_arguments(&mut openocd, config_probe_openocd);
-    openocd_commands(&mut openocd, &commands);
-    let _openocd = run_gdb_server(openocd, interpreter.as_ref().map(String::as_ref))?;
-
-    let script = registry.openocd_gdb_gdb(&config, reset, &rustc_substitute_path()?)?;
-    run_gdb_client(
-        &mut signals,
-        &config,
-        &gdb_args,
-        firmware.as_deref(),
-        interpreter.as_ref().map(String::as_ref),
-        script.path(),
-    )
-}
 
 /// Runs `drone log` command.
 pub fn log_swo(
@@ -55,7 +27,7 @@ pub fn log_swo(
     let LogCmd { reset, outputs } = cmd;
     let config_probe_openocd = config.probe.as_ref().unwrap().openocd.as_ref().unwrap();
 
-    let commands = registry.openocd_gdb_openocd(&config)?;
+    let commands = registry.openocd_gdb_server(None)?;
     let mut openocd = Command::new(&config_probe_openocd.command);
     openocd_arguments(&mut openocd, config_probe_openocd);
     openocd_commands(&mut openocd, &commands);

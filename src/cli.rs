@@ -35,6 +35,8 @@ pub enum Cmd {
     Flash(FlashCmd),
     /// Run a GDB session
     Gdb(GdbCmd),
+    /// Run OpenOCD server
+    Server(ServerCmd),
     /// Analyze or modify the heap layout
     Heap(HeapCmd),
     /// Capture the log output
@@ -45,7 +47,7 @@ pub enum Cmd {
     Reset(ResetCmd),
     /// Print requested information on stdout
     Print(PrintCmd),
-    /// Run default OpenOCD server
+    /// Run unmodified OpenOCD server
     Openocd(OpenocdCmd),
 }
 
@@ -130,6 +132,12 @@ pub struct GdbCmd {
     /// Path to the compiled firmware file
     #[structopt(parse(from_os_str))]
     pub firmware: Option<PathBuf>,
+    /// GDB client command
+    #[structopt(short, long)]
+    pub command: Option<OsString>,
+    /// GDB server port
+    #[structopt(short, long)]
+    pub port: Option<u16>,
     /// Reset before the operation
     #[structopt(short, long)]
     pub reset: bool,
@@ -139,6 +147,13 @@ pub struct GdbCmd {
     /// Arguments for `gdb`
     #[structopt(parse(from_os_str), last(true))]
     pub gdb_args: Vec<OsString>,
+}
+
+#[derive(Debug, StructOpt)]
+pub struct ServerCmd {
+    /// GDB server port
+    #[structopt(short, long)]
+    pub port: Option<u16>,
 }
 
 #[derive(Debug, StructOpt)]
