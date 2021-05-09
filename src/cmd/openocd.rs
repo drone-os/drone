@@ -6,5 +6,5 @@ use anyhow::Result;
 /// Runs `drone openocd` command.
 pub fn run(cmd: OpenocdCmd) -> Result<()> {
     let OpenocdCmd { args } = cmd;
-    exit_with_openocd(args.iter().map(|arg| arg.as_ref()))?;
+    exit_with_openocd(args)?;
 }

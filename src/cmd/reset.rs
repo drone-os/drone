@@ -1,15 +1,18 @@
 //! `drone reset` command.
 
-use crate::{cli::ResetCmd, probe, probe::Probe, templates::Registry, utils::register_signals};
+use crate::{
+    cli::ResetCmd,
+    openocd::{exit_with_openocd, inline_script_args, project_script_args},
+    templates::Registry,
+};
 use anyhow::Result;
-use drone_config as config;
-use std::convert::TryFrom;
 
 /// Runs `drone reset` command.
 pub fn run(cmd: ResetCmd) -> Result<()> {
-    let signals = register_signals()?;
+    let ResetCmd {} = cmd;
     let registry = Registry::new()?;
-    let config = config::Config::read_from_current_dir()?;
-    let probe = Probe::try_from(&config)?;
-    probe::reset(probe)(cmd, signals, registry, config)
+    let commands = registry.openocd_reset()?;
+    let mut args = project_script_args();
+    args.extend_from_slice(&inline_script_args(&commands));
+    exit_with_openocd(args)?;
 }

@@ -5,49 +5,17 @@ use super::{
     run_gdb_server, rustc_substitute_path,
 };
 use crate::{
-    cli::{FlashCmd, GdbCmd, LogCmd, ResetCmd},
+    cli::{GdbCmd, LogCmd},
     color::Color,
     log,
     templates::Registry,
-    utils::{block_with_signals, make_fifo, run_command, spawn_command, temp_dir},
+    utils::{block_with_signals, make_fifo, spawn_command, temp_dir},
 };
 use anyhow::Result;
 use drone_config as config;
 use signal_hook::iterator::Signals;
 use std::process::Command;
 use tempfile::tempdir_in;
-
-/// Runs `drone reset` command.
-pub fn reset(
-    cmd: ResetCmd,
-    mut signals: Signals,
-    registry: Registry<'_>,
-    config: config::Config,
-) -> Result<()> {
-    let ResetCmd {} = cmd;
-    let config_probe_openocd = config.probe.as_ref().unwrap().openocd.as_ref().unwrap();
-    let commands = registry.openocd_reset()?;
-    let mut openocd = Command::new(&config_probe_openocd.command);
-    openocd_arguments(&mut openocd, config_probe_openocd);
-    openocd_commands(&mut openocd, &commands);
-    block_with_signals(&mut signals, true, || run_command(openocd))
-}
-
-/// Runs `drone flash` command.
-pub fn flash(
-    cmd: FlashCmd,
-    mut signals: Signals,
-    registry: Registry<'_>,
-    config: config::Config,
-) -> Result<()> {
-    let FlashCmd { firmware } = cmd;
-    let config_probe_openocd = config.probe.as_ref().unwrap().openocd.as_ref().unwrap();
-    let commands = registry.openocd_flash(&firmware)?;
-    let mut openocd = Command::new(&config_probe_openocd.command);
-    openocd_arguments(&mut openocd, config_probe_openocd);
-    openocd_commands(&mut openocd, &commands);
-    block_with_signals(&mut signals, true, || run_command(openocd))
-}
 
 /// Runs `drone gdb` command.
 pub fn gdb(

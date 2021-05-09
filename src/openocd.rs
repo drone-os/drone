@@ -5,7 +5,8 @@ use drone_openocd_sys::{openocd_main, stderr, stdout, SCRIPTS_FINGERPRINT, SCRIP
 use libc::{setvbuf, _IONBF};
 use std::{
     convert::TryInto,
-    ffi::{CString, OsStr},
+    env::current_dir,
+    ffi::{CString, OsString},
     fs,
     io::prelude::*,
     os::unix::ffi::OsStrExt,
@@ -17,10 +18,9 @@ use std::{
 const SCRIPTS_PATH: &str = "/tmp/drone-openocd";
 
 /// Runs OpenOCD with given arguments. This function normally never returns.
-pub fn exit_with_openocd<'a, T: IntoIterator<Item = &'a OsStr>>(args: T) -> Result<!> {
+pub fn exit_with_openocd(args: Vec<OsString>) -> Result<!> {
     unpack_scripts()?;
-    let mut prefix_args =
-        vec![OsStr::new("drone-openocd"), OsStr::new("--search"), OsStr::new(SCRIPTS_PATH)];
+    let mut prefix_args = vec!["drone-openocd".into(), "--search".into(), SCRIPTS_PATH.into()];
     prefix_args.extend(args);
     let full_args = prefix_args
         .into_iter()
@@ -63,4 +63,20 @@ pub fn unpack_scripts() -> Result<()> {
     tar.wait()?.success().then_some(()).ok_or_else(|| anyhow!("tar failed"))?;
     fs::write(&fingerprint_path, SCRIPTS_FINGERPRINT)?;
     Ok(())
+}
+
+/// Generates OpenOCD arguments for including the project OpenOCD script.
+pub fn project_script_args() -> Vec<OsString> {
+    let script_path = current_dir().unwrap().join("openocd.tcl");
+    vec!["--file".into(), script_path.into()]
+}
+
+/// Generates OpenOCD arguments for the given script.
+pub fn inline_script_args(script: &str) -> Vec<OsString> {
+    let mut args = Vec::new();
+    for command in script.lines().filter(|l| !l.is_empty()) {
+        args.push("--command".into());
+        args.push(command.into());
+    }
+    args
 }

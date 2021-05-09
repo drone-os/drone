@@ -3,7 +3,7 @@
 pub mod openocd;
 
 use crate::{
-    cli::{FlashCmd, GdbCmd, LogCmd, ResetCmd},
+    cli::{GdbCmd, LogCmd},
     color::Color,
     templates::Registry,
     utils::{block_with_signals, detach_pgid, finally, run_command, spawn_command},
@@ -72,23 +72,7 @@ impl<'a> TryFrom<&'a config::Config> for Log {
 }
 
 type LogFn = fn(LogCmd, Signals, Registry<'_>, config::Config, Color) -> Result<()>;
-type ResetFn = fn(ResetCmd, Signals, Registry<'_>, config::Config) -> Result<()>;
-type FlashFn = fn(FlashCmd, Signals, Registry<'_>, config::Config) -> Result<()>;
 type GdbFn = fn(GdbCmd, Signals, Registry<'_>, config::Config) -> Result<()>;
-
-/// Returns a function to serve `drone reset` command.
-pub fn reset(probe: Probe) -> ResetFn {
-    match probe {
-        Probe::Openocd => openocd::reset,
-    }
-}
-
-/// Returns a function to serve `drone flash` command.
-pub fn flash(probe: Probe) -> FlashFn {
-    match probe {
-        Probe::Openocd => openocd::flash,
-    }
-}
 
 /// Returns a function to serve `drone gdb` command.
 pub fn gdb(probe: Probe) -> GdbFn {
