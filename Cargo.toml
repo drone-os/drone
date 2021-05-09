@@ -3,7 +3,7 @@ members = ["config", "openocd-sys"]
 
 [package]
 name = "drone"
-version = "0.14.0"
+version = "0.15.0"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 edition = "2018"
 resolver = "2"
@@ -34,11 +34,11 @@ CLI utility for Drone, an Embedded Operating System.
 maintenance = { status = "actively-developed" }
 
 [dependencies.drone-config]
-version = "=0.14.0"
+version = "=0.15.0"
 path = "config"
 
 [dependencies.drone-openocd-sys]
-version = "=0.14.0"
+version = "=0.15.0"
 path = "openocd-sys"
 
 [dependencies]
@@ -53,7 +53,7 @@ prettytable-rs = "0.8"
 regex = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-signal-hook = "0.2"
+signal-hook = "0.3"
 structopt = "0.3"
 tempfile = "3"
 thiserror = "1"

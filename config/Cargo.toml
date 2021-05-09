@@ -1,12 +1,12 @@
 [package]
 name = "drone-config"
-version = "0.14.0"
+version = "0.15.0"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 edition = "2018"
 resolver = "2"
 repository = "https://github.com/drone-os/drone"
 homepage = "https://www.drone-os.com/"
-documentation = "https://api.drone-os.com/drone-core/0.14/drone_config/"
+documentation = "https://api.drone-os.com/drone-core/0.15/drone_config/"
 license = "MIT OR Apache-2.0"
 description = """
 Configuration for Drone, an Embedded Operating System.

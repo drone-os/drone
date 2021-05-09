@@ -4,7 +4,10 @@ use crate::color::Color;
 use ansi_term::Color::Red;
 use anyhow::{bail, Result};
 use serde::{de, ser};
-use signal_hook::{iterator::Signals, SIGINT, SIGQUIT, SIGTERM};
+use signal_hook::{
+    consts::signal::{SIGINT, SIGQUIT, SIGTERM},
+    iterator::Signals,
+};
 use std::{
     env,
     ffi::CString,

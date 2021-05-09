@@ -8,15 +8,15 @@ fmt:
 
 # Check the source code for mistakes
 lint:
-	cargo clippy
+	cargo clippy --all
 
 # Build the documentation
 doc:
-	cargo doc
+	cargo doc --all
 
 # Open the documentation in a browser
 doc-open: doc
-	cargo doc --open
+	cargo doc --package drone --open
 
 # Run the tests
 test:
@@ -42,5 +42,6 @@ version-bump version:
 # Publish to crates.io
 publish:
 	cd config && cargo publish
+	cd openocd-sys && cargo publish
 	sleep 30
 	cargo publish
