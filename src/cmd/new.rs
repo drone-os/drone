@@ -108,10 +108,16 @@ fn new_heap(size: u32, pools: u32) -> Result<String> {
 }
 
 fn cargo_new(path: &Path, toolchain: &str) -> Result<()> {
-    let mut rustup = Command::new("rustup");
-    rustup.arg("run").arg(toolchain);
-    rustup.arg("cargo").arg("new").arg("--bin").arg(path);
-    run_command(rustup)
+    let mut command = if cfg!(feature = "no-rustup") {
+        Command::new("cargo")
+    } else {
+        let mut rustup = Command::new("rustup");
+        rustup.arg("run").arg(toolchain);
+        rustup.arg("cargo");
+        rustup
+    };
+    command.arg("new").arg("--bin").arg(path);
+    run_command(command)
 }
 
 fn src_main_rs(path: &Path, color: Color) -> Result<()> {
