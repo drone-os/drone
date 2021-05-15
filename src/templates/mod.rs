@@ -39,10 +39,7 @@ impl Registry<'_> {
         template!("new/rust-toolchain")?;
         template!("new/_cargo/config")?;
         template!("new/_gitignore")?;
-        template!("openocd/flash.tcl")?;
         template!("openocd/gdb-server.tcl")?;
-        template!("openocd/gdb-client")?;
-        template!("openocd/reset.tcl")?;
         template!("openocd/swo.gdb")?;
 
         helpers::register(&mut handlebars);
@@ -179,40 +176,11 @@ impl Registry<'_> {
         Ok(self.0.render("new/_gitignore", &data)?)
     }
 
-    /// Renders OpenOCD `reset` command script.
-    pub fn openocd_reset(&self) -> Result<String> {
-        helpers::clear_vars();
-        Ok(self.0.render("openocd/reset.tcl", &())?)
-    }
-
-    /// Renders OpenOCD `flash` command script.
-    pub fn openocd_flash(&self, firmware: &Path) -> Result<String> {
-        let data = json!({ "firmware": firmware });
-        helpers::clear_vars();
-        Ok(self.0.render("openocd/flash.tcl", &data)?)
-    }
-
     /// Renders OpenOCD `gdb` command OpenOCD script.
     pub fn openocd_gdb_server(&self, port: Option<u16>) -> Result<String> {
         let data = json!({ "port": port });
         helpers::clear_vars();
         Ok(self.0.render("openocd/gdb-server.tcl", &data)?)
-    }
-
-    /// Renders OpenOCD `gdb` command GDB script.
-    pub fn openocd_gdb_client(
-        &self,
-        port: u16,
-        reset: bool,
-        rustc_substitute_path: &str,
-    ) -> Result<NamedTempFile> {
-        let data = json!({
-            "port": port,
-            "reset": reset,
-            "rustc-substitute-path": rustc_substitute_path,
-        });
-        helpers::clear_vars();
-        named_temp_file(|file| self.0.render_to_write("openocd/gdb-client", &data, file))
     }
 
     /// Renders OpenOCD `swo` command script.

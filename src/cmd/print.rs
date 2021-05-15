@@ -14,6 +14,7 @@ use serde::Deserialize;
 use std::{
     fs::File,
     io::{prelude::*, stdout},
+    process::Command,
 };
 
 const CARGO_CONFIG_PATH: &str = ".cargo/config";
@@ -38,6 +39,7 @@ pub fn run(cmd: PrintCmd, color: Color) -> Result<()> {
     match print_sub_cmd {
         PrintSubCmd::Target => target(),
         PrintSubCmd::SupportedDevices => supported_devices(color),
+        PrintSubCmd::RustcSubstitutePath => rustc_substitute_path(),
     }
 }
 
@@ -83,4 +85,22 @@ fn probe_cell(probe: Option<Probe>, log_swo: bool, color: Color) -> String {
     } else {
         "--".into()
     }
+}
+
+fn rustc_substitute_path() -> Result<()> {
+    let mut rustc = Command::new("rustc");
+    rustc.arg("--print").arg("sysroot");
+    let sysroot = String::from_utf8(rustc.output()?.stdout)?.trim().to_string();
+    let mut rustc = Command::new("rustc");
+    rustc.arg("--verbose");
+    rustc.arg("--version");
+    let commit_hash = String::from_utf8(rustc.output()?.stdout)?
+        .lines()
+        .find_map(|line| {
+            line.starts_with("commit-hash: ").then(|| line.splitn(2, ": ").nth(1).unwrap())
+        })
+        .ok_or_else(|| anyhow!("parsing of rustc output failed"))?
+        .to_string();
+    println!("/rustc/{} {}/lib/rustlib/src/rust", commit_hash, sysroot);
+    Ok(())
 }

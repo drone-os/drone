@@ -31,23 +31,19 @@ pub struct Cli {
 
 #[derive(Debug, StructOpt)]
 pub enum Cmd {
-    /// Write the binary to ROM
-    Flash(FlashCmd),
-    /// Run a GDB session
-    Gdb(GdbCmd),
-    /// Run OpenOCD server
-    Server(ServerCmd),
+    /// Run OpenOCD script
+    Run(RunCmd),
+    /// Run GDB debugger together with OpenOCD server
+    Debug(DebugCmd),
     /// Analyze or modify the heap layout
     Heap(HeapCmd),
     /// Capture the log output
     Log(LogCmd),
     /// Create a new Drone project
     New(NewCmd),
-    /// Assert the reset signal
-    Reset(ResetCmd),
-    /// Print requested information on stdout
+    /// Print requested information to stdout
     Print(PrintCmd),
-    /// Run unmodified OpenOCD server
+    /// Run unmodified OpenOCD
     Openocd(OpenocdCmd),
 }
 
@@ -118,42 +114,29 @@ pub struct HeapGenerateCmd {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct ResetCmd {}
-
-#[derive(Debug, StructOpt)]
-pub struct FlashCmd {
-    /// Path to the compiled firmware file
+pub struct RunCmd {
+    /// OpenOCD script
     #[structopt(parse(from_os_str))]
-    pub firmware: PathBuf,
+    pub script: PathBuf,
 }
 
 #[derive(Debug, StructOpt)]
-pub struct GdbCmd {
-    /// Path to the compiled firmware file
+pub struct DebugCmd {
+    /// OpenOCD server script
     #[structopt(parse(from_os_str))]
-    pub firmware: Option<PathBuf>,
+    pub server_script: PathBuf,
+    /// GDB client script
+    #[structopt(parse(from_os_str))]
+    pub client_script: PathBuf,
     /// GDB client command
-    #[structopt(short, long)]
-    pub command: Option<OsString>,
-    /// GDB server port
-    #[structopt(short, long)]
-    pub port: Option<u16>,
-    /// Reset before the operation
-    #[structopt(short, long)]
-    pub reset: bool,
+    #[structopt(default_value = "gdb")]
+    pub command: OsString,
     /// Select a specific interpreter / user interface
     #[structopt(short, long)]
     pub interpreter: Option<String>,
-    /// Arguments for `gdb`
+    /// Additional arguments to <command>
     #[structopt(parse(from_os_str), last(true))]
-    pub gdb_args: Vec<OsString>,
-}
-
-#[derive(Debug, StructOpt)]
-pub struct ServerCmd {
-    /// GDB server port
-    #[structopt(short, long)]
-    pub port: Option<u16>,
+    pub command_args: Vec<OsString>,
 }
 
 #[derive(Debug, StructOpt)]
@@ -197,6 +180,8 @@ pub enum PrintSubCmd {
     Target,
     /// Print a list of supported target devices, debug probes, and log types
     SupportedDevices,
+    /// Print rustc-substitute-path value for GDB
+    RustcSubstitutePath,
 }
 
 fn parse_log_output(src: &OsStr) -> Result<LogOutput, OsString> {
