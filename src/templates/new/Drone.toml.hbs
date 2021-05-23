@@ -10,28 +10,3 @@ origin = {{addr device_ram_origin}}
 
 [linker]
 platform = "{{linker_platform}}"
-
-[probe]
-gdb-client-command = "gdb-multiarch"
-
-{{#if (eq probe_ident "openocd") ~}}
-[probe.openocd]
-command = "openocd"
-port = 3333
-arguments = [{{#each probe_openocd_arguments}}{{#unless @first}}, {{/unless}}"{{this}}"{{/each}}]
-{{~/if}}
-
-{{#if (or (eq log_ident "swoprobe") (eq log_ident "swoserial")) ~}}
-[log.swo]
-reset-freq = {{log_swo_reset_freq}}
-baud-rate = 115200
-{{~#if (eq probe_ident "bmp")}}
-serial-endpoint = "/dev/ttyBmpTarg"
-{{~else}}
-serial-endpoint = "/dev/ttyACM0"
-{{~/if}}
-{{~/if}}{{#if (eq log_ident "dsoserial") ~}}
-[log.dso]
-baud-rate = 115200
-serial-endpoint = "/dev/ttyACM0"
-{{~/if}}

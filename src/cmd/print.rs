@@ -4,8 +4,6 @@ use crate::{
     cli::{PrintCmd, PrintSubCmd},
     color::Color,
     devices::{Device, REGISTRY},
-    probe,
-    probe::{Log, Probe},
     utils::crate_root,
 };
 use anyhow::{anyhow, bail, Result};
@@ -38,7 +36,7 @@ pub fn run(cmd: PrintCmd, color: Color) -> Result<()> {
     let PrintCmd { print_sub_cmd } = cmd;
     match print_sub_cmd {
         PrintSubCmd::Target => target(),
-        PrintSubCmd::SupportedDevices => supported_devices(color),
+        PrintSubCmd::Chips => chips(color),
         PrintSubCmd::RustcSubstitutePath => rustc_substitute_path(),
     }
 }
@@ -61,30 +59,15 @@ fn target() -> Result<()> {
     Ok(())
 }
 
-fn supported_devices(color: Color) -> Result<()> {
+fn chips(color: Color) -> Result<()> {
     let mut table = Table::new();
     table.set_format(*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR);
-    table.set_titles(row!["--device", format!("--probe {}", color.bold("openocd")),]);
-    for Device { name, probe_openocd, log_swo, .. } in REGISTRY {
-        table.add_row(row![
-            color.bold(name),
-            probe_cell(probe_openocd.as_ref().map(|_| Probe::Openocd), log_swo.is_some(), color,),
-        ]);
+    table.set_titles(row!["--device"]);
+    for Device { name, .. } in REGISTRY {
+        table.add_row(row![color.bold(name)]);
     }
     table.print(&mut stdout())?;
     Ok(())
-}
-
-fn probe_cell(probe: Option<Probe>, log_swo: bool, color: Color) -> String {
-    if let Some(probe) = probe {
-        let mut logs = Vec::new();
-        if log_swo && probe::log(probe, Log::SwoProbe).is_some() {
-            logs.push(color.bold("swoprobe"));
-        }
-        format!("--log {}", logs.join("/"))
-    } else {
-        "--".into()
-    }
 }
 
 fn rustc_substitute_path() -> Result<()> {

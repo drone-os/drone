@@ -2,17 +2,12 @@
 
 pub mod helpers;
 
-use crate::{
-    devices::Device,
-    probe::{Log, Probe},
-    utils::{ser_to_string, temp_dir},
-};
+use crate::devices::Device;
 use anyhow::Result;
 use drone_config::Config;
 use handlebars::Handlebars;
 use serde_json::json;
-use std::{collections::BTreeSet, error::Error, fs::File, io::Write, path::Path};
-use tempfile::NamedTempFile;
+use std::io::prelude::*;
 
 /// Templates registry.
 pub struct Registry<'reg>(Handlebars<'reg>);
@@ -39,8 +34,6 @@ impl Registry<'_> {
         template!("new/rust-toolchain")?;
         template!("new/_cargo/config")?;
         template!("new/_gitignore")?;
-        template!("openocd/gdb-server.tcl")?;
-        template!("openocd/swo.gdb")?;
 
         helpers::register(&mut handlebars);
         Ok(Self(handlebars))
@@ -65,11 +58,10 @@ impl Registry<'_> {
     }
 
     /// Renders cortexm `src/lib.rs`.
-    pub fn new_src_lib_rs(&self, device: &Device, log: Log) -> Result<String> {
+    pub fn new_src_lib_rs(&self, device: &Device) -> Result<String> {
         let data = json!({
             "platform_name": device.platform_crate.krate.name(),
             "bindings_name": device.bindings_crate.krate.name(),
-            "log_ident": ser_to_string(log),
         });
         helpers::clear_vars();
         Ok(self.0.render("new/src/lib.rs", &data)?)
@@ -124,8 +116,6 @@ impl Registry<'_> {
         flash_size: u32,
         ram_size: u32,
         heap: &str,
-        probe: Probe,
-        log: Log,
     ) -> Result<String> {
         let data = json!({
             "device_flash_size": flash_size,
@@ -134,10 +124,6 @@ impl Registry<'_> {
             "device_ram_origin": device.ram_origin,
             "heap": heap.trim_end(),
             "linker_platform": device.platform_crate.linker_platform(),
-            "probe_ident": ser_to_string(probe),
-            "probe_openocd_arguments": device.probe_openocd.as_ref().map(|x| x.arguments),
-            "log_ident": ser_to_string(log),
-            "log_swo_reset_freq": device.log_swo.as_ref().map(|x| x.reset_freq),
         });
         helpers::clear_vars();
         Ok(self.0.render("new/Drone.toml", &data)?)
@@ -175,41 +161,4 @@ impl Registry<'_> {
         helpers::clear_vars();
         Ok(self.0.render("new/_gitignore", &data)?)
     }
-
-    /// Renders OpenOCD `gdb` command OpenOCD script.
-    pub fn openocd_gdb_server(&self, port: Option<u16>) -> Result<String> {
-        let data = json!({ "port": port });
-        helpers::clear_vars();
-        Ok(self.0.render("openocd/gdb-server.tcl", &data)?)
-    }
-
-    /// Renders OpenOCD `swo` command script.
-    pub fn openocd_swo(
-        &self,
-        config: &Config,
-        ports: &BTreeSet<u32>,
-        reset: bool,
-        pipe: &Path,
-        output: Option<&Path>,
-    ) -> Result<NamedTempFile> {
-        let data = json!({
-            "config": config,
-            "ports": ports,
-            "reset": reset,
-            "pipe": pipe,
-            "output": output,
-        });
-        helpers::clear_vars();
-        named_temp_file(|file| self.0.render_to_write("openocd/swo.gdb", &data, file))
-    }
-}
-
-fn named_temp_file<F, E>(f: F) -> Result<NamedTempFile>
-where
-    F: FnOnce(&File) -> Result<(), E>,
-    E: Error + Send + Sync + 'static,
-{
-    let temp_file = NamedTempFile::new_in(temp_dir())?;
-    f(temp_file.as_file())?;
-    Ok(temp_file)
 }

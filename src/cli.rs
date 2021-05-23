@@ -2,11 +2,7 @@
 
 #![allow(missing_docs)]
 
-use crate::{
-    color::Color,
-    probe::{Log, Probe},
-    utils::de_from_str,
-};
+use crate::{color::Color, utils::de_from_str};
 use anyhow::Error;
 use drone_config::parse_size;
 use std::{
@@ -35,10 +31,10 @@ pub enum Cmd {
     Run(RunCmd),
     /// Run GDB debugger together with OpenOCD server
     Debug(DebugCmd),
-    /// Analyze or modify the heap layout
-    Heap(HeapCmd),
     /// Capture the log output
     Log(LogCmd),
+    /// Analyze or modify the heap layout
+    Heap(HeapCmd),
     /// Create a new Drone project
     New(NewCmd),
     /// Print requested information to stdout
@@ -63,20 +59,34 @@ pub struct NewCmd {
     /// RAM size in bytes (e.g. 256K for 256 kilobyte, or hexadecimal 0xffK)
     #[structopt(short, long, parse(try_from_str = parse_size))]
     pub ram_size: u32,
-    /// Debug probe connected to the target device (run `drone print
-    /// supported-devices` for the list of all available options)
-    #[structopt(short, long, parse(try_from_str = de_from_str))]
-    pub probe: Option<Probe>,
-    /// Log type to use for the project (run `drone print supported-devices` for
-    /// the list of all available options)
-    #[structopt(long, short, parse(try_from_str = de_from_str))]
-    pub log: Option<Log>,
     /// Set the resulting package name, defaults to the directory name
     #[structopt(long)]
     pub name: Option<String>,
     /// Toolchain name, such as 'nightly' or 'nightly-2020-04-23'
     #[structopt(long, default_value = "nightly")]
     pub toolchain: String,
+}
+
+#[derive(Debug, StructOpt)]
+pub struct LogCmd {
+    /// Reset before the operation
+    #[structopt(short, long)]
+    pub reset: bool,
+    /// Log output (format: \[path\]\[:stream\]...)
+    #[structopt(
+        name = "OUTPUT",
+        parse(try_from_os_str = parse_log_output)
+    )]
+    pub outputs: Vec<LogOutput>,
+}
+
+/// Log output.
+#[derive(Debug, Clone)]
+pub struct LogOutput {
+    /// Selected streams.
+    pub streams: Vec<u32>,
+    /// Output path.
+    pub path: OsString,
 }
 
 #[derive(Debug, StructOpt)]
@@ -140,28 +150,6 @@ pub struct DebugCmd {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct LogCmd {
-    /// Reset before the operation
-    #[structopt(short, long)]
-    pub reset: bool,
-    /// Log output (format: \[path\]\[:port\]...)
-    #[structopt(
-        name = "OUTPUT",
-        parse(try_from_os_str = parse_log_output)
-    )]
-    pub outputs: Vec<LogOutput>,
-}
-
-/// Log output.
-#[derive(Debug, Clone)]
-pub struct LogOutput {
-    /// Selected ports.
-    pub ports: Vec<u32>,
-    /// Output path.
-    pub path: OsString,
-}
-
-#[derive(Debug, StructOpt)]
 pub struct PrintCmd {
     #[structopt(subcommand)]
     pub print_sub_cmd: PrintSubCmd,
@@ -178,8 +166,8 @@ pub struct OpenocdCmd {
 pub enum PrintSubCmd {
     /// Print the target triple of the current Drone project
     Target,
-    /// Print a list of supported target devices, debug probes, and log types
-    SupportedDevices,
+    /// Print a list of supported chips
+    Chips,
     /// Print rustc-substitute-path value for GDB
     RustcSubstitutePath,
 }
@@ -187,9 +175,9 @@ pub enum PrintSubCmd {
 fn parse_log_output(src: &OsStr) -> Result<LogOutput, OsString> {
     let mut chunks = src.as_bytes().split(|&b| b == b':');
     let path = OsStr::from_bytes(chunks.next().unwrap()).into();
-    let ports = chunks
-        .map(|port| Ok(String::from_utf8(port.to_vec())?.parse()?))
+    let streams = chunks
+        .map(|stream| Ok(String::from_utf8(stream.to_vec())?.parse()?))
         .collect::<Result<_, Error>>()
         .map_err(|err| err.to_string())?;
-    Ok(LogOutput { ports, path })
+    Ok(LogOutput { streams, path })
 }

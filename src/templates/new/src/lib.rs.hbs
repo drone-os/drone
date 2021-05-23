@@ -16,23 +16,12 @@ use drone_core::prelude::*;
 
 use drone_core::heap;
 use drone_{{bindings_name}}_map::{{bindings_name}}_reg_tokens;
-{{#if (or (eq log_ident "swoprobe") (eq log_ident "swoserial"))}}
-
-drone_{{platform_name}}::swo::set_log!();
-{{~/if}}
 
 {{bindings_name}}_reg_tokens! {
     /// A set of tokens for all memory-mapped registers.
     index => pub Regs;
 
     exclude => {
-
-{{~ #if (or (eq log_ident "swoprobe") (eq log_ident "swoserial"))}}
-        dwt_cyccnt,
-        itm_tpr, itm_tcr, itm_lar,
-        tpiu_acpr, tpiu_sppr, tpiu_ffcr,
-{{~/if}}
-
         scb_ccr,
         mpu_type, mpu_ctrl, mpu_rnr, mpu_rbar, mpu_rasr,
     }

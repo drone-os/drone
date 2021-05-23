@@ -1,10 +1,8 @@
 //! Debug log interface.
 
-pub mod swo;
-
 mod output;
 
-pub use self::output::{Output, OutputMap, OutputStream};
+pub use self::output::{DestStream, Output, OutputMap};
 
 use anyhow::Result;
 use std::{

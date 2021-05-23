@@ -6,40 +6,43 @@ use std::{
     io::{prelude::*, stdout, Stdout},
 };
 
-/// Number of ports.
-pub const PORTS_COUNT: usize = 32;
+/// Number of streams.
+pub const STREAMS_COUNT: usize = 32;
 
 /// Opened output.
 pub struct Output {
-    /// Selected ports.
-    ports: Vec<u32>,
-    /// Output stream.
-    stream: RefCell<OutputStream>,
+    /// Selected streams.
+    src_streams: Vec<u32>,
+    /// Destination stream.
+    dest_stream: RefCell<DestStream>,
 }
 
-/// Output stream.
-pub enum OutputStream {
+/// Destination stream.
+pub enum DestStream {
     /// Standard output.
     Stdout(Stdout),
-    /// File output.
+    /// File destination.
     File(File),
 }
 
 /// Output map.
-pub struct OutputMap<'a>([Vec<&'a RefCell<OutputStream>>; PORTS_COUNT]);
+pub struct OutputMap<'a>([Vec<&'a RefCell<DestStream>>; STREAMS_COUNT]);
 
 impl Output {
     /// Opens all output streams.
     pub fn open_all(outputs: &[cli::LogOutput]) -> io::Result<Vec<Output>> {
         outputs
             .iter()
-            .map(|cli::LogOutput { ports, path }| {
+            .map(|cli::LogOutput { streams, path }| {
                 if path.is_empty() {
-                    Ok(OutputStream::Stdout(stdout()))
+                    Ok(DestStream::Stdout(stdout()))
                 } else {
-                    OpenOptions::new().write(true).open(path).map(OutputStream::File)
+                    OpenOptions::new().write(true).open(path).map(DestStream::File)
                 }
-                .map(|stream| Self { ports: ports.clone(), stream: RefCell::new(stream) })
+                .map(|dest_stream| Self {
+                    src_streams: streams.clone(),
+                    dest_stream: RefCell::new(dest_stream),
+                })
             })
             .collect()
     }
@@ -47,18 +50,18 @@ impl Output {
 
 impl<'a> From<&'a [Output]> for OutputMap<'a> {
     fn from(outputs: &'a [Output]) -> Self {
-        let mut map: [Vec<&RefCell<OutputStream>>; PORTS_COUNT] = Default::default();
-        for Output { ports, stream } in outputs {
-            if ports.is_empty() {
+        let mut map: [Vec<&RefCell<DestStream>>; STREAMS_COUNT] = Default::default();
+        for Output { src_streams, dest_stream } in outputs {
+            if src_streams.is_empty() {
                 for outputs in &mut map {
-                    outputs.push(stream);
+                    outputs.push(dest_stream);
                 }
             } else {
-                for port in ports {
-                    if let Some(map) = map.get_mut(*port as usize) {
-                        map.push(stream);
+                for src_stream in src_streams {
+                    if let Some(map) = map.get_mut(*src_stream as usize) {
+                        map.push(dest_stream);
                     } else {
-                        log::warn!("Ignoring port {}", port);
+                        log::warn!("Ignoring stream {}", src_stream);
                     }
                 }
             }
@@ -68,16 +71,16 @@ impl<'a> From<&'a [Output]> for OutputMap<'a> {
 }
 
 impl OutputMap<'_> {
-    /// Write `data` to all `port` outputs.
-    pub fn write(&self, port: u8, data: &[u8]) -> io::Result<()> {
-        for output in &self.0[port as usize] {
+    /// Write `data` to all `stream` outputs.
+    pub fn write(&self, stream: u8, data: &[u8]) -> io::Result<()> {
+        for output in &self.0[stream as usize] {
             output.borrow_mut().write(data)?;
         }
         Ok(())
     }
 }
 
-impl OutputStream {
+impl DestStream {
     /// Write `data` to the output.
     pub fn write(&mut self, data: &[u8]) -> io::Result<()> {
         fn write_stream<T: Write>(stream: &mut T, data: &[u8]) -> io::Result<()> {

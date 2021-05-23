@@ -21,10 +21,8 @@ pub struct Device {
     pub platform_crate: PlatformCrate,
     /// Drone bindings crate configuration.
     pub bindings_crate: BindingsCrate,
-    /// OpenOCD configuration.
-    pub probe_openocd: Option<ProbeOpenocd>,
-    /// ARM® SWO configuration.
-    pub log_swo: Option<LogSwo>,
+    /// OpenOCD target config.
+    pub openocd_target: &'static str,
 }
 
 /// Drone platform crate configuration.
@@ -43,40 +41,6 @@ pub struct BindingsCrate {
     pub krate: crates::Bindings,
     /// Configuration flag value.
     pub flag: &'static str,
-    /// Available features.
-    pub features: &'static [&'static str],
-}
-
-/// Black Magic Probe configuration.
-pub struct ProbeBmp {
-    /// Device identifier.
-    pub device: &'static str,
-}
-
-/// OpenOCD configuration.
-pub struct ProbeOpenocd {
-    /// Command-line arguments to OpenOCD.
-    pub arguments: &'static [&'static str],
-}
-
-/// Segger J-Link configuration.
-pub struct ProbeJlink {
-    /// Device identifier.
-    pub device: &'static str,
-    /// Target interface.
-    pub interface: &'static str,
-}
-
-/// ARM® SWO configuration.
-pub struct LogSwo {
-    /// SWO frequency at reset.
-    pub reset_freq: u32,
-}
-
-/// Drone Serial Output configuration.
-pub struct LogDso {
-    /// Drone bindings crate.
-    pub krate: crates::Dso,
     /// Available features.
     pub features: &'static [&'static str],
 }

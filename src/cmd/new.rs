@@ -1,13 +1,7 @@
 //! `drone new` command.
 
 use crate::{
-    cli::NewCmd,
-    color::Color,
-    devices,
-    devices::Device,
-    heap, probe,
-    probe::{Log, Probe},
-    templates::Registry,
+    cli::NewCmd, color::Color, devices, devices::Device, heap, templates::Registry,
     utils::run_command,
 };
 use ansi_term::Color::Green;
@@ -23,7 +17,7 @@ const HEAP_POOLS: u32 = 8;
 
 /// Runs `drone new` command.
 pub fn run(cmd: NewCmd, color: Color) -> Result<()> {
-    let NewCmd { path, device, flash_size, ram_size, probe, log, name, toolchain } = cmd;
+    let NewCmd { path, device, flash_size, ram_size, name, toolchain } = cmd;
     let device = devices::find(&device)?;
     let registry = Registry::new()?;
     let name = name.as_deref().map_or_else(
@@ -45,46 +39,22 @@ pub fn run(cmd: NewCmd, color: Color) -> Result<()> {
     )?;
     let underscore_name = name.chars().map(|c| if c == '-' { '_' } else { c }).collect::<String>();
     let heap = new_heap(ram_size / 2, HEAP_POOLS)?;
-    let (probe, log) = choose_probe_and_log(device, probe, log)?;
 
     cargo_new(&path, &toolchain)?;
     src_main_rs(&path, color)?;
     src_bin_name_rs(&path, device, &name, &underscore_name, &registry, color)?;
-    src_lib_rs(&path, device, log, &registry, color)?;
+    src_lib_rs(&path, device, &registry, color)?;
     src_thr_rs(&path, device, &registry, color)?;
     src_tasks_mod_rs(&path, &registry, color)?;
     src_tasks_root_rs(&path, device, &registry, color)?;
     cargo_toml(&path, &name, device, &registry, color)?;
-    drone_toml(&path, device, flash_size, ram_size, &heap, probe, log, &registry, color)?;
+    drone_toml(&path, device, flash_size, ram_size, &heap, &registry, color)?;
     justfile(&path, &registry, color)?;
     rust_toolchain(&path, &toolchain, &registry, color)?;
     cargo_config(&path, device, &registry, color)?;
     gitignore(&path, &registry, color)?;
 
     Ok(())
-}
-
-fn choose_probe_and_log(
-    device: &Device,
-    mut probe: Option<Probe>,
-    mut log: Option<Log>,
-) -> Result<(Probe, Log)> {
-    if probe.is_none()
-        && device.probe_openocd.is_some()
-        && log.map_or(true, |log| probe::log(Probe::Openocd, log).is_some())
-    {
-        probe = Some(Probe::Openocd);
-    }
-    if log.is_none() {
-        if let Some(probe) = probe {
-            if device.log_swo.is_some() && probe::log(probe, Log::SwoProbe).is_some() {
-                log = Some(Log::SwoProbe);
-            }
-        }
-    }
-    probe
-        .and_then(|probe| log.map(|log| (probe, log)))
-        .ok_or_else(|| anyhow!("No supported probe and log combination for the given criteria"))
 }
 
 fn new_heap(size: u32, pools: u32) -> Result<String> {
@@ -125,16 +95,10 @@ fn src_bin_name_rs(
     Ok(())
 }
 
-fn src_lib_rs(
-    path: &Path,
-    device: &Device,
-    log: Log,
-    registry: &Registry<'_>,
-    color: Color,
-) -> Result<()> {
+fn src_lib_rs(path: &Path, device: &Device, registry: &Registry<'_>, color: Color) -> Result<()> {
     let path = path.join("src/lib.rs");
     let mut file = File::create(&path)?;
-    file.write_all(registry.new_src_lib_rs(device, log)?.as_bytes())?;
+    file.write_all(registry.new_src_lib_rs(device)?.as_bytes())?;
     print_created("src/lib.rs", color);
     Ok(())
 }
@@ -185,23 +149,18 @@ fn cargo_toml(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
 fn drone_toml(
     path: &Path,
     device: &Device,
     flash_size: u32,
     ram_size: u32,
     heap: &str,
-    probe: Probe,
-    log: Log,
     registry: &Registry<'_>,
     color: Color,
 ) -> Result<()> {
     let path = path.join("Drone.toml");
     let mut file = File::create(&path)?;
-    file.write_all(
-        registry.new_drone_toml(device, flash_size, ram_size, heap, probe, log)?.as_bytes(),
-    )?;
+    file.write_all(registry.new_drone_toml(device, flash_size, ram_size, heap)?.as_bytes())?;
     print_created("Drone.toml", color);
     Ok(())
 }

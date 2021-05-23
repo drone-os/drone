@@ -55,7 +55,6 @@ pub mod devices;
 pub mod heap;
 pub mod log;
 pub mod openocd;
-pub mod probe;
 pub mod templates;
 pub mod utils;
 

@@ -17,7 +17,7 @@ SECTIONS
     STACK_POINTER = ORIGIN(RAM) + LENGTH(RAM)
         - _data_section_size
         - _bss_section_size
-        - _dronereg_section_size
+        - _log_section_size
         - _heap_section_size;
 {{~ /unless}}
 {{~ #if (eq config.linker.platform "arm") }}
@@ -43,31 +43,37 @@ SECTIONS
         . = ALIGN(4);
     } > FLASH
 
-    .bss STACK_POINTER (NOLOAD) :
+    .data STACK_POINTER :
+    {
+        DATA_LOAD = LOADADDR(.data);
+        DATA_START = .;
+        *(.data.*);
+        . = ALIGN(4);
+        DATA_END = .;
+    } > RAM AT > FLASH
+
+    .bss ADDR(.data) + SIZEOF(.data) (NOLOAD) :
     {
         BSS_START = .;
         *(.sbss);
         *(.bss.*);
         *(COMMON);
         . = ALIGN(4);
-        BSS_END = .;
     } > RAM
 
-    .data ADDR(.bss) + SIZEOF(.bss) :
+    .log ADDR(.bss) + SIZEOF(.bss) (NOLOAD) :
     {
-        DATA_LOAD = LOADADDR(.data);
-        DATA_START = .;
-        *(.data.*);
-    } > RAM AT > FLASH
-
-    .dronereg ADDR(.data) + SIZEOF(.data) (NOLOAD) :
-    {
-        *(.dronereg.DSO_PORTS);
+        *(.log.CONTROL);
         . = ALIGN(4);
-        DATA_END = .;
+        BSS_END = .;
+        . = ALIGN(4);
+        LOG_START = .;
+        . += {{size config.log.size}};
+        . = ALIGN(4);
+        LOG_END = .;
     } > RAM
 
-    .heap ADDR(.dronereg) + SIZEOF(.dronereg) (NOLOAD) :
+    .heap ADDR(.log) + SIZEOF(.log) (NOLOAD) :
     {
         HEAP_START = .;
         . += {{size config.heap.main.size}};
