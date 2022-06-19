@@ -18,6 +18,7 @@ SECTIONS
         - _data_section_size
         - _bss_section_size
         - _log_section_size
+        - _log_data_section_size
         - _heap_section_size;
 {{~ /unless}}
 {{~ #if (eq config.linker.platform "arm") }}
@@ -45,16 +46,12 @@ SECTIONS
 
     .data STACK_POINTER :
     {
-        DATA_LOAD = LOADADDR(.data);
-        DATA_START = .;
         *(.data.*);
         . = ALIGN(4);
-        DATA_END = .;
     } > RAM AT > FLASH
 
     .bss ADDR(.data) + SIZEOF(.data) (NOLOAD) :
     {
-        BSS_START = .;
         *(.sbss);
         *(.bss.*);
         *(COMMON);
@@ -63,23 +60,31 @@ SECTIONS
 
     .log ADDR(.bss) + SIZEOF(.bss) (NOLOAD) :
     {
-        *(.log.CONTROL);
+        *(.log.*);
         . = ALIGN(4);
-        BSS_END = .;
-        . = ALIGN(4);
-        LOG_START = .;
-        . += {{size config.log.size}};
-        . = ALIGN(4);
-        LOG_END = .;
     } > RAM
 
-    .heap ADDR(.log) + SIZEOF(.log) (NOLOAD) :
+    .log_data ADDR(.log) + SIZEOF(.log) (NOLOAD) :
     {
-        HEAP_START = .;
+        . += {{size config.log.size}};
+        . = ALIGN(4);
+    } > RAM
+
+    .heap ADDR(.log_data) + SIZEOF(.log_data) (NOLOAD) :
+    {
         . += {{size config.heap.main.size}};
         . = ALIGN(4);
-        HEAP_END = .;
     } > RAM
+
+    DATA_LOAD = LOADADDR(.data);
+    DATA_START = ADDR(.data);
+    DATA_END = ADDR(.data) + SIZEOF(.data);
+    BSS_START = ADDR(.bss);
+    BSS_END = ADDR(.bss) + SIZEOF(.bss) + SIZEOF(.log);
+    LOG_START = ADDR(.log_data);
+    LOG_END = ADDR(.log_data) + SIZEOF(.log_data);
+    HEAP_START = ADDR(.heap);
+    HEAP_END = ADDR(.heap) + SIZEOF(.heap);
 
     /DISCARD/ :
     {

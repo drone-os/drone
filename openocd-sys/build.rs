@@ -52,6 +52,7 @@ fn main() {
         .expect("./bootstrap failed");
 
     Command::new(openocd_path.join("configure"))
+        .arg("--disable-werror")
         .arg("--prefix=/tmp/drone-openocd")
         .current_dir(&build_path)
         .status()

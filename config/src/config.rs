@@ -11,7 +11,7 @@ use std::collections::HashMap;
 pub struct Config {
     pub memory: Memory,
     pub heap: Heap,
-    pub log: Option<Log>,
+    pub log: Log,
     pub linker: Linker,
 }
 

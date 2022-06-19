@@ -4,13 +4,12 @@ mod log;
 
 use anyhow::{anyhow, Result};
 use drone_openocd_sys::{
-    adapter_quit, arm_cti_cleanup_all, arm_tpiu_swo_cleanup_all, command_context_mode,
-    command_exit, command_mode_COMMAND_CONFIG, command_set_output_handler,
-    configuration_output_handler, dap_cleanup_all, exit_on_signal, flash_free_all_banks,
-    free_config, gdb_service_free, help_del_all_commands, openocd_thread, server_free,
-    server_host_os_close, server_host_os_entry, setup_command_handler, stderr, stdout,
-    unregister_all_commands, util_init, ERROR_FAIL, ERROR_OK, EXIT_FAILURE, SCRIPTS_FINGERPRINT,
-    SCRIPTS_TAR_BZ2,
+    adapter_quit, arm_cti_cleanup_all, command_context_mode, command_exit,
+    command_mode_COMMAND_CONFIG, command_set_output_handler, configuration_output_handler,
+    dap_cleanup_all, exit_on_signal, flash_free_all_banks, free_config, gdb_service_free,
+    ioutil_init, openocd_thread, server_free, server_host_os_close, server_host_os_entry,
+    setup_command_handler, stderr, stdout, unregister_all_commands, util_init, ERROR_FAIL,
+    ERROR_OK, EXIT_FAILURE, SCRIPTS_FINGERPRINT, SCRIPTS_TAR_BZ2,
 };
 use libc::{setvbuf, _IONBF};
 use std::{
@@ -109,6 +108,10 @@ pub unsafe extern "C" fn openocd_main(argc: i32, argv: *mut *mut i8) -> i32 {
             return EXIT_FAILURE as i32;
         }
 
+        if ioutil_init(cmd_ctx) != ERROR_OK as i32 {
+            return EXIT_FAILURE as i32;
+        }
+
         if log::init(cmd_ctx) != ERROR_OK as i32 {
             return EXIT_FAILURE as i32;
         }
@@ -122,11 +125,9 @@ pub unsafe extern "C" fn openocd_main(argc: i32, argv: *mut *mut i8) -> i32 {
 
         flash_free_all_banks();
         gdb_service_free();
-        arm_tpiu_swo_cleanup_all();
         server_free();
 
         unregister_all_commands(cmd_ctx, ptr::null_mut());
-        help_del_all_commands(cmd_ctx);
 
         dap_cleanup_all();
         arm_cti_cleanup_all();
