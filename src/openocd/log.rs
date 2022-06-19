@@ -5,15 +5,13 @@ use drone_openocd_sys::{
     target_register_timer_callback, target_timer_type_TARGET_TIMER_TYPE_PERIODIC,
     target_write_buffer, COMMAND_REGISTRATION_DONE, ERROR_OK,
 };
-use lazy_static::lazy_static;
 use libc::c_void;
+use once_cell::sync::Lazy;
 use std::{ffi::CString, ptr, sync::Mutex, time::Duration};
 
 const POLLING_INTERVAL: Duration = Duration::from_millis(500);
 
-lazy_static! {
-    static ref CTRL: Mutex<Option<Control>> = Mutex::new(None);
-}
+static CTRL: Lazy<Mutex<Option<Control>>> = Lazy::new(|| Mutex::new(None));
 
 struct Control {
     target: *mut target,
