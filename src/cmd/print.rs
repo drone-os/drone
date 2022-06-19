@@ -80,7 +80,7 @@ fn rustc_substitute_path() -> Result<()> {
     let commit_hash = String::from_utf8(rustc.output()?.stdout)?
         .lines()
         .find_map(|line| {
-            line.starts_with("commit-hash: ").then(|| line.splitn(2, ": ").nth(1).unwrap())
+            line.starts_with("commit-hash: ").then(|| line.split_once(": ").unwrap().1)
         })
         .ok_or_else(|| anyhow!("parsing of rustc output failed"))?
         .to_string();

@@ -3,7 +3,7 @@ use drone_openocd_sys::{
     command_context, command_invocation, command_mode_COMMAND_ANY, command_registration,
     get_current_target, register_commands, target, target_read_buffer, target_read_u32,
     target_register_timer_callback, target_timer_type_TARGET_TIMER_TYPE_PERIODIC,
-    target_write_buffer, target_write_u32, COMMAND_REGISTRATION_DONE, ERROR_OK,
+    target_write_buffer, COMMAND_REGISTRATION_DONE, ERROR_OK,
 };
 use lazy_static::lazy_static;
 use libc::c_void;
@@ -97,7 +97,12 @@ unsafe extern "C" fn drone_log_callback(_data: *mut c_void) -> i32 {
         }
         unsafe {
             let mut buffer = [0; 128];
-            let ret = target_read_buffer(ctrl.target, dbg!(ctrl.address.into()), 128, buffer.as_mut_ptr());
+            let ret = target_read_buffer(
+                ctrl.target,
+                dbg!(ctrl.address.into()),
+                128,
+                buffer.as_mut_ptr(),
+            );
             // dbg!(buffer);
             dbg!(ret);
             println!(

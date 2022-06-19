@@ -25,7 +25,6 @@
 //! $ drone help
 //! ```
 
-#![feature(bool_to_option)]
 #![feature(exhaustive_patterns)]
 #![feature(generator_trait)]
 #![feature(generators)]

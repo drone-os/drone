@@ -3,13 +3,8 @@
 #![allow(missing_docs)]
 
 use crate::{color::Color, utils::de_from_str};
-use anyhow::Error;
 use drone_config::parse_size;
-use std::{
-    ffi::{OsStr, OsString},
-    os::unix::ffi::OsStrExt,
-    path::PathBuf,
-};
+use std::{ffi::OsString, path::PathBuf};
 use structopt::StructOpt;
 
 /// Drone OS command line utility.
@@ -155,14 +150,4 @@ pub enum PrintSubCmd {
     Chips,
     /// Print rustc-substitute-path value for GDB
     RustcSubstitutePath,
-}
-
-fn parse_log_output(src: &OsStr) -> Result<LogOutput, OsString> {
-    let mut chunks = src.as_bytes().split(|&b| b == b':');
-    let path = OsStr::from_bytes(chunks.next().unwrap()).into();
-    let streams = chunks
-        .map(|stream| Ok(String::from_utf8(stream.to_vec())?.parse()?))
-        .collect::<Result<_, Error>>()
-        .map_err(|err| err.to_string())?;
-    Ok(LogOutput { streams, path })
 }

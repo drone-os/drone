@@ -1,4 +1,3 @@
-#![feature(bool_to_option)]
 #![warn(clippy::pedantic)]
 
 use bindgen::callbacks::ParseCallbacks;

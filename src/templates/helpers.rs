@@ -144,5 +144,5 @@ pub fn register(handlebars: &mut Handlebars<'_>) {
 
 /// Clears all variables.
 pub fn clear_vars() {
-    VARS.with(|vars| vars.lock().unwrap().clear())
+    VARS.with(|vars| vars.lock().unwrap().clear());
 }

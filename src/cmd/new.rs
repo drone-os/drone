@@ -42,12 +42,12 @@ pub fn run(cmd: NewCmd, color: Color) -> Result<()> {
 
     cargo_new(&path, &toolchain)?;
     src_main_rs(&path, color)?;
-    src_bin_name_rs(&path, device, &name, &underscore_name, &registry, color)?;
+    src_bin_name_rs(&path, device, name, &underscore_name, &registry, color)?;
     src_lib_rs(&path, device, &registry, color)?;
     src_thr_rs(&path, device, &registry, color)?;
     src_tasks_mod_rs(&path, &registry, color)?;
     src_tasks_root_rs(&path, device, &registry, color)?;
-    cargo_toml(&path, &name, device, &registry, color)?;
+    cargo_toml(&path, name, device, &registry, color)?;
     drone_toml(&path, device, flash_size, ram_size, &heap, &registry, color)?;
     justfile(&path, &registry, color)?;
     rust_toolchain(&path, &toolchain, &registry, color)?;

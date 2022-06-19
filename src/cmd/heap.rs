@@ -73,7 +73,7 @@ pub fn generate(
         let layout = heap::layout::empty(size, pools);
         heap::layout::render(&mut stdout(), config, &layout)?;
     } else {
-        let (layout, frag) = heap::layout::optimize(&trace, size, pools)?;
+        let (layout, frag) = heap::layout::optimize(trace, size, pools)?;
         eprintln!();
         eprintln!("{}", color.bold_fg(&format!("{:=^80}", " OPTIMIZED LAYOUT "), Cyan));
         heap::layout::render(&mut stdout(), config, &layout)?;
