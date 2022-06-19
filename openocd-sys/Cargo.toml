@@ -14,5 +14,5 @@ OpenOCD bindings for Drone, an Embedded Operating System.
 """
 
 [build-dependencies]
-bindgen = "0.58"
-sha2 = "0.9.4"
+bindgen = "0.60"
+sha2 = "0.10"
