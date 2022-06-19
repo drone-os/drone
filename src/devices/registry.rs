@@ -546,38 +546,38 @@ pub const REGISTRY: &[Device] = &[
         },
         openocd_target: "target/nrf52.cfg",
     },
-    // Device {
-    //     name: "nrf9160",
-    //     target: "thumbv8m.main-none-eabihf",
-    //     flash_origin: 0x0000_0000,
-    //     ram_origin: 0x2000_0000,
-    //     platform_crate: PlatformCrate {
-    //         krate: crates::Platform::Cortexm,
-    //         flag: "cortexm33f_r0p2",
-    //         features: &["floating-point-unit", "memory-protection-unit", "security-extension"],
-    //     },
-    //     bindings_crate: BindingsCrate {
-    //         krate: crates::Bindings::Nrf,
-    //         flag: "nrf9160",
-    //         features: &["uarte"],
-    //     },
-    //     openocd_target: "target/nrf9160.cfg",
-    // },
-    // Device {
-    //     name: "gd32vf103",
-    //     target: "riscv32imac-unknown-none-elf",
-    //     flash_origin: 0x0800_0000,
-    //     ram_origin: 0x2000_0000,
-    //     platform_crate: PlatformCrate {
-    //         krate: crates::Platform::Riscv,
-    //         flag: "bumblebee",
-    //         features: &["m-extension", "a-extension", "c-extension"],
-    //     },
-    //     bindings_crate: BindingsCrate {
-    //         krate: crates::Bindings::Gd32V,
-    //         flag: "gd32vf103",
-    //         features: &[],
-    //     },
-    //     openocd_target: "target/gd32vf103.cfg",
-    // },
+    /* Device {
+     *     name: "nrf9160",
+     *     target: "thumbv8m.main-none-eabihf",
+     *     flash_origin: 0x0000_0000,
+     *     ram_origin: 0x2000_0000,
+     *     platform_crate: PlatformCrate {
+     *         krate: crates::Platform::Cortexm,
+     *         flag: "cortexm33f_r0p2",
+     *         features: &["floating-point-unit", "memory-protection-unit", "security-extension"],
+     *     },
+     *     bindings_crate: BindingsCrate {
+     *         krate: crates::Bindings::Nrf,
+     *         flag: "nrf9160",
+     *         features: &["uarte"],
+     *     },
+     *     openocd_target: "target/nrf9160.cfg",
+     * },
+     * Device {
+     *     name: "gd32vf103",
+     *     target: "riscv32imac-unknown-none-elf",
+     *     flash_origin: 0x0800_0000,
+     *     ram_origin: 0x2000_0000,
+     *     platform_crate: PlatformCrate {
+     *         krate: crates::Platform::Riscv,
+     *         flag: "bumblebee",
+     *         features: &["m-extension", "a-extension", "c-extension"],
+     *     },
+     *     bindings_crate: BindingsCrate {
+     *         krate: crates::Bindings::Gd32V,
+     *         flag: "gd32vf103",
+     *         features: &[],
+     *     },
+     *     openocd_target: "target/gd32vf103.cfg",
+     * }, */
 ];

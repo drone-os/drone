@@ -31,8 +31,6 @@ pub enum Cmd {
     Run(RunCmd),
     /// Run GDB debugger together with OpenOCD server
     Debug(DebugCmd),
-    /// Capture the log output
-    Log(LogCmd),
     /// Analyze or modify the heap layout
     Heap(HeapCmd),
     /// Create a new Drone project
@@ -65,19 +63,6 @@ pub struct NewCmd {
     /// Toolchain name, such as 'nightly' or 'nightly-2020-04-23'
     #[structopt(long, default_value = "nightly")]
     pub toolchain: String,
-}
-
-#[derive(Debug, StructOpt)]
-pub struct LogCmd {
-    /// Reset before the operation
-    #[structopt(short, long)]
-    pub reset: bool,
-    /// Log output (format: \[path\]\[:stream\]...)
-    #[structopt(
-        name = "OUTPUT",
-        parse(try_from_os_str = parse_log_output)
-    )]
-    pub outputs: Vec<LogOutput>,
 }
 
 /// Log output.

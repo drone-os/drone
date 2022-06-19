@@ -1,7 +1,17 @@
 //! OpenOCD integration.
 
+mod log;
+
 use anyhow::{anyhow, Result};
-use drone_openocd_sys::{openocd_main, stderr, stdout, SCRIPTS_FINGERPRINT, SCRIPTS_TAR_BZ2};
+use drone_openocd_sys::{
+    adapter_quit, arm_cti_cleanup_all, arm_tpiu_swo_cleanup_all, command_context_mode,
+    command_exit, command_mode_COMMAND_CONFIG, command_set_output_handler,
+    configuration_output_handler, dap_cleanup_all, exit_on_signal, flash_free_all_banks,
+    free_config, gdb_service_free, help_del_all_commands, openocd_thread, server_free,
+    server_host_os_close, server_host_os_entry, setup_command_handler, stderr, stdout,
+    unregister_all_commands, util_init, ERROR_FAIL, ERROR_OK, EXIT_FAILURE, SCRIPTS_FINGERPRINT,
+    SCRIPTS_TAR_BZ2,
+};
 use libc::{setvbuf, _IONBF};
 use std::{
     convert::TryInto,
@@ -20,7 +30,10 @@ use std::{
 const SCRIPTS_PATH: &str = "/tmp/drone-openocd";
 
 /// Runs OpenOCD with given arguments. This function normally never returns.
-pub fn exit_with_openocd(args: Vec<OsString>) -> Result<!> {
+pub fn exit_with_openocd(
+    openocd_main: unsafe extern "C" fn(i32, *mut *mut i8) -> i32,
+    args: Vec<OsString>,
+) -> Result<!> {
     unpack_scripts()?;
     env::set_var("OPENOCD_SCRIPTS", SCRIPTS_PATH);
     let args = iter::once("drone-openocd".into())
@@ -44,14 +57,14 @@ pub fn unpack_scripts() -> Result<()> {
     if root_path.exists() {
         if let Ok(fingerprint) = fs::read(&fingerprint_path) {
             if fingerprint == SCRIPTS_FINGERPRINT {
-                log::info!("OpenOCD scripts are up-to-date");
+                ::log::info!("OpenOCD scripts are up-to-date");
                 return Ok(());
             }
         }
-        log::info!("OpenOCD scripts are outdated");
+        ::log::info!("OpenOCD scripts are outdated");
         fs::remove_dir_all(&root_path)?;
     }
-    log::info!("Unpacking OpenOCD scripts");
+    ::log::info!("Unpacking OpenOCD scripts");
     fs::create_dir_all(&root_path)?;
     let mut tar = Command::new("tar")
         .arg("--extract")
@@ -80,4 +93,58 @@ pub fn inline_script_args(script: &str) -> Vec<OsString> {
         args.push(command.into());
     }
     args
+}
+
+/// Custom OpenOCD entry function.
+///
+/// # Safety
+///
+/// `argc` and `argv` should describe correct C-style arguments.
+#[allow(clippy::cast_possible_wrap)]
+pub unsafe extern "C" fn openocd_main(argc: i32, argv: *mut *mut i8) -> i32 {
+    unsafe {
+        let cmd_ctx = setup_command_handler(ptr::null_mut());
+
+        if util_init(cmd_ctx) != ERROR_OK as i32 {
+            return EXIT_FAILURE as i32;
+        }
+
+        if log::init(cmd_ctx) != ERROR_OK as i32 {
+            return EXIT_FAILURE as i32;
+        }
+
+        command_context_mode(cmd_ctx, command_mode_COMMAND_CONFIG);
+        command_set_output_handler(cmd_ctx, Some(configuration_output_handler), ptr::null_mut());
+
+        server_host_os_entry();
+
+        let ret = openocd_thread(argc, argv, cmd_ctx);
+
+        flash_free_all_banks();
+        gdb_service_free();
+        arm_tpiu_swo_cleanup_all();
+        server_free();
+
+        unregister_all_commands(cmd_ctx, ptr::null_mut());
+        help_del_all_commands(cmd_ctx);
+
+        dap_cleanup_all();
+        arm_cti_cleanup_all();
+
+        adapter_quit();
+
+        server_host_os_close();
+
+        command_exit(cmd_ctx);
+
+        free_config();
+
+        if ret == ERROR_FAIL {
+            return EXIT_FAILURE as i32;
+        } else if ret != ERROR_OK as i32 {
+            exit_on_signal(ret);
+        }
+
+        ret
+    }
 }

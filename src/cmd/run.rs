@@ -1,6 +1,10 @@
 //! `drone run` command.
 
-use crate::{cli::RunCmd, openocd::exit_with_openocd, utils::temp_dir};
+use crate::{
+    cli::RunCmd,
+    openocd::{exit_with_openocd, openocd_main},
+    utils::temp_dir,
+};
 use anyhow::Result;
 use std::{ffi::OsStr, fs::File, io};
 use tempfile::NamedTempFile;
@@ -15,5 +19,5 @@ pub fn run(cmd: RunCmd) -> Result<()> {
         Box::new(File::open(script)?)
     };
     io::copy(&mut input, &mut temp_file)?;
-    exit_with_openocd(vec!["--file".into(), temp_file.path().into()])?;
+    exit_with_openocd(openocd_main, vec!["--file".into(), temp_file.path().into()])?;
 }
