@@ -1,8 +1,7 @@
 #![warn(clippy::pedantic)]
 
 use bindgen::callbacks::ParseCallbacks;
-use sha2::{Digest, Sha256};
-use std::{env, env::current_dir, fs, fs::File, io, path::PathBuf, process::Command};
+use std::{env, path::PathBuf, process::Command};
 
 #[derive(Debug)]
 pub struct UnprefixItems {}
@@ -18,86 +17,29 @@ impl ParseCallbacks for UnprefixItems {
 
 fn main() {
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let build_path = out_path.join("openocd");
-    let scripts_path = out_path.join("scripts.tar.bz2");
-    let fingerprint_path = out_path.join("scripts.sha256");
-    let bindings_path = out_path.join("bindings.rs");
-    let openocd_path = current_dir().unwrap().join("openocd");
-    let include_dirs = vec![
-        build_path.clone(),
-        build_path.join("src"),
-        build_path.join("jimtcl"),
-        openocd_path.join("src"),
-        openocd_path.join("src/helper"),
-        openocd_path.join("jimtcl"),
-    ];
-    fs::create_dir_all(&build_path).unwrap();
+    let openocd_lib = env::var("OPENOCD_LIB").expect("$OPENOCD_LIB is not set");
+    let openocd_include = env::var("OPENOCD_INCLUDE").expect("$OPENOCD_INCLUDE is not set");
+    let openocd_include = format!("-I{}", openocd_include);
+    let clang_args =
+        vec!["-DHAVE_CONFIG_H", "-DRELSTR=\"\"", "-DGITVERSION=\"\"", &openocd_include];
 
     println!("cargo:rerun-if-changed=wrapper.c");
     println!("cargo:rustc-link-lib=static=openocd");
     println!("cargo:rustc-link-lib=static=jim");
     println!("cargo:rustc-link-lib=static=wrapper");
+    println!("cargo:rustc-link-lib=hidapi-libusb");
+    println!("cargo:rustc-link-lib=ftdi1");
     println!("cargo:rustc-link-lib=usb-1.0");
-    println!("cargo:rustc-link-search=native={}", build_path.join("src/.libs").display());
-    println!("cargo:rustc-link-search=native={}", build_path.join("jimtcl").display());
-    println!("cargo:rustc-link-search=native={}", build_path.display());
-
-    Command::new("./bootstrap")
-        .current_dir(&openocd_path)
-        .status()
-        .expect("failed to execute ./bootstrap")
-        .success()
-        .then_some(())
-        .expect("./bootstrap failed");
-
-    Command::new(openocd_path.join("configure"))
-        .arg("--disable-werror")
-        .arg("--prefix=/tmp/drone-openocd")
-        .current_dir(&build_path)
-        .status()
-        .expect("failed to execute ./configure")
-        .success()
-        .then_some(())
-        .expect("./configure failed");
-
-    Command::new("make")
-        .arg("--jobs=4")
-        .current_dir(&build_path)
-        .status()
-        .expect("failed to execute make")
-        .success()
-        .then_some(())
-        .expect("make failed");
-
-    Command::new("tar")
-        .arg("--create")
-        .arg("--bzip2")
-        .arg("--verbose")
-        .arg(format!("--file={}", scripts_path.display()))
-        .arg(".")
-        .current_dir(openocd_path.join("tcl"))
-        .status()
-        .expect("failed to execute tar")
-        .success()
-        .then_some(())
-        .expect("tar failed");
-
-    let mut scripts = File::open(&scripts_path).expect("failed to read the scripts archive");
-    let mut fingerprint = Sha256::new();
-    io::copy(&mut scripts, &mut fingerprint).expect("failed to hash the scripts archive");
-    let fingerprint = fingerprint.finalize();
-    fs::write(&fingerprint_path, fingerprint).expect("failed to write the fingerprint file");
-
-    let clang_args = vec!["-DHAVE_CONFIG_H", "-DRELSTR=\"\"", "-DGITVERSION=\"\""];
+    println!("cargo:rustc-link-search=native={}", openocd_lib);
+    println!("cargo:rustc-link-search=native={}", out_path.display());
 
     Command::new("clang")
         .arg("-fPIC")
         .args(&clang_args)
-        .args(include_dirs.iter().map(|path| format!("-I{}", path.display())))
         .arg("-c")
         .arg("wrapper.c")
         .arg("-o")
-        .arg(build_path.join("wrapper.o"))
+        .arg(out_path.join("wrapper.o"))
         .status()
         .expect("failed to execute clang")
         .success()
@@ -106,8 +48,8 @@ fn main() {
 
     Command::new("ar")
         .arg("crus")
-        .arg(build_path.join("libwrapper.a"))
-        .arg(build_path.join("wrapper.o"))
+        .arg(out_path.join("libwrapper.a"))
+        .arg(out_path.join("wrapper.o"))
         .status()
         .expect("failed to execute ar")
         .success()
@@ -118,11 +60,10 @@ fn main() {
         .header("wrapper.c")
         .clang_arg("-DBINDGEN")
         .clang_args(&clang_args)
-        .clang_args(include_dirs.iter().map(|path| format!("-I{}", path.display())))
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .parse_callbacks(Box::new(UnprefixItems {}))
         .generate()
         .expect("failed to generate bindings")
-        .write_to_file(bindings_path)
+        .write_to_file(out_path.join("bindings.rs"))
         .expect("failed to write bindings");
 }
