@@ -35,7 +35,7 @@
         nativeBuildInputs = with pkgs; [
           clang
         ];
-        libopenocd = pkgs.stdenv.mkDerivation {
+        libopenocd = { extraConfigureFlags ? [ ] }: pkgs.stdenv.mkDerivation {
           name = "libopenocd";
           src = openocd;
           nativeBuildInputs = with pkgs; [
@@ -49,9 +49,7 @@
           preConfigure = ''
             SKIP_SUBMODULE=1 ./bootstrap
           '';
-          configureFlags = [
-            "--disable-werror"
-          ];
+          configureFlags = [ "--disable-werror" ] ++ extraConfigureFlags;
           buildPhase = ''
             make --jobs=$NIX_BUILD_CORES
           '';
@@ -90,32 +88,43 @@
           cargo = rustToolchain;
           rustc = rustToolchain;
         };
-        env = {
-          OPENOCD_LIB = "${libopenocd}/lib";
-          OPENOCD_INCLUDE = "${libopenocd}/include";
-          OPENOCD_SCRIPTS = "${libopenocd}/share/openocd/scripts";
-          LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
-          RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/library";
-        };
+        env = libopenocdArgs:
+          let libopenocdPkg = libopenocd libopenocdArgs; in
+          {
+            OPENOCD_LIB = "${libopenocdPkg}/lib";
+            OPENOCD_INCLUDE = "${libopenocdPkg}/include";
+            OPENOCD_SCRIPTS = "${libopenocdPkg}/share/openocd/scripts";
+            LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
+            RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/library";
+          };
       in
       {
-        packages.default = naersk-lib.buildPackage ({
-          src = ./.;
-          inherit buildInputs;
-          inherit nativeBuildInputs;
-          postInstall = ''
-            mkdir -p $out/share/openocd
-            ln -s $OPENOCD_SCRIPTS $out/share/openocd
-          '';
-        } // env);
-        devShells.default = pkgs.mkShell ({
-          inherit buildInputs;
-          nativeBuildInputs = nativeBuildInputs ++ [
-            rustToolchain
-            rustFmt
-            rustAnalyzer
-          ];
-        } // env);
+        packages = rec {
+          drone = pkgs.lib.makeOverridable
+            (libopenocdArgs: naersk-lib.buildPackage ({
+              src = ./.;
+              inherit buildInputs;
+              inherit nativeBuildInputs;
+              postInstall = ''
+                mkdir -p $out/share/openocd
+                ln -s $OPENOCD_SCRIPTS $out/share/openocd
+              '';
+            } // (env libopenocdArgs)))
+            { };
+          default = drone;
+        };
+        devShells = rec {
+          native = pkgs.mkShell ({
+            name = "native";
+            inherit buildInputs;
+            nativeBuildInputs = nativeBuildInputs ++ [
+              rustToolchain
+              rustFmt
+              rustAnalyzer
+            ];
+          } // (env { }));
+          default = native;
+        };
       }
     );
 }
