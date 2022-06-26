@@ -35,7 +35,7 @@
         nativeBuildInputs = with pkgs; [
           clang
         ];
-        libopenocd = { extraConfigureFlags ? [ ] }: pkgs.stdenv.mkDerivation {
+        libopenocd = { patches ? null, configureFlags ? [ ] }: pkgs.stdenv.mkDerivation {
           name = "libopenocd";
           src = openocd;
           nativeBuildInputs = with pkgs; [
@@ -46,10 +46,17 @@
             which
           ];
           inherit buildInputs;
+          patches = (pkgs.lib.optionals (builtins.isNull patches) [
+            # Patch is upstream, so can be removed when OpenOCD 0.12.0 or later is released.
+            (pkgs.fetchpatch {
+              url = "https://github.com/openocd-org/openocd/commit/cff0e417da58adef1ceef9a63a99412c2cc87ff3.patch";
+              sha256 = "Xxzf5miWy4S34sbQq8VQdAbY/oqGyhL/AJxiEPRuj3Q=";
+            })
+          ]) ++ (pkgs.lib.optionals (!builtins.isNull patches) patches);
           preConfigure = ''
             SKIP_SUBMODULE=1 ./bootstrap
           '';
-          configureFlags = [ "--disable-werror" ] ++ extraConfigureFlags;
+          configureFlags = [ "--disable-werror" ] ++ configureFlags;
           buildPhase = ''
             make --jobs=$NIX_BUILD_CORES
           '';
