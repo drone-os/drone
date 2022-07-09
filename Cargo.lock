@@ -349,7 +349,6 @@ dependencies = [
  "eyre",
  "handlebars",
  "libc",
- "once_cell",
  "prettytable-rs",
  "regex",
  "serde",

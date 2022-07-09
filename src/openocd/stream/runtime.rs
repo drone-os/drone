@@ -52,7 +52,7 @@ macro_rules! read_field {
         result_from(unsafe {
             target_read_u32(
                 $target,
-                u64::from($address - size_of::<Runtime>() as u32 + offset_of!($field) as u32),
+                ($address - size_of::<Runtime>() as u32 + offset_of!($field) as u32).into(),
                 &mut $self.$field,
             )
         })
@@ -64,7 +64,7 @@ macro_rules! write_field {
         result_from(unsafe {
             target_write_u32(
                 $target,
-                u64::from($address - size_of::<Runtime>() as u32 + offset_of!($field) as u32),
+                ($address - size_of::<Runtime>() as u32 + offset_of!($field) as u32).into(),
                 $self.$field,
             )
         })
@@ -82,14 +82,14 @@ impl RemoteRuntime for Runtime {
         unsafe {
             result_from(target_write_buffer(
                 target,
-                u64::from(address),
+                address.into(),
                 BOOTSTRAP_SEQUENCE_LENGTH as u32,
                 BOOTSTRAP_SEQUENCE.as_ptr(),
             ))?;
             let runtime: [u8; size_of::<Runtime>()] = transmute(self.clone());
             result_from(target_write_buffer(
                 target,
-                u64::from(address) + BOOTSTRAP_SEQUENCE_LENGTH as u64,
+                (address + BOOTSTRAP_SEQUENCE_LENGTH as u32).into(),
                 size_of::<Runtime>() as u32,
                 runtime.as_ptr(),
             ))?;
@@ -122,8 +122,8 @@ impl RemoteRuntime for Runtime {
     }
 }
 
-#[allow(clippy::cast_possible_wrap)]
 pub fn result_from(code: c_int) -> Result<()> {
+    #[allow(clippy::cast_possible_wrap)]
     const ERROR_OK_: c_int = ERROR_OK as _;
     match code {
         ERROR_OK_ => Ok(()),
@@ -135,6 +135,7 @@ pub fn result_from(code: c_int) -> Result<()> {
 #[allow(clippy::cast_possible_wrap)]
 pub fn result_into(result: Result<()>) -> c_int {
     match result {
+        #[allow(clippy::cast_possible_wrap)]
         Ok(()) => ERROR_OK as _,
         Err(Error::Fail) => ERROR_FAIL as _,
         Err(Error::Other(err)) => err,

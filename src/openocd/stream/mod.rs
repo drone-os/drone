@@ -5,25 +5,21 @@ use drone_openocd::{
     command_context, command_invocation, command_mode_COMMAND_EXEC, command_registration,
     get_current_target, register_commands, target, target_read_buffer,
     target_register_timer_callback, target_timer_type_TARGET_TIMER_TYPE_PERIODIC,
-    COMMAND_REGISTRATION_DONE,
+    COMMAND_REGISTRATION_DONE, ERROR_FAIL,
 };
 use drone_stream::{Runtime, MIN_BUFFER_SIZE, STREAM_COUNT};
 use eyre::{bail, Error, Result};
 use libc::c_void;
-use once_cell::sync::Lazy;
 use runtime::RemoteRuntime;
 use std::{
     ffi::{CStr, CString, OsStr, OsString},
     os::{raw::c_int, unix::prelude::OsStrExt},
-    process, ptr, slice,
-    sync::Mutex,
+    ptr, slice,
     time::Duration,
 };
 use tracing::error;
 
 const POLLING_INTERVAL: Duration = Duration::from_millis(500);
-
-static CONTEXT: Lazy<Mutex<Option<Context>>> = Lazy::new(|| Mutex::new(None));
 
 pub type Target = *mut target;
 
@@ -80,95 +76,89 @@ pub(crate) fn init(ctx: *mut command_context) -> c_int {
 }
 
 unsafe extern "C" fn handle_drone_stream_reset_command(cmd: *mut command_invocation) -> c_int {
-    init_context(cmd);
-    handler_wrapper(|context| {
+    start_streaming(cmd, |context| {
         context.runtime.target_write_bootstrap(context.target, context.address)?;
         Ok(())
     })
 }
 
 unsafe extern "C" fn handle_drone_stream_run_command(cmd: *mut command_invocation) -> c_int {
-    init_context(cmd);
-    handler_wrapper(|context| {
+    start_streaming(cmd, |context| {
         context.runtime.target_write_mask(context.target, context.address)?;
         Ok(())
     })
 }
 
-unsafe extern "C" fn drone_stream_callback(_data: *mut c_void) -> c_int {
-    handler_wrapper(|context| {
+unsafe extern "C" fn drone_stream_timer_callback(context: *mut c_void) -> c_int {
+    let context = unsafe { &mut *context.cast::<Context>() };
+    runtime::result_into((|| {
         context.runtime.target_read_write_offset(context.target, context.address)?;
         dbg!(context.runtime.write_offset);
-        unsafe {
+        let buffer = unsafe {
             let mut buffer = [0; 128];
-            let ret = target_read_buffer(
-                context.target,
-                context.address.into(),
-                128,
-                buffer.as_mut_ptr(),
-            );
-            dbg!(ret);
-            println!(
-                "{}",
-                buffer.iter().fold(String::new(), |mut a, x| {
-                    a.push_str(&char::from_u32((*x).into()).unwrap_or('?').to_string());
-                    a
-                })
-            );
-        }
+            target_read_buffer(context.target, context.address.into(), 128, buffer.as_mut_ptr());
+            buffer.iter().fold(String::new(), |mut a, x| {
+                a.push_str(&char::from_u32((*x).into()).unwrap_or('?').to_string());
+                a
+            })
+        };
+        println!("{}", buffer);
         Ok(())
-    })
+    })())
 }
 
-fn init_context(cmd: *mut command_invocation) {
-    let mut context = CONTEXT.lock().unwrap();
-    if context.is_none() {
-        match routes_from_cmd(cmd) {
-            Ok(routes) => match Config::read_from_current_dir() {
-                Ok(ref config @ Config { stream: Some(ref stream), .. }) => {
-                    if stream.size >= MIN_BUFFER_SIZE {
-                        let target = unsafe { get_current_target((*cmd).ctx) };
-                        let address = config.memory.ram.origin + config.memory.ram.size
-                            - config.heap.main.size
-                            - stream.size;
-                        let runtime = Runtime::from_mask(routes_to_mask(&routes));
-                        *context = Some(Context { target, address, routes, runtime });
-                        unsafe {
-                            target_register_timer_callback(
-                                Some(drone_stream_callback),
-                                POLLING_INTERVAL.as_millis() as u32,
-                                target_timer_type_TARGET_TIMER_TYPE_PERIODIC,
-                                ptr::null_mut(),
-                            );
-                        }
-                        return;
-                    }
-                    error!(
-                        "Drone Stream buffer size of {} is less than the minimal buffer size of {}",
-                        stream.size, MIN_BUFFER_SIZE
-                    );
-                }
-                Ok(Config { stream: None, .. }) => {
-                    error!("Drone Stream is not enabled in Drone.toml");
-                }
-                Err(err) => {
-                    error!("Couldn't read Drone.toml: {err:#?}");
-                }
-            },
-            Err(err) => {
-                error!("failed to parse arguments to `drone_stream`: {err:#?}");
-            }
-        }
-    } else {
-        error!("Drone Stream has already started");
+fn start_streaming<F: FnOnce(&Context) -> runtime::Result<()>>(
+    cmd: *mut command_invocation,
+    f: F,
+) -> c_int {
+    match init_context(cmd) {
+        Some(context) => runtime::result_into((|| {
+            f(&context)?;
+            runtime::result_from(unsafe {
+                target_register_timer_callback(
+                    Some(drone_stream_timer_callback),
+                    POLLING_INTERVAL.as_millis() as u32,
+                    target_timer_type_TARGET_TIMER_TYPE_PERIODIC,
+                    Box::into_raw(context).cast(),
+                )
+            })?;
+            Ok(())
+        })()),
+        None => ERROR_FAIL,
     }
-    process::exit(1);
 }
 
-fn handler_wrapper<F: FnOnce(&mut Context) -> runtime::Result<()>>(f: F) -> c_int {
-    let mut context = CONTEXT.lock().unwrap();
-    let context = context.as_mut().unwrap();
-    runtime::result_into(f(context))
+fn init_context(cmd: *mut command_invocation) -> Option<Box<Context>> {
+    match routes_from_cmd(cmd) {
+        Ok(routes) => match Config::read_from_current_dir() {
+            Ok(ref config @ Config { stream: Some(ref stream), .. })
+                if stream.size >= MIN_BUFFER_SIZE =>
+            {
+                let target = unsafe { get_current_target((*cmd).ctx) };
+                let address = config.memory.ram.origin + config.memory.ram.size
+                    - config.heap.main.size
+                    - stream.size;
+                let runtime = Runtime::from_mask(routes_to_mask(&routes));
+                return Some(Box::new(Context { target, address, routes, runtime }));
+            }
+            Ok(Config { stream: Some(stream), .. }) => {
+                error!(
+                    "Drone Stream buffer size of {} is less than the minimal buffer size of {}",
+                    stream.size, MIN_BUFFER_SIZE
+                );
+            }
+            Ok(Config { stream: None, .. }) => {
+                error!("Drone Stream is not enabled in Drone.toml");
+            }
+            Err(err) => {
+                error!("Couldn't read Drone.toml: {err:#?}");
+            }
+        },
+        Err(err) => {
+            error!("failed to parse arguments to `drone_stream`: {err:#?}");
+        }
+    }
+    None
 }
 
 fn routes_from_cmd(cmd: *mut command_invocation) -> Result<Vec<Route>> {
@@ -198,7 +188,7 @@ impl TryFrom<&[u8]> for Route {
         let streams = chunks
             .map(|stream| {
                 let number = String::from_utf8(stream.to_vec())?.parse()?;
-                if number >= u32::from(STREAM_COUNT) {
+                if number >= STREAM_COUNT.into() {
                     bail!(
                         "Stream number {number} exceeds the maximum number of streams \
                          {STREAM_COUNT}"
