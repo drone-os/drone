@@ -5,7 +5,7 @@
 #![warn(clippy::pedantic)]
 #![no_std]
 
-use core::mem::MaybeUninit;
+use core::mem::{size_of, MaybeUninit};
 
 /// Maximum number of streams.
 pub const STREAM_COUNT: u8 = 32;
@@ -19,10 +19,14 @@ pub const BOOTSTRAP_SEQUENCE_LENGTH: usize = 16;
 pub const BOOTSTRAP_SEQUENCE: [u8; BOOTSTRAP_SEQUENCE_LENGTH] =
     [41, 139, 234, 244, 56, 213, 238, 162, 226, 175, 62, 199, 229, 177, 168, 74];
 
+/// Minimal buffer size in bytes.
+#[allow(clippy::cast_possible_truncation)]
+pub const MIN_BUFFER_SIZE: u32 = (BOOTSTRAP_SEQUENCE_LENGTH + size_of::<Runtime>()) as _;
+
 /// Drone Stream runtime data structure.
 ///
 /// This structure is accessible by both the application and the debug probe.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 #[repr(C)]
 pub struct Runtime {
     /// Streams mask. If `n`-th bit is `1`, `n`-th stream is enabled.
