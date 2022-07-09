@@ -1,5 +1,5 @@
 [workspace]
-members = ["config", "openocd-sys"]
+members = ["config", "stream", "openocd"]
 
 [package]
 name = "drone"
@@ -36,9 +36,13 @@ maintenance = { status = "actively-developed" }
 version = "=0.15.0"
 path = "config"
 
-[dependencies.drone-openocd-sys]
+[dependencies.drone-stream]
 version = "=0.15.0"
-path = "openocd-sys"
+path = "stream"
+
+[dependencies.drone-openocd]
+version = "=0.15.0"
+path = "openocd"
 
 [dependencies]
 ansi_term = "0.12"

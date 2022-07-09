@@ -344,7 +344,8 @@ dependencies = [
  "ansi_term",
  "color-eyre",
  "drone-config",
- "drone-openocd-sys",
+ "drone-openocd",
+ "drone-stream",
  "eyre",
  "handlebars",
  "libc",
@@ -374,11 +375,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "drone-openocd-sys"
+name = "drone-openocd"
 version = "0.15.0"
 dependencies = [
  "bindgen",
 ]
+
+[[package]]
+name = "drone-stream"
+version = "0.15.0"
 
 [[package]]
 name = "either"

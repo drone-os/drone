@@ -2,7 +2,7 @@
 
 mod stream;
 
-use drone_openocd_sys::{
+use drone_openocd::{
     adapter_quit, arm_cti_cleanup_all, command_context_mode, command_exit,
     command_mode_COMMAND_CONFIG, command_set_output_handler, configuration_output_handler,
     dap_cleanup_all, exit_on_signal, flash_free_all_banks, free_config, gdb_service_free,
