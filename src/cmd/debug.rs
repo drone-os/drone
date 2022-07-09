@@ -4,7 +4,7 @@ use crate::{
     cli::DebugCmd,
     utils::{block_with_signals, detach_pgid, finally, register_signals, temp_dir},
 };
-use anyhow::{anyhow, Result};
+use eyre::{eyre, Result};
 use std::{
     env::current_exe,
     fs::File,
@@ -50,7 +50,7 @@ fn run_server(mut openocd: Command, interpreter: bool) -> Result<impl Drop> {
     }
     detach_pgid(&mut openocd);
     let mut openocd =
-        openocd.spawn().map_err(|err| anyhow!("`{:?}` failed to execute: {}", openocd, err))?;
+        openocd.spawn().map_err(|err| eyre!("`{:?}` failed to execute: {}", openocd, err))?;
     if interpreter {
         if let Some(stdout) = openocd.stdout.take() {
             transform_output(stdout);

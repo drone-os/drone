@@ -5,7 +5,7 @@ mod registry;
 pub use self::registry::REGISTRY;
 
 use crate::crates;
-use anyhow::{bail, Result};
+use eyre::{bail, Result};
 
 /// Device configuration.
 pub struct Device {

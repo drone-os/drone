@@ -1,8 +1,6 @@
 //! Utility functions.
 
-use crate::color::Color;
-use ansi_term::Color::Red;
-use anyhow::{bail, Result};
+use eyre::{bail, Result};
 use serde::{de, ser};
 use signal_hook::{
     consts::signal::{SIGINT, SIGQUIT, SIGTERM},
@@ -13,7 +11,7 @@ use std::{
     ffi::CString,
     os::unix::{ffi::OsStrExt, process::CommandExt},
     path::PathBuf,
-    process::{exit, Child, Command},
+    process::{Child, Command},
     sync::mpsc::{channel, RecvTimeoutError},
     thread,
     time::Duration,
@@ -21,23 +19,6 @@ use std::{
 use tempfile::TempDir;
 use thiserror::Error;
 use walkdir::WalkDir;
-
-/// Runs the application code inside closure `f`, prints an error using `color`
-/// preference if there is any, and sets the exit code.
-pub fn run_wrapper(color: Color, f: impl FnOnce() -> Result<()>) {
-    match f() {
-        Ok(()) => {
-            exit(0);
-        }
-        Err(err) if err.is::<SignalError>() => {
-            exit(1);
-        }
-        Err(err) => {
-            eprintln!("{}: {:?}", color.bold_fg("Error", Red), err);
-            exit(1);
-        }
-    }
-}
 
 /// Returns the current crate root.
 pub fn crate_root() -> Result<PathBuf> {

@@ -1,4 +1,4 @@
-#ifndef BINDGEN
+#ifndef DRONE_BINDGEN
 #define openocd_main __openocd_main
 #endif
 

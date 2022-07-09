@@ -11,7 +11,7 @@ use std::collections::HashMap;
 pub struct Config {
     pub memory: Memory,
     pub heap: Heap,
-    pub log: Log,
+    pub stream: Option<Stream>,
     pub linker: Linker,
 }
 
@@ -73,7 +73,7 @@ pub struct HeapPool {
 #[non_exhaustive]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub struct Log {
+pub struct Stream {
     #[serde(deserialize_with = "deserialize_size")]
     pub size: u32,
 }

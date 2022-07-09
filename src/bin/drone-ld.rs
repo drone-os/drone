@@ -1,15 +1,11 @@
 #![warn(clippy::pedantic)]
 
-use anyhow::Result;
 use drone::{
-    color::Color,
     templates::Registry,
-    utils::{
-        block_with_signals, crate_root, register_signals, run_command, run_wrapper,
-        search_rust_tool,
-    },
+    utils::{block_with_signals, crate_root, register_signals, run_command, search_rust_tool},
 };
 use drone_config::Config;
+use eyre::Result;
 use std::{
     collections::HashMap,
     env,
@@ -19,11 +15,7 @@ use std::{
     process::Command,
 };
 
-fn main() {
-    run_wrapper(Color::Never, run);
-}
-
-fn run() -> Result<()> {
+fn main() -> Result<()> {
     let args = env::args_os().skip(1).collect::<Vec<_>>();
     let config = Config::read_from_current_dir()?;
     let registry = Registry::new()?;

@@ -58,7 +58,7 @@ fn main() {
 
     bindgen::builder()
         .header("wrapper.c")
-        .clang_arg("-DBINDGEN")
+        .clang_arg("-DDRONE_BINDGEN")
         .clang_args(&clang_args)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .parse_callbacks(Box::new(UnprefixItems {}))

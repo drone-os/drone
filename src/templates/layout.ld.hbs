@@ -17,8 +17,8 @@ SECTIONS
     STACK_POINTER = ORIGIN(RAM) + LENGTH(RAM)
         - _data_section_size
         - _bss_section_size
-        - _log_section_size
-        - _log_data_section_size
+        - _stream_rt_section_size
+        - _stream_buffer_section_size
         - _heap_section_size;
 {{~ /unless}}
 {{~ #if (eq config.linker.platform "arm") }}
@@ -58,19 +58,19 @@ SECTIONS
         . = ALIGN(4);
     } > RAM
 
-    .log ADDR(.bss) + SIZEOF(.bss) (NOLOAD) :
+    .stream_rt ADDR(.bss) + SIZEOF(.bss) (NOLOAD) :
     {
-        *(.log.*);
+        *(.stream_rt.*);
         . = ALIGN(4);
     } > RAM
 
-    .log_data ADDR(.log) + SIZEOF(.log) (NOLOAD) :
+    .stream_buffer ADDR(.stream_rt) + SIZEOF(.stream_rt) (NOLOAD) :
     {
-        . += {{size config.log.size}};
+        . += {{size config.stream.size}};
         . = ALIGN(4);
     } > RAM
 
-    .heap ADDR(.log_data) + SIZEOF(.log_data) (NOLOAD) :
+    .heap ADDR(.stream_buffer) + SIZEOF(.stream_buffer) (NOLOAD) :
     {
         . += {{size config.heap.main.size}};
         . = ALIGN(4);
@@ -80,9 +80,9 @@ SECTIONS
     DATA_START = ADDR(.data);
     DATA_END = ADDR(.data) + SIZEOF(.data);
     BSS_START = ADDR(.bss);
-    BSS_END = ADDR(.bss) + SIZEOF(.bss) + SIZEOF(.log);
-    LOG_START = ADDR(.log_data);
-    LOG_END = ADDR(.log_data) + SIZEOF(.log_data);
+    BSS_END = ADDR(.bss) + SIZEOF(.bss) + SIZEOF(.stream_rt);
+    STREAM_START = ADDR(.stream_buffer);
+    STREAM_END = ADDR(.stream_buffer) + SIZEOF(.stream_buffer);
     HEAP_START = ADDR(.heap);
     HEAP_END = ADDR(.heap) + SIZEOF(.heap);
 

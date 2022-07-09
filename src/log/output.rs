@@ -5,6 +5,7 @@ use std::{
     io,
     io::{prelude::*, stdout, Stdout},
 };
+use tracing::warn;
 
 /// Number of streams.
 pub const STREAMS_COUNT: usize = 32;
@@ -61,7 +62,7 @@ impl<'a> From<&'a [Output]> for OutputMap<'a> {
                     if let Some(map) = map.get_mut(*src_stream as usize) {
                         map.push(dest_stream);
                     } else {
-                        log::warn!("Ignoring stream {}", src_stream);
+                        warn!("Ignoring stream {}", src_stream);
                     }
                 }
             }

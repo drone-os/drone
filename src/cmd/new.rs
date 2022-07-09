@@ -5,7 +5,7 @@ use crate::{
     utils::run_command,
 };
 use ansi_term::Color::Green;
-use anyhow::{anyhow, Result};
+use eyre::{eyre, Result};
 use std::{
     fs::{create_dir, read_to_string, remove_file, File},
     io::Write,
@@ -24,14 +24,14 @@ pub fn run(cmd: NewCmd, color: Color) -> Result<()> {
         || {
             path.file_name()
                 .ok_or_else(|| {
-                    anyhow!(
+                    eyre!(
                         "cannot auto-detect package name from path {:?} ; use --name to override",
                         path.as_os_str()
                     )
                 })
                 .and_then(|name| {
                     name.to_str().ok_or_else(|| {
-                        anyhow!("cannot create package with a non-unicode name: {:?}", name)
+                        eyre!("cannot create package with a non-unicode name: {:?}", name)
                     })
                 })
         },

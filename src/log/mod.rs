@@ -4,7 +4,7 @@ mod output;
 
 pub use self::output::{DestStream, Output, OutputMap};
 
-use anyhow::Result;
+use eyre::Result;
 use std::{
     fs::File,
     io::prelude::*,
@@ -13,6 +13,7 @@ use std::{
     pin::Pin,
     thread,
 };
+use tracing::debug;
 
 type ParserFn = fn(&[Output]) -> Pin<Box<dyn Generator<u8, Yield = (), Return = Result<!>> + '_>>;
 
@@ -24,7 +25,7 @@ pub fn capture(input: PathBuf, outputs: Vec<Output>, parser: ParserFn) {
             let mut parser = Box::pin(parser(&outputs));
             for byte in input.bytes() {
                 let byte = byte?;
-                log::debug!("BYTE 0b{0:08b} 0x{0:02X} {1:?}", byte, char::from(byte));
+                debug!("BYTE 0b{0:08b} 0x{0:02X} {1:?}", byte, char::from(byte));
                 match parser.as_mut().resume(byte) {
                     GeneratorState::Yielded(()) => (),
                     GeneratorState::Complete(Err(err)) => panic!("log parser failure: {}", err),

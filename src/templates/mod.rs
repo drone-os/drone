@@ -3,8 +3,8 @@
 pub mod helpers;
 
 use crate::devices::Device;
-use anyhow::Result;
 use drone_config::Config;
+use eyre::Result;
 use handlebars::Handlebars;
 use serde_json::json;
 use std::io::prelude::*;

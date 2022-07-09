@@ -6,7 +6,7 @@ use crate::{
     devices::{Device, REGISTRY},
     utils::crate_root,
 };
-use anyhow::{anyhow, bail, Result};
+use eyre::{bail, eyre, Result};
 use prettytable::{cell, format, row, Table};
 use serde::Deserialize;
 use std::{
@@ -54,7 +54,7 @@ fn target() -> Result<()> {
     let target = config
         .build
         .and_then(|build| build.target)
-        .ok_or_else(|| anyhow!("No [build.target] configuration in {}", CARGO_CONFIG_PATH))?;
+        .ok_or_else(|| eyre!("No [build.target] configuration in {}", CARGO_CONFIG_PATH))?;
     println!("{}", target);
     Ok(())
 }
@@ -82,7 +82,7 @@ fn rustc_substitute_path() -> Result<()> {
         .find_map(|line| {
             line.starts_with("commit-hash: ").then(|| line.split_once(": ").unwrap().1)
         })
-        .ok_or_else(|| anyhow!("parsing of rustc output failed"))?
+        .ok_or_else(|| eyre!("parsing of rustc output failed"))?
         .to_string();
     println!("/rustc/{} {}/lib/rustlib/src/rust", commit_hash, sysroot);
     Ok(())

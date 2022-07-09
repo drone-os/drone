@@ -9,7 +9,7 @@ mod format;
 
 pub use crate::{config::*, format::*};
 
-use anyhow::{anyhow, bail, Result};
+use eyre::{bail, eyre, Result};
 use std::{env, fs::File, io::prelude::*, path::Path};
 
 /// The name of the Drone configuration file.
@@ -33,7 +33,7 @@ impl Config {
         } else {
             Self::read(
                 env::var_os("CARGO_MANIFEST_DIR")
-                    .ok_or_else(|| anyhow!("`CARGO_MANIFEST_DIR` is not set"))?
+                    .ok_or_else(|| eyre!("`CARGO_MANIFEST_DIR` is not set"))?
                     .as_ref(),
             )
         }

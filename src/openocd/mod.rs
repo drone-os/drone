@@ -1,8 +1,7 @@
 //! OpenOCD integration.
 
-mod log;
+mod stream;
 
-use anyhow::Result;
 use drone_openocd_sys::{
     adapter_quit, arm_cti_cleanup_all, command_context_mode, command_exit,
     command_mode_COMMAND_CONFIG, command_set_output_handler, configuration_output_handler,
@@ -11,6 +10,7 @@ use drone_openocd_sys::{
     setup_command_handler, stderr, stdout, unregister_all_commands, util_init, ERROR_FAIL,
     ERROR_OK, EXIT_FAILURE,
 };
+use eyre::Result;
 use libc::{setvbuf, _IONBF};
 use std::{
     convert::TryInto,
@@ -57,7 +57,7 @@ pub unsafe extern "C" fn openocd_main(argc: i32, argv: *mut *mut i8) -> i32 {
             return EXIT_FAILURE as i32;
         }
 
-        if log::init(cmd_ctx) != ERROR_OK as i32 {
+        if stream::init(cmd_ctx) != ERROR_OK as i32 {
             return EXIT_FAILURE as i32;
         }
 

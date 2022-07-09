@@ -6,8 +6,3 @@ pub mod new;
 pub mod openocd;
 pub mod print;
 pub mod run;
-
-pub use self::{
-    debug::run as debug, heap::run as heap, new::run as new, openocd::run as openocd,
-    print::run as print, run::run,
-};

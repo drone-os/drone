@@ -5,7 +5,7 @@ use crate::{
     openocd::{exit_with_openocd, openocd_main},
     utils::temp_dir,
 };
-use anyhow::Result;
+use eyre::Result;
 use std::{ffi::OsStr, fs::File, io};
 use tempfile::NamedTempFile;
 

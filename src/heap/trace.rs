@@ -8,6 +8,7 @@ use std::{
     pin::Pin,
 };
 use thiserror::Error;
+use tracing::{debug, trace};
 
 /// The key used to shuffle packet bits.
 pub const KEY: u32 = 0xC5AC_CE55;
@@ -139,7 +140,7 @@ fn parser<R: Read>(
             frame = (u32::from_le_bytes(frame) ^ KEY).to_be_bytes();
             let header = frame[0];
             let payload = &frame[1..];
-            log::trace!(
+            trace!(
                 "FRAME: 0x({:02X}){:02X}{:02X}{:02X}",
                 header,
                 payload[0],
@@ -183,7 +184,7 @@ fn parser<R: Read>(
                     if !frame.is_empty() {
                         break Err(Error::InvalidSequence);
                     }
-                    log::debug!("Alloc: 0x{:08X}", size);
+                    debug!("Alloc: 0x{:08X}", size);
                     yield Packet::Alloc { size };
                 }
                 0xD2 => {
@@ -196,7 +197,7 @@ fn parser<R: Read>(
                     if !frame.is_empty() {
                         break Err(Error::InvalidSequence);
                     }
-                    log::debug!("Dealloc: 0x{:08X}", size);
+                    debug!("Dealloc: 0x{:08X}", size);
                     yield Packet::Dealloc { size };
                 }
                 0xB3 => {
@@ -210,7 +211,7 @@ fn parser<R: Read>(
                     if !frame.is_empty() {
                         break Err(Error::InvalidSequence);
                     }
-                    log::debug!("Grow: 0x{:08X} -> 0x{:08X}", old_size, new_size);
+                    debug!("Grow: 0x{:08X} -> 0x{:08X}", old_size, new_size);
                     yield Packet::Grow { old_size, new_size };
                 }
                 0xC3 => {
@@ -224,7 +225,7 @@ fn parser<R: Read>(
                     if !frame.is_empty() {
                         break Err(Error::InvalidSequence);
                     }
-                    log::debug!("Shrink: 0x{:08X} -> 0x{:08X}", old_size, new_size);
+                    debug!("Shrink: 0x{:08X} -> 0x{:08X}", old_size, new_size);
                     yield Packet::Shrink { old_size, new_size };
                 }
                 _ => break Err(Error::InvalidFrame),

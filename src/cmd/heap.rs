@@ -7,8 +7,8 @@ use crate::{
     heap::TraceMap,
 };
 use ansi_term::Color::{Cyan, Yellow};
-use anyhow::{anyhow, Result};
 use drone_config::{self as config, format_size};
+use eyre::{eyre, Result};
 use prettytable::{cell, format, row, Table};
 use std::{
     fs::File,
@@ -29,7 +29,7 @@ pub fn run(cmd: HeapCmd, color: Color) -> Result<()> {
                         .extra
                         .get(&heap_config)
                         .map(|heap| heap.block.size)
-                        .ok_or_else(|| anyhow!("Unknown `{}` heap configuration", heap_config))
+                        .ok_or_else(|| eyre!("Unknown `{}` heap configuration", heap_config))
                 }
             })
         },

@@ -4,7 +4,7 @@ pub mod layout;
 pub mod trace;
 
 use self::trace::{Packet, Parser};
-use anyhow::{bail, Result};
+use eyre::{bail, Result};
 use std::{collections::BTreeMap, fs::File};
 
 /// Processed trace map.

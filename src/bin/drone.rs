@@ -1,9 +1,9 @@
 #![warn(clippy::pedantic)]
 
-use drone::{cli::Cli, utils::run_wrapper};
+use drone::cli::Cli;
+use eyre::Result;
 use structopt::StructOpt;
 
-fn main() {
-    let args = Cli::from_args();
-    run_wrapper(args.color, || args.run());
+fn main() -> Result<()> {
+    Cli::from_args().run()
 }

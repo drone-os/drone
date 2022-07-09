@@ -58,32 +58,36 @@ pub mod templates;
 pub mod utils;
 
 use self::cli::{Cli, Cmd};
-use ::log::Level;
-use anyhow::Result;
-use env_logger::Builder as LoggerBuilder;
+use eyre::Result;
+use time::macros::format_description;
+use tracing::{trace, Level};
+use tracing_subscriber::fmt::time::LocalTime;
 
 impl Cli {
     /// Runs the program.
     pub fn run(self) -> Result<()> {
+        color_eyre::install()?;
         let Self { cmd, color, verbosity } = self;
-        let log_level = match verbosity {
-            0 => Level::Error,
-            1 => Level::Warn,
-            2 => Level::Info,
-            3 => Level::Debug,
-            _ => Level::Trace,
-        };
-        LoggerBuilder::new()
-            .filter(Some(env!("CARGO_PKG_NAME")), log_level.to_level_filter())
-            .filter(None, Level::Warn.to_level_filter())
-            .try_init()?;
+        tracing_subscriber::fmt()
+            .with_max_level(match verbosity {
+                0 => Level::ERROR,
+                1 => Level::WARN,
+                2 => Level::INFO,
+                3 => Level::DEBUG,
+                _ => Level::TRACE,
+            })
+            .with_timer(LocalTime::new(format_description!(
+                "[hour]:[minute]:[second].[subsecond digits:3]"
+            )))
+            .init();
+        trace!("Logger initialized");
         match cmd {
-            Cmd::Run(cmd) => cmd::run(cmd),
-            Cmd::Debug(cmd) => cmd::debug(cmd),
-            Cmd::Heap(cmd) => cmd::heap(cmd, color),
-            Cmd::New(cmd) => cmd::new(cmd, color),
-            Cmd::Print(cmd) => cmd::print(cmd, color),
-            Cmd::Openocd(cmd) => cmd::openocd(cmd),
+            Cmd::Run(cmd) => cmd::run::run(cmd),
+            Cmd::Debug(cmd) => cmd::debug::run(cmd),
+            Cmd::Heap(cmd) => cmd::heap::run(cmd, color),
+            Cmd::New(cmd) => cmd::new::run(cmd, color),
+            Cmd::Print(cmd) => cmd::print::run(cmd, color),
+            Cmd::Openocd(cmd) => cmd::openocd::run(cmd),
         }
     }
 }
