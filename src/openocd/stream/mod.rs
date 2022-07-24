@@ -3,9 +3,8 @@ mod runtime;
 use drone_config::Config;
 use drone_openocd::{
     command_context, command_invocation, command_mode_COMMAND_EXEC, command_registration,
-    get_current_target, register_commands, target, target_read_buffer,
-    target_register_timer_callback, target_timer_type_TARGET_TIMER_TYPE_PERIODIC,
-    COMMAND_REGISTRATION_DONE, ERROR_FAIL,
+    get_current_target, register_commands, target, target_register_timer_callback,
+    target_timer_type_TARGET_TIMER_TYPE_PERIODIC, COMMAND_REGISTRATION_DONE, ERROR_FAIL,
 };
 use drone_stream::{Runtime, MIN_BUFFER_SIZE, STREAM_COUNT};
 use eyre::{bail, Error, Result};
@@ -28,6 +27,7 @@ pub struct Context {
     address: u32,
     routes: Vec<Route>,
     runtime: Runtime,
+    buffer: Vec<u8>,
 }
 
 #[derive(Debug)]
@@ -84,36 +84,40 @@ unsafe extern "C" fn handle_drone_stream_reset_command(cmd: *mut command_invocat
 
 unsafe extern "C" fn handle_drone_stream_run_command(cmd: *mut command_invocation) -> c_int {
     start_streaming(cmd, |context| {
-        context.runtime.target_write_mask(context.target, context.address)?;
+        context.runtime.target_read_write_cursor(context.target, context.address)?;
+        context.runtime.read_cursor = context.runtime.write_cursor;
+        context.runtime.target_write_read_cursor(context.target, context.address)?;
+        context.runtime.target_write_enable_mask(context.target, context.address)?;
         Ok(())
     })
 }
 
+// TODO implement de-initialization on detach
+
 unsafe extern "C" fn drone_stream_timer_callback(context: *mut c_void) -> c_int {
     let context = unsafe { &mut *context.cast::<Context>() };
     runtime::result_into((|| {
-        context.runtime.target_read_write_offset(context.target, context.address)?;
-        dbg!(context.runtime.write_offset);
-        let buffer = unsafe {
-            let mut buffer = [0; 128];
-            target_read_buffer(context.target, context.address.into(), 128, buffer.as_mut_ptr());
-            buffer.iter().fold(String::new(), |mut a, x| {
-                a.push_str(&char::from_u32((*x).into()).unwrap_or('?').to_string());
-                a
-            })
-        };
-        println!("{}", buffer);
+        let data = context.runtime.target_consume_buffer(
+            context.target,
+            context.address,
+            &mut context.buffer,
+        )?;
+        let data = data.iter().fold(String::new(), |mut a, x| {
+            a.push_str(&char::from_u32((*x).into()).unwrap_or('?').to_string());
+            a
+        });
+        println!("{:?}", data);
         Ok(())
     })())
 }
 
-fn start_streaming<F: FnOnce(&Context) -> runtime::Result<()>>(
+fn start_streaming<F: FnOnce(&mut Context) -> runtime::Result<()>>(
     cmd: *mut command_invocation,
     f: F,
 ) -> c_int {
     match init_context(cmd) {
-        Some(context) => runtime::result_into((|| {
-            f(&context)?;
+        Some(mut context) => runtime::result_into((|| {
+            f(&mut context)?;
             runtime::result_from(unsafe {
                 target_register_timer_callback(
                     Some(drone_stream_timer_callback),
@@ -138,8 +142,9 @@ fn init_context(cmd: *mut command_invocation) -> Option<Box<Context>> {
                 let address = config.memory.ram.origin + config.memory.ram.size
                     - config.heap.main.size
                     - stream.size;
-                let runtime = Runtime::from_mask(routes_to_mask(&routes));
-                return Some(Box::new(Context { target, address, routes, runtime }));
+                let runtime = Runtime::from_enable_mask(routes_to_enable_mask(&routes));
+                let buffer = vec![0; stream.size as usize];
+                return Some(Box::new(Context { target, address, routes, runtime, buffer }));
             }
             Ok(Config { stream: Some(stream), .. }) => {
                 error!(
@@ -169,14 +174,14 @@ fn routes_from_cmd(cmd: *mut command_invocation) -> Result<Vec<Route>> {
         .collect()
 }
 
-fn routes_to_mask(routes: &[Route]) -> u32 {
-    let mut mask = 0;
+fn routes_to_enable_mask(routes: &[Route]) -> u32 {
+    let mut enable_mask = 0;
     for route in routes {
         for stream in &route.streams {
-            mask |= 1 << stream;
+            enable_mask |= 1 << stream;
         }
     }
-    mask
+    enable_mask
 }
 
 impl TryFrom<&[u8]> for Route {

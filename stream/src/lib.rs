@@ -19,9 +19,17 @@ pub const BOOTSTRAP_SEQUENCE_LENGTH: usize = 16;
 pub const BOOTSTRAP_SEQUENCE: [u8; BOOTSTRAP_SEQUENCE_LENGTH] =
     [41, 139, 234, 244, 56, 213, 238, 162, 226, 175, 62, 199, 229, 177, 168, 74];
 
+/// Length of one frame header.
+pub const HEADER_LENGTH: u32 = 2;
+
+/// Maximal supported length of a single transaction.
+pub const MAX_TRANSACTION_LENGTH: u32 = 256;
+
 /// Minimal buffer size in bytes.
 #[allow(clippy::cast_possible_truncation)]
-pub const MIN_BUFFER_SIZE: u32 = (BOOTSTRAP_SEQUENCE_LENGTH + size_of::<Runtime>()) as _;
+pub const MIN_BUFFER_SIZE: u32 = (BOOTSTRAP_SEQUENCE_LENGTH + size_of::<Runtime>()) as u32
+    + HEADER_LENGTH
+    + MAX_TRANSACTION_LENGTH;
 
 /// Drone Stream runtime data structure.
 ///
@@ -29,12 +37,18 @@ pub const MIN_BUFFER_SIZE: u32 = (BOOTSTRAP_SEQUENCE_LENGTH + size_of::<Runtime>
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub struct Runtime {
-    /// Streams mask. If `n`-th bit is `1`, `n`-th stream is enabled.
-    pub mask: u32,
-    /// TODO
-    pub read_offset: u32,
-    /// TODO
-    pub write_offset: u32,
+    /// Enabled streams mask. If `n`-th bit is `1`, `n`-th stream is enabled.
+    ///
+    /// Writable by the probe; readable by the application.
+    pub enable_mask: u32,
+    /// Offset, up to which (not inclusive) the probe has read bytes.
+    ///
+    /// Writable by the probe; readable by the application.
+    pub read_cursor: u32,
+    /// Offset, up to which (not inclusive) the application has written bytes.
+    ///
+    /// Readable by the probe; writable by the application.
+    pub write_cursor: u32,
 }
 
 impl Runtime {

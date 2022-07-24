@@ -1,6 +1,9 @@
 use super::Target;
-use drone_openocd::{target_read_u32, target_write_buffer, target_write_u32, ERROR_FAIL, ERROR_OK};
-use drone_stream::{Runtime, BOOTSTRAP_SEQUENCE, BOOTSTRAP_SEQUENCE_LENGTH};
+use drone_openocd::{
+    target_read_buffer, target_read_u32, target_write_buffer, target_write_u32, ERROR_FAIL,
+    ERROR_OK,
+};
+use drone_stream::{Runtime, BOOTSTRAP_SEQUENCE, BOOTSTRAP_SEQUENCE_LENGTH, HEADER_LENGTH};
 use std::{
     mem::{size_of, transmute, MaybeUninit},
     os::raw::c_int,
@@ -21,21 +24,24 @@ pub enum Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 pub trait RemoteRuntime {
-    fn from_mask(mask: u32) -> Self;
+    fn from_enable_mask(enable_mask: u32) -> Self;
 
     fn target_write_bootstrap(&self, target: Target, address: u32) -> Result<()>;
 
-    fn target_read_mask(&mut self, target: Target, address: u32) -> Result<()>;
+    fn target_write_enable_mask(&self, target: Target, address: u32) -> Result<()>;
 
-    fn target_write_mask(&self, target: Target, address: u32) -> Result<()>;
+    fn target_write_read_cursor(&self, target: Target, address: u32) -> Result<()>;
 
-    fn target_read_read_offset(&mut self, target: Target, address: u32) -> Result<()>;
+    fn target_write_write_cursor(&self, target: Target, address: u32) -> Result<()>;
 
-    fn target_write_read_offset(&self, target: Target, address: u32) -> Result<()>;
+    fn target_read_write_cursor(&mut self, target: Target, address: u32) -> Result<()>;
 
-    fn target_read_write_offset(&mut self, target: Target, address: u32) -> Result<()>;
-
-    fn target_write_write_offset(&self, target: Target, address: u32) -> Result<()>;
+    fn target_consume_buffer<'r, 'b>(
+        &'r mut self,
+        target: Target,
+        address: u32,
+        buffer: &'b mut [u8],
+    ) -> Result<&'b mut [u8]>;
 }
 
 macro_rules! offset_of {
@@ -72,9 +78,9 @@ macro_rules! write_field {
 }
 
 impl RemoteRuntime for Runtime {
-    fn from_mask(mask: u32) -> Self {
+    fn from_enable_mask(enable_mask: u32) -> Self {
         let mut runtime = Runtime::zeroed();
-        runtime.mask = mask;
+        runtime.enable_mask = enable_mask;
         runtime
     }
 
@@ -94,31 +100,60 @@ impl RemoteRuntime for Runtime {
                 runtime.as_ptr(),
             ))?;
         }
+        self.target_write_read_cursor(target, address)?;
+        self.target_write_write_cursor(target, address)?;
         Ok(())
     }
 
-    fn target_read_mask(&mut self, target: Target, address: u32) -> Result<()> {
-        read_field!(self, target, address, mask)
+    fn target_write_enable_mask(&self, target: Target, address: u32) -> Result<()> {
+        write_field!(self, target, address, enable_mask)
     }
 
-    fn target_write_mask(&self, target: Target, address: u32) -> Result<()> {
-        write_field!(self, target, address, mask)
+    fn target_write_read_cursor(&self, target: Target, address: u32) -> Result<()> {
+        write_field!(self, target, address, read_cursor)
     }
 
-    fn target_read_read_offset(&mut self, target: Target, address: u32) -> Result<()> {
-        read_field!(self, target, address, read_offset)
+    fn target_write_write_cursor(&self, target: Target, address: u32) -> Result<()> {
+        write_field!(self, target, address, write_cursor)
     }
 
-    fn target_write_read_offset(&self, target: Target, address: u32) -> Result<()> {
-        write_field!(self, target, address, read_offset)
+    fn target_read_write_cursor(&mut self, target: Target, address: u32) -> Result<()> {
+        read_field!(self, target, address, write_cursor)
     }
 
-    fn target_read_write_offset(&mut self, target: Target, address: u32) -> Result<()> {
-        read_field!(self, target, address, write_offset)
-    }
-
-    fn target_write_write_offset(&self, target: Target, address: u32) -> Result<()> {
-        write_field!(self, target, address, write_offset)
+    fn target_consume_buffer<'r, 'b>(
+        &'r mut self,
+        target: Target,
+        address: u32,
+        buffer: &'b mut [u8],
+    ) -> Result<&'b mut [u8]> {
+        let mut count;
+        self.target_read_write_cursor(target, address)?;
+        let start = (address + self.read_cursor).into();
+        if self.write_cursor >= self.read_cursor {
+            count = self.write_cursor - self.read_cursor;
+            unsafe {
+                assert!(count as usize <= buffer.len());
+                result_from(target_read_buffer(target, start, count, buffer.as_mut_ptr()))?;
+            }
+        } else {
+            count = buffer.len() as u32 - self.read_cursor;
+            unsafe {
+                if count > HEADER_LENGTH {
+                    assert!(count as usize <= buffer.len());
+                    result_from(target_read_buffer(target, start, count, buffer.as_mut_ptr()))?;
+                } else {
+                    count = 0;
+                }
+                let ptr = buffer.as_mut_ptr().add(count as usize);
+                count += self.write_cursor;
+                assert!(count as usize <= buffer.len());
+                result_from(target_read_buffer(target, address.into(), self.write_cursor, ptr))?;
+            }
+        }
+        self.read_cursor = self.write_cursor;
+        self.target_write_read_cursor(target, address)?;
+        Ok(&mut buffer[0..count as usize])
     }
 }
 
