@@ -1,7 +1,7 @@
-//! `drone run` command.
+//! `drone probe` command.
 
 use crate::{
-    cli::RunCmd,
+    cli::ProbeCmd,
     openocd::{exit_with_openocd, openocd_main},
     utils::temp_dir,
 };
@@ -9,9 +9,9 @@ use eyre::Result;
 use std::{ffi::OsStr, fs::File, io};
 use tempfile::NamedTempFile;
 
-/// Runs `drone run` command.
-pub fn run(cmd: RunCmd) -> Result<()> {
-    let RunCmd { script } = cmd;
+/// Runs `drone probe` command.
+pub fn run(cmd: ProbeCmd) -> Result<()> {
+    let ProbeCmd { script } = cmd;
     let mut temp_file = NamedTempFile::new_in(temp_dir())?;
     let mut input: Box<dyn io::Read> = if script == OsStr::new("-") {
         Box::new(io::stdin())

@@ -22,8 +22,8 @@ pub struct Cli {
 
 #[derive(Debug, StructOpt)]
 pub enum Cmd {
-    /// Run OpenOCD script
-    Run(RunCmd),
+    /// Run a TCL script in Drone OpenOCD context
+    Probe(ProbeCmd),
     /// Run GDB debugger together with OpenOCD server
     Debug(DebugCmd),
     /// Analyze or modify the heap layout
@@ -95,8 +95,8 @@ pub struct HeapGenerateCmd {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct RunCmd {
-    /// OpenOCD script
+pub struct ProbeCmd {
+    /// TCL script
     #[structopt(parse(from_os_str))]
     pub script: PathBuf,
 }

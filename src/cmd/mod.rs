@@ -5,4 +5,4 @@ pub mod heap;
 pub mod new;
 pub mod openocd;
 pub mod print;
-pub mod run;
+pub mod probe;
