@@ -8,20 +8,25 @@ use drone_config::Config;
 use drone_openocd::{
     command_context, command_invocation, command_mode_COMMAND_EXEC, command_registration,
     get_current_target, register_commands, target, target_register_timer_callback,
-    target_timer_type_TARGET_TIMER_TYPE_PERIODIC, COMMAND_REGISTRATION_DONE, ERROR_FAIL,
+    target_timer_type_TARGET_TIMER_TYPE_PERIODIC, target_unregister_timer_callback,
+    COMMAND_REGISTRATION_DONE, ERROR_FAIL, ERROR_OK,
 };
 use drone_stream::{Runtime, HEADER_LENGTH, MIN_BUFFER_SIZE, STREAM_COUNT};
 use libc::c_void;
 use runtime::RemoteRuntime;
 use std::{
     ffi::{CStr, CString},
+    iter::FusedIterator,
     os::raw::c_int,
     ptr, slice,
+    sync::atomic::{AtomicPtr, Ordering},
     time::Duration,
 };
 use tracing::{error, warn};
 
 const POLLING_INTERVAL: Duration = Duration::from_millis(50);
+
+static STREAM_PTR: AtomicPtr<Stream> = AtomicPtr::new(ptr::null_mut());
 
 struct Stream {
     target: *mut target,
@@ -86,6 +91,14 @@ impl Stream {
         Ok(())
     }
 
+    fn stop(&mut self) -> runtime::Result<()> {
+        unsafe {
+            self.runtime.enable_mask = 0;
+            self.runtime.target_write_enable_mask(self.target, self.address)?;
+        }
+        Ok(())
+    }
+
     fn poll(&mut self) -> runtime::Result<()> {
         let mut buffer = unsafe {
             self.runtime.target_consume_buffer(self.target, self.address, &mut self.buffer)?
@@ -121,8 +134,6 @@ impl Stream {
     }
 }
 
-// TODO implement de-initialization on detach
-
 /// Initializes Drone Stream commands.
 ///
 /// # Safety
@@ -148,6 +159,15 @@ pub unsafe fn init(ctx: *mut command_context) -> c_int {
             chain: ptr::null_mut(),
             jim_handler: None,
         },
+        command_registration {
+            name: CString::new("stop").unwrap().into_raw(),
+            handler: Some(handle_drone_stream_stop_command),
+            mode: command_mode_COMMAND_EXEC,
+            help: CString::new("stop capture").unwrap().into_raw(),
+            usage: CString::new("[nofail]").unwrap().into_raw(),
+            chain: ptr::null_mut(),
+            jim_handler: None,
+        },
         unsafe { COMMAND_REGISTRATION_DONE },
     ]));
     let drone_stream_command_handlers = Box::leak(Box::new([
@@ -166,11 +186,44 @@ pub unsafe fn init(ctx: *mut command_context) -> c_int {
 }
 
 unsafe extern "C" fn handle_drone_stream_reset_command(cmd: *mut command_invocation) -> c_int {
-    start_streaming(cmd, Stream::start_reset)
+    unsafe { start_streaming(cmd, Stream::start_reset) }
 }
 
 unsafe extern "C" fn handle_drone_stream_run_command(cmd: *mut command_invocation) -> c_int {
-    start_streaming(cmd, Stream::start_run)
+    unsafe { start_streaming(cmd, Stream::start_run) }
+}
+
+unsafe extern "C" fn handle_drone_stream_stop_command(cmd: *mut command_invocation) -> c_int {
+    let mut args = unsafe { args_iter(&mut *cmd) };
+    let nofail = match args.next() {
+        None => false,
+        Some(b"nofail") => true,
+        Some(arg) => {
+            error!("unexpected argument `{}` to `drone_stream stop`", String::from_utf8_lossy(arg));
+            return ERROR_FAIL;
+        }
+    };
+    if args.next().is_some() {
+        error!("`drone_stream stop` takes up to 1 argument");
+        return ERROR_FAIL;
+    }
+    let stream_ptr = STREAM_PTR.swap(ptr::null_mut(), Ordering::SeqCst);
+    if stream_ptr.is_null() {
+        #[allow(clippy::cast_possible_wrap)]
+        return if nofail {
+            ERROR_OK as i32
+        } else {
+            error!("drone_stream is not running");
+            ERROR_FAIL
+        };
+    }
+    runtime::result_into(unsafe {
+        runtime::result_from(target_unregister_timer_callback(
+            Some(drone_stream_timer_callback),
+            stream_ptr.cast(),
+        ))
+        .and_then(|()| (&mut *stream_ptr).stop())
+    })
 }
 
 unsafe extern "C" fn drone_stream_timer_callback(stream: *mut c_void) -> c_int {
@@ -178,31 +231,37 @@ unsafe extern "C" fn drone_stream_timer_callback(stream: *mut c_void) -> c_int {
     runtime::result_into(stream.poll())
 }
 
-fn start_streaming<F: FnOnce(&mut Stream) -> runtime::Result<()>>(
+unsafe fn start_streaming<F: FnOnce(&mut Stream) -> runtime::Result<()>>(
     cmd: *mut command_invocation,
     f: F,
 ) -> c_int {
-    let route_descs = unsafe { slice::from_raw_parts((*cmd).argv, (*cmd).argc as _) }
-        .iter()
-        .map(|arg| unsafe { CStr::from_ptr(*arg).to_bytes() })
-        .map(TryInto::try_into)
-        .collect();
+    let route_descs = unsafe { args_iter(&mut *cmd) }.map(TryInto::try_into).collect();
     match route_descs {
         Ok(route_descs) => {
             let target = unsafe { get_current_target((*cmd).ctx) };
-            if let Some(mut stream) = Stream::new(target, route_descs) {
-                return runtime::result_into((|| {
-                    f(&mut stream)?;
-                    runtime::result_from(unsafe {
-                        target_register_timer_callback(
+            if let Some(stream) = Stream::new(target, route_descs) {
+                let stream_ptr = Box::into_raw(Box::new(stream));
+                let atomic_result = STREAM_PTR.compare_exchange(
+                    ptr::null_mut(),
+                    stream_ptr,
+                    Ordering::SeqCst,
+                    Ordering::SeqCst,
+                );
+                if atomic_result.is_err() {
+                    error!("drone_stream has already started");
+                    drop(unsafe { Box::from_raw(stream_ptr) });
+                } else {
+                    return runtime::result_into((|| unsafe {
+                        f(&mut *stream_ptr)?;
+                        runtime::result_from(target_register_timer_callback(
                             Some(drone_stream_timer_callback),
                             POLLING_INTERVAL.as_millis() as u32,
                             target_timer_type_TARGET_TIMER_TYPE_PERIODIC,
-                            Box::into_raw(Box::new(stream)).cast(),
-                        )
-                    })?;
-                    Ok(())
-                })());
+                            stream_ptr.cast(),
+                        ))?;
+                        Ok(())
+                    })());
+                }
             }
         }
         Err(err) => {
@@ -210,6 +269,12 @@ fn start_streaming<F: FnOnce(&mut Stream) -> runtime::Result<()>>(
         }
     }
     ERROR_FAIL
+}
+
+unsafe fn args_iter(cmd: &mut command_invocation) -> impl FusedIterator<Item = &[u8]> {
+    unsafe { slice::from_raw_parts((*cmd).argv, (*cmd).argc as _) }
+        .iter()
+        .map(|arg| unsafe { CStr::from_ptr(*arg).to_bytes() })
 }
 
 fn make_enable_mask(routes: &[RouteDesc]) -> u32 {
