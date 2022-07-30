@@ -1,7 +1,6 @@
 //! OpenOCD integration.
 
-mod stream;
-
+use crate::stream;
 use drone_openocd::{
     adapter_quit, arm_cti_cleanup_all, command_context_mode, command_exit,
     command_mode_COMMAND_CONFIG, command_set_output_handler, configuration_output_handler,

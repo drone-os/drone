@@ -60,15 +60,6 @@ pub struct NewCmd {
     pub toolchain: String,
 }
 
-/// Log output.
-#[derive(Debug, Clone)]
-pub struct LogOutput {
-    /// Selected streams.
-    pub streams: Vec<u32>,
-    /// Output path.
-    pub path: OsString,
-}
-
 #[derive(Debug, StructOpt)]
 pub struct HeapCmd {
     /// Heap trace file obtained from the device

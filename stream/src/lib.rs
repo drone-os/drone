@@ -33,7 +33,8 @@ pub const MIN_BUFFER_SIZE: u32 = (BOOTSTRAP_SEQUENCE_LENGTH + size_of::<Runtime>
 
 /// Drone Stream runtime data structure.
 ///
-/// This structure is accessible by both the application and the debug probe.
+/// This data structure risides in both the application memory and the `drone`
+/// utility memory.
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub struct Runtime {

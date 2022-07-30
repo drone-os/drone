@@ -52,8 +52,8 @@ pub mod color;
 pub mod crates;
 pub mod devices;
 pub mod heap;
-pub mod log;
 pub mod openocd;
+pub mod stream;
 pub mod templates;
 pub mod utils;
 
