@@ -1,6 +1,6 @@
 //! OpenOCD integration.
 
-use crate::stream;
+use crate::{color::Color, stream};
 use drone_config::locate_project_root;
 use drone_openocd::{
     adapter_quit, arm_cti_cleanup_all, command_context_mode, command_exit,
@@ -16,7 +16,7 @@ use std::{
     convert::TryInto,
     ffi::{CString, OsString},
     iter,
-    os::unix::ffi::OsStrExt,
+    os::unix::prelude::*,
     path::PathBuf,
     process::exit,
     ptr, str,
@@ -135,4 +135,23 @@ pub fn probe_config_path() -> Result<PathBuf> {
         }
     }
     bail!("{} configuration file not exists in {}", CONFIG_NAMES[0], project_root.display());
+}
+
+/// Creates a TCL command to print a colored message.
+pub fn echo_colored<T: AsRef<str>>(message: T, fg: ansi_term::Color, color: Color) -> String {
+    let command = format!(
+        "echo \"{}\"",
+        color
+            .bold_fg(message.as_ref(), fg)
+            .escape_default()
+            .flat_map(|c| match c {
+                c @ '[' => vec!['\\', c],
+                _ => vec![c],
+            })
+            .fold(String::new(), |mut string, c| {
+                string.push(c);
+                string
+            })
+    );
+    command
 }

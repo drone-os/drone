@@ -9,7 +9,7 @@ use signal_hook::{
 use std::{
     env,
     ffi::CString,
-    os::unix::{ffi::OsStrExt, process::CommandExt},
+    os::unix::prelude::*,
     path::PathBuf,
     process::{Child, Command},
     sync::mpsc::{channel, RecvTimeoutError},

@@ -14,7 +14,7 @@ use std::{
     env,
     ffi::OsStr,
     fs,
-    os::unix::prelude::OsStrExt,
+    os::unix::prelude::*,
     path::{Path, PathBuf},
     process::Command,
 };

@@ -22,6 +22,8 @@ pub struct Cli {
 
 #[derive(Debug, StructOpt)]
 pub enum Cmd {
+    /// Flashes a binary to the connected target
+    Flash(FlashCmd),
     /// Resets the connected target
     Reset(ResetCmd),
     /// Run a GDB server attached to the target
@@ -36,6 +38,18 @@ pub enum Cmd {
     Print(PrintCmd),
     /// Run unmodified OpenOCD process
     Openocd(OpenocdCmd),
+}
+
+#[derive(Debug, StructOpt)]
+pub struct FlashCmd {
+    /// Binary name to flash
+    pub binary: Option<String>,
+    /// Select release profile
+    #[structopt(short, long)]
+    pub release: bool,
+    /// Select the specified profile
+    #[structopt(long, name = "PROFILE-NAME")]
+    pub profile: Option<String>,
 }
 
 #[derive(Debug, StructOpt)]

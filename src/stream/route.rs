@@ -8,7 +8,7 @@ use std::{
     fs::{File, OpenOptions},
     io,
     io::{prelude::*, stdout, Stdout},
-    os::unix::prelude::OsStrExt,
+    os::unix::prelude::*,
     rc::Rc,
 };
 use tracing::warn;
