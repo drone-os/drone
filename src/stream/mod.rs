@@ -7,9 +7,9 @@ use self::route::{RouteDesc, Routes};
 use drone_config::{locate_project_root, Config};
 use drone_openocd::{
     command_context, command_invocation, command_mode_COMMAND_EXEC, command_registration,
-    get_current_target, register_commands, target, target_register_timer_callback,
-    target_timer_type_TARGET_TIMER_TYPE_PERIODIC, target_unregister_timer_callback,
-    COMMAND_REGISTRATION_DONE, ERROR_FAIL, ERROR_OK,
+    command_run_line, get_current_target, register_commands, target,
+    target_register_timer_callback, target_timer_type_TARGET_TIMER_TYPE_PERIODIC,
+    target_unregister_timer_callback, COMMAND_REGISTRATION_DONE, ERROR_FAIL, ERROR_OK,
 };
 use drone_stream::{Runtime, HEADER_LENGTH, MIN_BUFFER_SIZE, STREAM_COUNT};
 use libc::c_void;
@@ -25,6 +25,9 @@ use std::{
 use tracing::{error, warn};
 
 const POLLING_INTERVAL: Duration = Duration::from_millis(50);
+
+const OVERRIDABLE_PROCS: &[&str] =
+    &["before_drone_stream", "before_drone_stream_reset", "before_drone_stream_run"];
 
 static STREAM_PTR: AtomicPtr<Stream> = AtomicPtr::new(ptr::null_mut());
 
@@ -81,15 +84,19 @@ impl Stream {
         None
     }
 
-    fn start_reset(&mut self) -> runtime::Result<()> {
+    fn start_reset(&mut self, ctx: *mut command_context) -> runtime::Result<()> {
         unsafe {
+            let line = CString::new("before_drone_stream_reset").unwrap().into_raw();
+            runtime::result_from(command_run_line(ctx, line))?;
             self.runtime.target_write_bootstrap(self.target, self.address)?;
         }
         Ok(())
     }
 
-    fn start_run(&mut self) -> runtime::Result<()> {
+    fn start_run(&mut self, ctx: *mut command_context) -> runtime::Result<()> {
         unsafe {
+            let line = CString::new("before_drone_stream_run").unwrap().into_raw();
+            runtime::result_from(command_run_line(ctx, line))?;
             self.runtime.target_read_write_cursor(self.target, self.address)?;
             self.runtime.read_cursor = self.runtime.write_cursor;
             self.runtime.target_write_read_cursor(self.target, self.address)?;
@@ -189,7 +196,19 @@ pub unsafe fn init(ctx: *mut command_context) -> c_int {
         },
         unsafe { COMMAND_REGISTRATION_DONE },
     ]));
-    unsafe { register_commands(ctx, ptr::null_mut(), drone_stream_command_handlers.as_ptr()) }
+    runtime::result_into((|| unsafe {
+        for overridable_proc in OVERRIDABLE_PROCS {
+            let line = format!("proc {overridable_proc} {{}} {{}}");
+            let line = CString::new(line).unwrap().into_raw();
+            runtime::result_from(command_run_line(ctx, line))?;
+        }
+        runtime::result_from(register_commands(
+            ctx,
+            ptr::null_mut(),
+            drone_stream_command_handlers.as_ptr(),
+        ))?;
+        Ok(())
+    })())
 }
 
 unsafe extern "C" fn handle_drone_stream_reset_command(cmd: *mut command_invocation) -> c_int {
@@ -238,7 +257,7 @@ unsafe extern "C" fn drone_stream_timer_callback(stream: *mut c_void) -> c_int {
     runtime::result_into(stream.poll())
 }
 
-unsafe fn start_streaming<F: FnOnce(&mut Stream) -> runtime::Result<()>>(
+unsafe fn start_streaming<F: FnOnce(&mut Stream, *mut command_context) -> runtime::Result<()>>(
     cmd: *mut command_invocation,
     f: F,
 ) -> c_int {
@@ -259,7 +278,9 @@ unsafe fn start_streaming<F: FnOnce(&mut Stream) -> runtime::Result<()>>(
                     drop(unsafe { Box::from_raw(stream_ptr) });
                 } else {
                     return runtime::result_into((|| unsafe {
-                        f(&mut *stream_ptr)?;
+                        let line = CString::new("before_drone_stream").unwrap().into_raw();
+                        runtime::result_from(command_run_line((*cmd).ctx, line))?;
+                        f(&mut *stream_ptr, (*cmd).ctx)?;
                         runtime::result_from(target_register_timer_callback(
                             Some(drone_stream_timer_callback),
                             POLLING_INTERVAL.as_millis() as u32,

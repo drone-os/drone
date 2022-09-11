@@ -106,15 +106,8 @@ pub struct Commands {
 
 impl Commands {
     /// Creates a new OpenOCD arguments list.
-    pub fn new(var: Option<(&str, &str)>) -> Result<Self> {
-        let mut args = Vec::new();
-        if let Some((name, value)) = var {
-            // `value` will be printed to stdout by OpenOCD.
-            args.push("--command".into());
-            args.push(format!("set {name} \"{value}\"").into());
-        }
-        args.push("--file".into());
-        args.push(probe_config_path()?.into());
+    pub fn new() -> Result<Self> {
+        let args = vec!["--file".into(), probe_config_path()?.into()];
         Ok(Self { args })
     }
 

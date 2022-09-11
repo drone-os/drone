@@ -11,7 +11,7 @@ use eyre::Result;
 /// Runs `drone stream` command.
 pub fn run(cmd: StreamCmd, color: Color) -> Result<()> {
     let StreamCmd { streams, reset } = cmd;
-    let mut commands = Commands::new(Some(("__DRONE_STREAM", "Starting Drone Stream")))?;
+    let mut commands = Commands::new()?;
     commands.push("gdb_port disabled");
     commands.push("tcl_port disabled");
     commands.push("telnet_port disabled");
