@@ -22,9 +22,11 @@ pub struct Cli {
 
 #[derive(Debug, StructOpt)]
 pub enum Cmd {
-    /// Flashes a binary to the connected target
+    /// Listen to Drone Stream at the connected target
+    Stream(StreamCmd),
+    /// Flash a binary to the connected target
     Flash(FlashCmd),
-    /// Resets the connected target
+    /// Reset the connected target
     Reset(ResetCmd),
     /// Run a GDB server attached to the target
     Debug(DebugCmd),
@@ -38,6 +40,16 @@ pub enum Cmd {
     Print(PrintCmd),
     /// Run unmodified OpenOCD process
     Openocd(OpenocdCmd),
+}
+
+#[derive(Debug, StructOpt)]
+pub struct StreamCmd {
+    /// Stream routes specification. Leave `path` empty to route to STDOUT
+    #[structopt(name = "[path[:stream]...]...", default_value = ":0:1")]
+    pub streams: String,
+    /// Reset target before streaming
+    #[structopt(short, long)]
+    pub reset: bool,
 }
 
 #[derive(Debug, StructOpt)]

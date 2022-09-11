@@ -11,7 +11,7 @@ use eyre::Result;
 /// Runs `drone reset` command.
 pub fn run(cmd: ResetCmd, color: Color) -> Result<()> {
     let ResetCmd {} = cmd;
-    let mut commands = Commands::new()?;
+    let mut commands = Commands::new(None)?;
     commands.push("gdb_port disabled");
     commands.push("tcl_port disabled");
     commands.push("telnet_port disabled");

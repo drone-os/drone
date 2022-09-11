@@ -18,7 +18,7 @@ pub fn run(cmd: FlashCmd, color: Color) -> Result<()> {
         Some(binary) => binary,
         None => return Ok(()),
     };
-    let mut commands = Commands::new()?;
+    let mut commands = Commands::new(None)?;
     commands.push("gdb_port disabled");
     commands.push("tcl_port disabled");
     commands.push("telnet_port disabled");

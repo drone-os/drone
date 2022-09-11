@@ -10,7 +10,7 @@ use eyre::Result;
 /// Runs `drone debug` command.
 pub fn run(cmd: DebugCmd, color: crate::color::Color) -> Result<()> {
     let DebugCmd { port } = cmd;
-    let mut commands = Commands::new()?;
+    let mut commands = Commands::new(None)?;
     if let Some(port) = port {
         commands.push(format!("gdb_port {port}"));
     }
