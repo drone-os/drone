@@ -4,7 +4,7 @@ use drone::{
     templates::Registry,
     utils::{block_with_signals, crate_root, register_signals, run_command, search_rust_tool},
 };
-use drone_config::Config;
+use drone_config::{locate_project_root, Config};
 use eyre::Result;
 use std::{
     collections::HashMap,
@@ -17,7 +17,7 @@ use std::{
 
 fn main() -> Result<()> {
     let args = env::args_os().skip(1).collect::<Vec<_>>();
-    let config = Config::read_from_current_dir()?;
+    let config = Config::read_from_project_root(&locate_project_root()?)?;
     let registry = Registry::new()?;
     let mut signals = register_signals()?;
 

@@ -4,7 +4,7 @@ pub mod route;
 pub mod runtime;
 
 use self::route::{RouteDesc, Routes};
-use drone_config::Config;
+use drone_config::{locate_project_root, Config};
 use drone_openocd::{
     command_context, command_invocation, command_mode_COMMAND_EXEC, command_registration,
     get_current_target, register_commands, target, target_register_timer_callback,
@@ -40,7 +40,14 @@ unsafe impl Send for Stream {}
 
 impl Stream {
     fn new(target: *mut target, route_descs: Vec<RouteDesc>) -> Option<Self> {
-        match Config::read_from_current_dir() {
+        let project_root = match locate_project_root() {
+            Ok(project_root) => project_root,
+            Err(err) => {
+                error!("Couldn't locate project root: {err:#?}");
+                return None;
+            }
+        };
+        match Config::read_from_project_root(&project_root) {
             Ok(ref config @ Config { stream: Some(ref stream), .. })
                 if stream.size >= MIN_BUFFER_SIZE =>
             {

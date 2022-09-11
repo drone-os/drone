@@ -3,21 +3,18 @@
 use crate::{
     cli::ProbeCmd,
     openocd::{exit_with_openocd, openocd_main},
-    utils::temp_dir,
 };
 use eyre::Result;
-use std::{ffi::OsStr, fs::File, io};
-use tempfile::NamedTempFile;
 
 /// Runs `drone probe` command.
 pub fn run(cmd: ProbeCmd) -> Result<()> {
-    let ProbeCmd { script } = cmd;
-    let mut temp_file = NamedTempFile::new_in(temp_dir())?;
-    let mut input: Box<dyn io::Read> = if script == OsStr::new("-") {
-        Box::new(io::stdin())
-    } else {
-        Box::new(File::open(script)?)
-    };
-    io::copy(&mut input, &mut temp_file)?;
-    exit_with_openocd(openocd_main, vec!["--file".into(), temp_file.path().into()])?;
+    let ProbeCmd { script, command } = cmd;
+    let mut args = Vec::new();
+    for command in command {
+        args.push("--command".into());
+        args.push(command);
+    }
+    args.push("--file".into());
+    args.push(script.into());
+    exit_with_openocd(openocd_main, args)?;
 }

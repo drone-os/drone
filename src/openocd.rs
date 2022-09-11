@@ -1,6 +1,7 @@
 //! OpenOCD integration.
 
 use crate::stream;
+use drone_config::locate_project_root;
 use drone_openocd::{
     adapter_quit, arm_cti_cleanup_all, command_context_mode, command_exit,
     command_mode_COMMAND_CONFIG, command_set_output_handler, configuration_output_handler,
@@ -9,16 +10,20 @@ use drone_openocd::{
     setup_command_handler, stderr, stdout, unregister_all_commands, util_init, ERROR_FAIL,
     ERROR_OK, EXIT_FAILURE,
 };
-use eyre::Result;
+use eyre::{bail, Result};
 use libc::{setvbuf, _IONBF};
 use std::{
     convert::TryInto,
     ffi::{CString, OsString},
     iter,
     os::unix::ffi::OsStrExt,
+    path::PathBuf,
     process::exit,
-    ptr,
+    ptr, str,
 };
+
+/// Possible names of the OpenOCD configuration file.
+pub const CONFIG_NAMES: &[&str] = &["probe.tcl", "probe/config.tcl"];
 
 /// Runs OpenOCD with given arguments. This function normally never returns.
 pub fn exit_with_openocd(
@@ -92,4 +97,42 @@ pub unsafe extern "C" fn openocd_main(argc: i32, argv: *mut *mut i8) -> i32 {
 
         ret
     }
+}
+
+/// OpenOCD commands list.
+pub struct Commands {
+    args: Vec<OsString>,
+}
+
+impl Commands {
+    /// Creates a new OpenOCD arguments list.
+    pub fn new() -> Result<Self> {
+        let args = vec!["--file".into(), probe_config_path()?.into()];
+        Ok(Self { args })
+    }
+
+    /// Adds a new command to the list.
+    pub fn push<T: Into<OsString>>(&mut self, command: T) {
+        self.args.push("--command".into());
+        self.args.push(command.into());
+    }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<Vec<OsString>> for Commands {
+    fn into(self) -> Vec<OsString> {
+        self.args
+    }
+}
+
+/// Locates OpenOCD configuration file starting from the current directory.
+pub fn probe_config_path() -> Result<PathBuf> {
+    let project_root = locate_project_root()?;
+    for config_name in CONFIG_NAMES {
+        let path = project_root.join(config_name);
+        if path.exists() {
+            return Ok(path);
+        }
+    }
+    bail!("{} configuration file not exists in {}", CONFIG_NAMES[0], project_root.display());
 }

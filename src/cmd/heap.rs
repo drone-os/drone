@@ -20,17 +20,19 @@ pub fn run(cmd: HeapCmd, color: Color) -> Result<()> {
     let HeapCmd { trace_file, config: heap_config, size, heap_sub_cmd } = cmd;
     let size = size.map_or_else(
         || {
-            config::Config::read_from_current_dir().and_then(|config| {
-                if heap_config == "main" {
-                    Ok(config.heap.main.size)
-                } else {
-                    config
-                        .heap
-                        .extra
-                        .get(&heap_config)
-                        .map(|heap| heap.block.size)
-                        .ok_or_else(|| eyre!("Unknown `{}` heap configuration", heap_config))
-                }
+            config::locate_project_root().and_then(|project_root| {
+                config::Config::read_from_project_root(&project_root).and_then(|config| {
+                    if heap_config == "main" {
+                        Ok(config.heap.main.size)
+                    } else {
+                        config
+                            .heap
+                            .extra
+                            .get(&heap_config)
+                            .map(|heap| heap.block.size)
+                            .ok_or_else(|| eyre!("Unknown `{}` heap configuration", heap_config))
+                    }
+                })
             })
         },
         Ok,

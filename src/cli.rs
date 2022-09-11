@@ -22,18 +22,35 @@ pub struct Cli {
 
 #[derive(Debug, StructOpt)]
 pub enum Cmd {
-    /// Run a TCL script in Drone OpenOCD context
-    Probe(ProbeCmd),
-    /// Run GDB debugger together with OpenOCD server
+    /// Run a GDB server attached to the target
     Debug(DebugCmd),
+    /// Run an arbitrary TCL script inside Drone OpenOCD context
+    Probe(ProbeCmd),
     /// Analyze or modify the heap layout
     Heap(HeapCmd),
     /// Create a new Drone project
     New(NewCmd),
     /// Print requested information to stdout
     Print(PrintCmd),
-    /// Run unmodified OpenOCD
+    /// Run unmodified OpenOCD process
     Openocd(OpenocdCmd),
+}
+
+#[derive(Debug, StructOpt)]
+pub struct DebugCmd {
+    /// TCP/IP port for the GDB server
+    #[structopt(short, long)]
+    pub port: Option<u16>,
+}
+
+#[derive(Debug, StructOpt)]
+pub struct ProbeCmd {
+    /// TCL script to execute
+    #[structopt(parse(from_os_str))]
+    pub script: PathBuf,
+    /// Additional commands to execute before the TCL script
+    #[structopt(short, long)]
+    pub command: Vec<OsString>,
 }
 
 #[derive(Debug, StructOpt)]
@@ -92,32 +109,6 @@ pub struct HeapGenerateCmd {
     /// Number of pools
     #[structopt(short, long, parse(try_from_str = parse_size))]
     pub pools: u32,
-}
-
-#[derive(Debug, StructOpt)]
-pub struct ProbeCmd {
-    /// TCL script
-    #[structopt(parse(from_os_str))]
-    pub script: PathBuf,
-}
-
-#[derive(Debug, StructOpt)]
-pub struct DebugCmd {
-    /// OpenOCD server script
-    #[structopt(parse(from_os_str))]
-    pub server_script: PathBuf,
-    /// GDB client script
-    #[structopt(parse(from_os_str))]
-    pub client_script: PathBuf,
-    /// GDB client command
-    #[structopt(default_value = "gdb")]
-    pub command: OsString,
-    /// Select a specific interpreter / user interface
-    #[structopt(short, long)]
-    pub interpreter: Option<String>,
-    /// Additional arguments to <command>
-    #[structopt(parse(from_os_str), last(true))]
-    pub command_args: Vec<OsString>,
 }
 
 #[derive(Debug, StructOpt)]

@@ -10,20 +10,21 @@ mod format;
 pub use crate::{config::*, format::*};
 
 use eyre::{bail, eyre, Result};
-use std::{env, fs::File, io::prelude::*, path::Path};
+use std::{
+    env,
+    ffi::OsStr,
+    fs,
+    os::unix::prelude::OsStrExt,
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 /// The name of the Drone configuration file.
 pub const CONFIG_NAME: &str = "Drone.toml";
 
 impl Config {
-    /// Reads the configuration file from the current working directory and
-    /// returns a parsed object.
-    pub fn read_from_current_dir() -> Result<Self> {
-        Self::read(Path::new("."))
-    }
-
-    /// Reads the configuration file from the `CARGO_MANIFEST_DIR` environment
-    /// variable path and returns a parsed object.
+    /// Reads a configuration file from the path set by `CARGO_MANIFEST_DIR`
+    /// environment variable.
     ///
     /// If `CARGO_MANIFEST_DIR_OVERRIDE` environment variable is set, the
     /// function will parse its value directly.
@@ -31,26 +32,21 @@ impl Config {
         if let Ok(string) = env::var("CARGO_MANIFEST_DIR_OVERRIDE") {
             Self::parse(&string)
         } else {
-            Self::read(
+            Self::read_from_project_root(
                 env::var_os("CARGO_MANIFEST_DIR")
-                    .ok_or_else(|| eyre!("`CARGO_MANIFEST_DIR` is not set"))?
+                    .ok_or_else(|| eyre!("$CARGO_MANIFEST_DIR is not set"))?
                     .as_ref(),
             )
         }
     }
 
-    /// Reads the configuration file at `crate_root` and returns a parsed
-    /// object.
-    pub fn read(crate_root: &Path) -> Result<Self> {
-        let crate_root = crate_root.canonicalize()?;
-        let path = crate_root.join(CONFIG_NAME);
+    /// Reads a configuration file from `project_root`.
+    pub fn read_from_project_root(project_root: &Path) -> Result<Self> {
+        let path = project_root.join(CONFIG_NAME);
         if !path.exists() {
-            bail!("`{}` not exists in `{}", CONFIG_NAME, crate_root.display());
+            bail!("`{}` configuration file not exists in `{}", CONFIG_NAME, project_root.display());
         }
-        let mut buffer = String::new();
-        let mut file = File::open(&path)?;
-        file.read_to_string(&mut buffer)?;
-        Self::parse(&buffer)
+        Self::parse(&fs::read_to_string(&path)?)
     }
 
     /// Parses config from the `string`.
@@ -79,4 +75,24 @@ impl HeapBlock {
         }
         Ok(())
     }
+}
+
+/// Locates cargo project root starting from the current directory.
+pub fn locate_project_root() -> Result<PathBuf> {
+    let root = Command::new("cargo")
+        .arg("locate-project")
+        .arg("--message-format")
+        .arg("plain")
+        .output()?;
+    if !root.status.success() {
+        bail!("Couldn't locate project root (cargo locate-project exited with error)");
+    }
+    let root = Path::new(OsStr::from_bytes(&root.stdout));
+    let root = root.parent().ok_or_else(|| {
+        eyre!("Couldn't locate project root (bad output from cargo locate-project)")
+    })?;
+    if !root.exists() {
+        bail!("Couldn't locate project root (cargo locate-project returned non-existent path)");
+    }
+    Ok(root.into())
 }
