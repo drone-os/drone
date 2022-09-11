@@ -82,6 +82,7 @@ impl Cli {
             .init();
         trace!("Logger initialized");
         match cmd {
+            Cmd::Reset(cmd) => cmd::reset::run(cmd),
             Cmd::Debug(cmd) => cmd::debug::run(cmd),
             Cmd::Probe(cmd) => cmd::probe::run(cmd),
             Cmd::Heap(cmd) => cmd::heap::run(cmd, color),

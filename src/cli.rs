@@ -22,6 +22,8 @@ pub struct Cli {
 
 #[derive(Debug, StructOpt)]
 pub enum Cmd {
+    /// Resets the connected target
+    Reset(ResetCmd),
     /// Run a GDB server attached to the target
     Debug(DebugCmd),
     /// Run an arbitrary TCL script inside Drone OpenOCD context
@@ -35,6 +37,9 @@ pub enum Cmd {
     /// Run unmodified OpenOCD process
     Openocd(OpenocdCmd),
 }
+
+#[derive(Debug, StructOpt)]
+pub struct ResetCmd {}
 
 #[derive(Debug, StructOpt)]
 pub struct DebugCmd {
