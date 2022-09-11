@@ -96,3 +96,12 @@ pub fn locate_project_root() -> Result<PathBuf> {
     }
     Ok(root.into())
 }
+
+/// Locates cargo target directory.
+pub fn locate_target_root(project_root: &Path) -> Result<PathBuf> {
+    let target_dir = env::var("CARGO_BUILD_TARGET_DIR")
+        .or_else(|_| env::var("CARGO_TARGET_DIR"))
+        .unwrap_or_else(|_| "target".into());
+    let target = env::var("CARGO_BUILD_TARGET")?;
+    Ok(project_root.join(target_dir).join(target))
+}

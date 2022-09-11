@@ -2,9 +2,9 @@
 
 use drone::{
     templates::Registry,
-    utils::{block_with_signals, crate_root, register_signals, run_command, search_rust_tool},
+    utils::{block_with_signals, register_signals, run_command, search_rust_tool},
 };
-use drone_config::{locate_project_root, Config};
+use drone_config::{locate_project_root, locate_target_root, Config};
 use eyre::Result;
 use std::{
     collections::HashMap,
@@ -17,13 +17,12 @@ use std::{
 
 fn main() -> Result<()> {
     let args = env::args_os().skip(1).collect::<Vec<_>>();
-    let config = Config::read_from_project_root(&locate_project_root()?)?;
+    let project_root = locate_project_root()?;
+    let config = Config::read_from_project_root(&project_root)?;
     let registry = Registry::new()?;
     let mut signals = register_signals()?;
 
-    let crate_root = crate_root()?;
-    let target = block_with_signals(&mut signals, true, run_drone_print_target)?;
-    let target = crate_root.join("target").join(target);
+    let target = locate_target_root(&project_root)?;
     create_dir_all(&target)?;
     let stage_one = target.join("layout.ld.1");
     let stage_two = target.join("layout.ld.2");
@@ -77,11 +76,4 @@ fn run_size(mut command: Command) -> Result<HashMap<String, u32>> {
         }
     }
     Ok(map)
-}
-
-fn run_drone_print_target() -> Result<String> {
-    let mut command = Command::new("drone");
-    command.arg("print").arg("target");
-    let stdout = String::from_utf8(command.output()?.stdout)?;
-    Ok(stdout.trim().to_string())
 }

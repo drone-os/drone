@@ -7,27 +7,14 @@ use signal_hook::{
     iterator::Signals,
 };
 use std::{
-    env,
-    ffi::CString,
-    os::unix::prelude::*,
     path::PathBuf,
-    process::{Child, Command},
+    process::Command,
     sync::mpsc::{channel, RecvTimeoutError},
     thread,
     time::Duration,
 };
-use tempfile::TempDir;
 use thiserror::Error;
 use walkdir::WalkDir;
-
-/// Returns the current crate root.
-pub fn crate_root() -> Result<PathBuf> {
-    let mut cargo = Command::new("cargo");
-    cargo.arg("locate-project").arg("--message-format=plain");
-    let mut root = PathBuf::from(String::from_utf8(cargo.output()?.stdout)?);
-    root.pop();
-    Ok(root)
-}
 
 /// Searches for the Rust tool `tool` in the sysroot.
 pub fn search_rust_tool(tool: &str) -> Result<PathBuf> {
@@ -53,14 +40,6 @@ pub fn run_command(mut command: Command) -> Result<()> {
             }
             bail!("`{:?}` terminated by signal", command,)
         }
-        Err(err) => bail!("`{:?}` failed to execute: {}", command, err),
-    }
-}
-
-/// Spawns the command and checks for errors.
-pub fn spawn_command(mut command: Command) -> Result<Child> {
-    match command.spawn() {
-        Ok(child) => Ok(child),
         Err(err) => bail!("`{:?}` failed to execute: {}", command, err),
     }
 }
@@ -97,42 +76,6 @@ where
                 }
             }
         }
-    }
-}
-
-/// Runs the closure when the returned object is dropped.
-pub fn finally<F: FnOnce()>(f: F) -> impl Drop {
-    struct Finalizer<F: FnOnce()>(Option<F>);
-    impl<F: FnOnce()> Drop for Finalizer<F> {
-        fn drop(&mut self) {
-            self.0.take().unwrap()();
-        }
-    }
-    Finalizer(Some(f))
-}
-
-/// Returns the directory for temporary files.
-pub fn temp_dir() -> PathBuf {
-    env::var_os("XDG_RUNTIME_DIR").map_or(env::temp_dir(), Into::into)
-}
-
-/// Creates a new fifo.
-pub fn make_fifo(dir: &TempDir, name: &str) -> Result<PathBuf> {
-    let pipe = dir.path().join(name);
-    let c_pipe = CString::new(pipe.as_os_str().as_bytes())?;
-    if unsafe { libc::mkfifo(c_pipe.as_ptr(), 0o644) } == -1 {
-        return Err(std::io::Error::last_os_error().into());
-    }
-    Ok(pipe)
-}
-
-/// Moves the process to a new process group.
-pub fn detach_pgid(command: &mut Command) {
-    unsafe {
-        command.pre_exec(|| {
-            libc::setpgid(0, 0);
-            Ok(())
-        });
     }
 }
 

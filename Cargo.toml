@@ -57,7 +57,6 @@ serde_json = "1"
 serde = { version = "1", features = ["derive"] }
 signal-hook = "0.3"
 structopt = "0.3"
-tempfile = "3"
 thiserror = "1"
 time = { version = "0.3", features = ["macros"] }
 toml = "0.5"

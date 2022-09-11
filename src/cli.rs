@@ -157,10 +157,6 @@ pub struct OpenocdCmd {
 
 #[derive(Debug, StructOpt)]
 pub enum PrintSubCmd {
-    /// Print the target triple of the current Drone project
-    Target,
     /// Print a list of supported chips
     Chips,
-    /// Print rustc-substitute-path value for GDB
-    RustcSubstitutePath,
 }
