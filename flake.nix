@@ -30,6 +30,12 @@
           channel = "1.63";
           sha256 = "KXx+ID0y4mg2B3LHp7IyaiMrdexF6octADnAtFIOjrY=";
         };
+        rustFmtChannel = {
+          channel = "nightly";
+          date = "2022-07-28";
+          sha256 = "YNNAzlp1G1bBPg3Jf+FLeJ6oLbeAUMnX072HtlgFz8M=";
+        };
+
         pkgs = nixpkgs.legacyPackages.${system};
         buildInputs = with pkgs; [
           hidapi
@@ -39,6 +45,21 @@
         nativeBuildInputs = with pkgs; [
           clang
         ];
+        rustToolchain = with fenix.packages.${system};
+          let toolchain = toolchainOf rustChannel; in
+          combine [
+            toolchain.rustc
+            toolchain.cargo
+            toolchain.clippy
+            toolchain.rust-src
+          ];
+        rustFmt = (fenix.packages.${system}.toolchainOf rustFmtChannel).rustfmt;
+        rustAnalyzer = fenix.packages.${system}.rust-analyzer;
+        naersk-lib = naersk.lib.${system}.override {
+          cargo = rustToolchain;
+          rustc = rustToolchain;
+        };
+
         libopenocd = { patches ? null, configureFlags ? [ ] }: pkgs.stdenv.mkDerivation {
           name = "libopenocd";
           src = openocd;
@@ -80,20 +101,7 @@
             rm -r $out/share/openocd/contrib $out/share/openocd/OpenULINK
           '';
         };
-        rustToolchain = with fenix.packages.${system};
-          let toolchain = toolchainOf rustChannel; in
-          combine [
-            toolchain.rustc
-            toolchain.cargo
-            toolchain.clippy
-            toolchain.rust-src
-          ];
-        rustFmt = (fenix.packages.${system}.toolchainOf rustChannel).rustfmt;
-        rustAnalyzer = fenix.packages.${system}.rust-analyzer;
-        naersk-lib = naersk.lib.${system}.override {
-          cargo = rustToolchain;
-          rustc = rustToolchain;
-        };
+
         env = libopenocdArgs:
           let libopenocdPkg = libopenocd libopenocdArgs; in
           {
@@ -103,6 +111,7 @@
             LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
             RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/library";
           };
+
         package = pkgs.lib.makeOverridable
           (libopenocdArgs: naersk-lib.buildPackage ({
             src = ./.;
@@ -114,6 +123,48 @@
             '';
           } // (env libopenocdArgs)))
           { };
+
+        cargoRdme = (
+          pkgs.rustPlatform.buildRustPackage rec {
+            name = "cargo-rdme";
+            src = pkgs.fetchFromGitHub {
+              owner = "orium";
+              repo = name;
+              rev = "v0.7.2";
+              sha256 = "sha256-jMFBdfSd3hz3YdI1TZjJFJGzcSIrry+4zgUgV51MlZ4=";
+            };
+            cargoSha256 = "sha256-2swM8GLyYDyrSXzaKNbG4u1//X35Oa4SCKPqiMVhwxY=";
+            nativeBuildInputs = [ pkgs.pkg-config ];
+            buildInputs = [ pkgs.openssl ];
+            doCheck = false;
+          });
+
+        checkAll = pkgs.writeShellScriptBin "check-all" ''
+          set -ex
+          cargo rdme --check
+          cargo fmt --all --check
+          cargo clippy --workspace -- --deny warnings
+          cargo test --workspace --exclude drone-openocd
+          RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --workspace
+        '';
+
+        updateVersions = pkgs.writeShellScriptBin "update-versions" ''
+          sed -i "s/\(api\.drone-os\.com\/drone-core\/\)[0-9]\+\(\.[0-9]\+\)\+/\1$(echo $1 | sed 's/\(.*\)\.[0-9]\+/\1/')/" \
+            config/Cargo.toml
+          sed -i "/\[.*\]/h;/version = \".*\"/{x;s/\[package\]/version = \"$1\"/;t;x}" \
+            Cargo.toml config/Cargo.toml stream/Cargo.toml openocd/Cargo.toml
+          sed -i "/\[.*\]/h;/version = \"=.*\"/{x;s/\[.*drone-.*\]/version = \"=$1\"/;t;x}" \
+            Cargo.toml
+        '';
+
+        publishCrates = pkgs.writeShellScriptBin "publish-crates" ''
+          cd config && cargo publish
+          cd stream && cargo publish
+          cd openocd && cargo publish
+          sleep 30
+          cargo publish
+        '';
+
         shell = pkgs.mkShell ({
           name = "native";
           inherit buildInputs;
@@ -121,6 +172,10 @@
             rustToolchain
             rustFmt
             rustAnalyzer
+            cargoRdme
+            checkAll
+            updateVersions
+            publishCrates
           ];
         } // (env { }));
       in

@@ -1,7 +1,9 @@
 [![crates.io](https://img.shields.io/crates/v/drone.svg)](https://crates.io/crates/drone)
 ![maintenance](https://img.shields.io/badge/maintenance-actively--developed-brightgreen.svg)
 
-# drone
+# Drone CLI
+
+<!-- cargo-rdme start -->
 
 CLI utility for Drone, an Embedded Operating System.
 
@@ -29,6 +31,8 @@ Check the built-in help:
 ```shell
 $ drone help
 ```
+
+<!-- cargo-rdme end -->
 
 ## License
 
