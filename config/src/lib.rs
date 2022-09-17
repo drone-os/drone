@@ -53,6 +53,7 @@ impl Config {
     pub fn parse(string: &str) -> Result<Self> {
         let config = toml::from_str::<Self>(string)?;
         config.check_heaps()?;
+        config.check_stream()?;
         Ok(config)
     }
 
@@ -64,6 +65,19 @@ impl Config {
         }
         Ok(())
     }
+
+    fn check_stream(&self) -> Result<()> {
+        if let Some(Stream { size }) = &self.stream {
+            let modulo = size % 4;
+            if modulo != 0 {
+                bail!(
+                    "{CONFIG_NAME}: `stream.size` should be a factor of 4, but {size} % 4 == \
+                     {modulo}"
+                );
+            }
+        }
+        Ok(())
+    }
 }
 
 impl HeapBlock {
@@ -71,7 +85,7 @@ impl HeapBlock {
         let Self { size, pools } = self;
         let used: u32 = pools.iter().map(|pool| pool.block * pool.capacity).sum();
         if used != *size {
-            bail!("{}: `heap.pools` adds up to {}, but `heap.size = {}", CONFIG_NAME, used, size);
+            bail!("{CONFIG_NAME}: `heap.pools` adds up to {used}, but `heap.size = {size}");
         }
         Ok(())
     }

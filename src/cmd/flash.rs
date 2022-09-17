@@ -65,9 +65,11 @@ fn locate_binary(
             if !metadata.is_file() || metadata.permissions().mode() & 0o111 == 0 {
                 continue;
             }
-            if binary.as_deref().map_or(false, |binary| {
-                path.file_name().expect("bad target dir").to_string_lossy() != binary
-            }) {
+            let file_name = path.file_name().expect("bad target dir").to_string_lossy();
+            if binary.as_deref().map_or(false, |binary| file_name != binary) {
+                continue;
+            }
+            if file_name.starts_with('.') {
                 continue;
             }
             let path = path

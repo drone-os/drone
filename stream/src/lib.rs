@@ -26,9 +26,11 @@ pub const MAX_TRANSACTION_LENGTH: u32 = 256;
 
 /// Minimal buffer size in bytes.
 #[allow(clippy::cast_possible_truncation)]
-pub const MIN_BUFFER_SIZE: u32 = (BOOTSTRAP_SEQUENCE_LENGTH + size_of::<Runtime>()) as u32
-    + HEADER_LENGTH
-    + MAX_TRANSACTION_LENGTH;
+pub const MIN_BUFFER_SIZE: u32 = {
+    let mut size = (BOOTSTRAP_SEQUENCE_LENGTH + size_of::<Runtime>()) as u32;
+    size += HEADER_LENGTH + MAX_TRANSACTION_LENGTH;
+    (size / 4 + (size % 4 != 0) as u32) * 4
+};
 
 /// Drone Stream runtime data structure.
 ///

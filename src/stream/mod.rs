@@ -4,7 +4,7 @@ pub mod route;
 pub mod runtime;
 
 use self::route::{RouteDesc, Routes};
-use drone_config::{locate_project_root, Config};
+use drone_config::{locate_project_root, Config, CONFIG_NAME};
 use drone_openocd::{
     command_context, command_invocation, command_mode_COMMAND_EXEC, command_registration,
     command_run_line, get_current_target, register_commands, target,
@@ -75,10 +75,10 @@ impl Stream {
                 );
             }
             Ok(Config { stream: None, .. }) => {
-                error!("Drone Stream is not enabled in Drone.toml");
+                error!("[stream] section is not set in {CONFIG_NAME}");
             }
             Err(err) => {
-                error!("Couldn't read Drone.toml: {err:#?}");
+                error!("Couldn't parse {CONFIG_NAME}: {err:#?}");
             }
         }
         None

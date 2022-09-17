@@ -80,7 +80,7 @@ impl Cli {
         match cmd {
             Cmd::Stream(cmd) => cmd::stream::run(cmd, color),
             Cmd::Flash(cmd) => cmd::flash::run(cmd, color),
-            Cmd::Reset(cmd) => cmd::reset::run(cmd, color),
+            Cmd::Reset(cmd) => cmd::reset::run(cmd),
             Cmd::Debug(cmd) => cmd::debug::run(cmd, color),
             Cmd::Probe(cmd) => cmd::probe::run(cmd),
             Cmd::Heap(cmd) => cmd::heap::run(cmd, color),
