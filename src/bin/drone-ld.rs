@@ -1,72 +1,65 @@
 #![warn(clippy::pedantic)]
 
-use drone::{
-    templates::Registry,
-    utils::{block_with_signals, register_signals, run_command, search_rust_tool},
-};
+use drone::template;
 use drone_config::{locate_project_root, locate_target_root, Config};
-use eyre::Result;
+use eyre::{bail, Result, WrapErr};
 use std::{
     collections::HashMap,
     env,
     ffi::{OsStr, OsString},
-    fs::{create_dir_all, File},
-    path::Path,
-    process::Command,
+    fs,
+    path::{Path, PathBuf},
+    process::{Command, ExitStatus},
 };
+use walkdir::WalkDir;
 
 fn main() -> Result<()> {
     let args = env::args_os().skip(1).collect::<Vec<_>>();
     let project_root = locate_project_root()?;
     let config = Config::read_from_project_root(&project_root)?;
-    let registry = Registry::new()?;
-    let mut signals = register_signals()?;
-
     let target = locate_target_root(&project_root)?;
-    create_dir_all(&target)?;
-    let stage_one = target.join("layout.ld.1");
-    let stage_two = target.join("layout.ld.2");
-    {
-        let stage_one_file = File::create(&stage_one)?;
-        let stage_two_file = File::create(&stage_two)?;
-        registry.layout_ld(&config, false, &stage_one_file)?;
-        registry.layout_ld(&config, true, &stage_two_file)?;
-    }
+    fs::create_dir_all(&target)?;
 
     if let Some(output_position) = args.iter().position(|arg| arg == "-o") {
-        let linker = linker_command(stage_one.as_ref(), &args, &[])?;
-        block_with_signals(&mut signals, true, || run_command(linker))?;
+        let script = target.join("layout.ld.1");
+        template::layout_ld::render(&script, true, &config)
+            .wrap_err("Rendering stage one linker script")?;
+        run_linker(&script, &args, &[]).wrap_err("Running stage one linker")?;
 
-        let size = size_command(&args[output_position + 1])?;
-        let syms = block_with_signals(&mut signals, true, || run_size(size))?
+        let syms = run_size(&args[output_position + 1])
+            .wrap_err("Checking section sizes")?
             .into_iter()
             .map(|(name, size)| format!("--defsym=_{}_section_size={}", name, size))
             .collect::<Vec<_>>();
 
-        let linker = linker_command(stage_two.as_ref(), &args, &syms)?;
-        block_with_signals(&mut signals, true, || run_command(linker))?;
+        let script = target.join("layout.ld.2");
+        template::layout_ld::render(&script, false, &config)
+            .wrap_err("Rendering stage two linker script")?;
+        run_linker(&script, &args, &syms).wrap_err("Running stage two linker")?;
     }
 
     Ok(())
 }
 
-fn linker_command(script: &Path, args: &[OsString], syms: &[String]) -> Result<Command> {
-    let mut rust_lld = Command::new(search_rust_tool("rust-lld")?);
-    rust_lld.arg("-flavor").arg("gnu");
-    rust_lld.arg("-T").arg(script);
-    rust_lld.args(args);
-    rust_lld.args(syms);
-    Ok(rust_lld)
+fn run_linker(script: &Path, args: &[OsString], syms: &[String]) -> Result<()> {
+    let program = "rust-lld";
+    let mut command = Command::new(search_rust_tool(program)?);
+    command.arg("-flavor").arg("gnu");
+    command.arg("-T").arg(script);
+    command.args(args);
+    command.args(syms);
+    let status = command.status()?;
+    check_status(program, status)?;
+    Ok(())
 }
 
-fn size_command(output: &OsStr) -> Result<Command> {
-    let mut command = Command::new(search_rust_tool("llvm-size")?);
+fn run_size(output: &OsStr) -> Result<HashMap<String, u32>> {
+    let program = "llvm-size";
+    let mut command = Command::new(search_rust_tool(program)?);
     command.arg("-A").arg(output);
-    Ok(command)
-}
-
-fn run_size(mut command: Command) -> Result<HashMap<String, u32>> {
-    let stdout = String::from_utf8(command.output()?.stdout)?;
+    let output = command.output()?;
+    check_status(program, output.status)?;
+    let stdout = String::from_utf8(output.stdout)?;
     let mut map = HashMap::new();
     for line in stdout.lines() {
         if line.starts_with('.') {
@@ -76,4 +69,30 @@ fn run_size(mut command: Command) -> Result<HashMap<String, u32>> {
         }
     }
     Ok(map)
+}
+
+fn search_rust_tool(tool: &str) -> Result<PathBuf> {
+    let program = "rustc";
+    let mut rustc = Command::new(program);
+    rustc.arg("--print").arg("sysroot");
+    let output = rustc.output()?;
+    check_status(program, output.status)?;
+    let sysroot = String::from_utf8(output.stdout)?;
+    for entry in WalkDir::new(sysroot.trim()) {
+        let entry = entry?;
+        if entry.file_name() == tool {
+            return Ok(entry.into_path());
+        }
+    }
+    bail!("Couldn't find `{}`", tool);
+}
+
+fn check_status(program: &str, status: ExitStatus) -> Result<()> {
+    if !status.success() {
+        if let Some(code) = status.code() {
+            bail!("{program} exited with status code: {code}")
+        }
+        bail!("{program} terminated by signal")
+    }
+    Ok(())
 }

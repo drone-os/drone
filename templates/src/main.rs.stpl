@@ -2,9 +2,9 @@
 #![no_main]
 #![no_std]
 
-use drone_core::{mem, token::Token};
-use drone_{{platform_name}}::processor;
-use {{crate_name}}::{
+use drone_core::{mem, stream, token::Token};
+use drone_<%- platform_name %>::cpu;
+use <%- crate_name %>::{
     tasks,
     thr::{ThrsInit, Vtable},
     Regs,
@@ -29,11 +29,11 @@ pub unsafe extern "C" fn reset() -> ! {
     // values from flash memory. This is safe because none of these variables
     // have been in use before this line.
     unsafe { mem::data_init() };
-{{~#if-includes platform_features "floating-point-unit" }}
-    // Initialize the Floating Point Unit. This is safe because the unit has not
+<% if fpu_init { %>    // Initialize the Floating Point Unit. This is safe because the unit has not
     // been in use before this line.
-    unsafe { processor::fpu_init(true) };
-{{~/if-includes}}
+    unsafe { cpu::fpu_init(true) };
+<% } %>    // Initialize Drone Streams.
+    stream::init();
     // Run the root task.
     tasks::root(
         // Instantiate a zero-sized collection of tokens for memory-mapped
@@ -45,6 +45,6 @@ pub unsafe extern "C" fn reset() -> ! {
     );
     // If the root task returned, always sleep between interrupts.
     loop {
-        processor::wait_for_int();
+        cpu::wait_for_int();
     }
 }

@@ -1,0 +1,85 @@
+{
+  description = "Drone OS project";
+
+  inputs = {
+    utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "nixpkgs/nixos-22.05";
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    drone = {
+      url = "github:drone-os/drone";
+      inputs.utils.follows = "utils";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fenix.follows = "fenix";
+    };
+  };
+
+  outputs = { self, utils, nixpkgs, fenix, drone }:
+    utils.lib.eachDefaultSystem (system:
+      let
+        target = "<%- target %>";
+        <%- platform_flag_name %> = "<%- platform_flag %>";
+        <%- bindings_flag_name %> = "<%- bindings_flag %>";
+        rustChannel = {
+          channel = "nightly";
+          date = "2022-06-18";
+          sha256 = "TX82NKIM6/V8rJ8CskbwizaDCvQeF0KvN3GkcY4XQzQ=";
+        };
+
+        pkgs = nixpkgs.legacyPackages.${system};
+        dronePkg = drone.packages.${system}.drone;
+        rustToolchain = with fenix.packages.${system};
+          let toolchain = toolchainOf rustChannel; in
+          combine [
+            toolchain.rustc
+            toolchain.cargo
+            toolchain.clippy
+            toolchain.rust-src
+            toolchain.llvm-tools-preview
+            (targets.${target}.toolchainOf rustChannel).rust-std
+          ];
+        rustFmt = (fenix.packages.${system}.toolchainOf rustChannel).rustfmt;
+        rustAnalyzer = fenix.packages.${system}.rust-analyzer;
+
+        crossEnv = {
+          CARGO_BUILD_TARGET = target;
+          CARGO_BUILD_RUSTFLAGS = ''--cfg <%- platform_flag_name %>="${<%- platform_flag_name %>}" --cfg <%- bindings_flag_name %>="${<%- bindings_flag_name %>}" -C linker=${dronePkg}/bin/drone-ld'';
+        };
+        nativeEnv = {
+          CARGO_BUILD_TARGET = pkgs.stdenv.targetPlatform.config;
+          CARGO_BUILD_RUSTFLAGS = ''--cfg <%- platform_flag_name %>="${<%- platform_flag_name %>}" --cfg <%- bindings_flag_name %>="${<%- bindings_flag_name %>}"'';
+        };
+
+        checkAll = pkgs.writeShellScriptBin "check-all" ''
+          set -ex
+          cargo fmt --check
+          cargo clippy -- --deny warnings
+          nix develop '.#native' -c cargo test --features std
+          RUSTDOCFLAGS='-D warnings' cargo doc --no-deps
+        '';
+
+        mkShell = extraEnv: pkgs.mkShell ({
+          nativeBuildInputs = [
+            rustToolchain
+            rustFmt
+            rustAnalyzer
+            dronePkg
+            checkAll
+          ] ++ (with pkgs; [
+            # lldb # install LLDB
+            # nodePackages.vscode-langservers-extracted # install Rust LSP
+          ]);
+          RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/library";
+        } // extraEnv);
+      in
+      {
+        devShells = rec {
+          cross = mkShell (crossEnv // { name = "cross"; });
+          native = mkShell (nativeEnv // { name = "native"; });
+          default = cross;
+        };
+      }
+    );
+}

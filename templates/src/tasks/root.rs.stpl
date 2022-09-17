@@ -1,7 +1,7 @@
 //! The root task.
 
 use crate::{thr, thr::ThrsInit, Regs};
-use drone_{{platform_name}}::{reg::prelude::*, thr::prelude::*};
+use drone_<%- platform_name %>::{reg::prelude::*, thr::prelude::*};
 
 /// The root task handler.
 #[inline(never)]

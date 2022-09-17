@@ -1,0 +1,14 @@
+[memory.flash]
+size = "<%- flash_size %>"
+origin = <%- flash_origin %>
+
+[memory.ram]
+size = "<%- ram_size %>"
+origin = <%- ram_origin %>
+
+<%- heap %>
+[stream]
+size = "<%- stream_size %>"
+
+[linker]
+platform = "<%- linker_platform %>"

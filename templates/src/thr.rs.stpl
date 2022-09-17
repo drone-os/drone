@@ -1,9 +1,9 @@
 //! The threads.
 
-pub use drone_{{platform_name}}::thr::{init, init_extended};
-pub use drone_{{bindings_name}}_map::thr::*;
+pub use drone_<%- platform_name %>::thr::{init, init_extended};
+pub use drone_<%- bindings_name %>_map::thr::*;
 
-use drone_{{platform_name}}::thr;
+use drone_<%- platform_name %>::thr;
 
 thr::nvic! {
     /// Thread-safe storage.

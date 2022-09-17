@@ -155,6 +155,8 @@
             Cargo.toml config/Cargo.toml stream/Cargo.toml openocd/Cargo.toml
           sed -i "/\[.*\]/h;/version = \"=.*\"/{x;s/\[.*drone-.*\]/version = \"=$1\"/;t;x}" \
             Cargo.toml
+          sed -i "s/\(const DRONE_VERSION: &str = \"\).*\(\";\)/\1$1\2/" \
+            src/project/cargo_toml.rs
         '';
 
         publishCrates = pkgs.writeShellScriptBin "publish-crates" ''

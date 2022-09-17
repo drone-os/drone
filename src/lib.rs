@@ -50,8 +50,7 @@ pub mod devices;
 pub mod heap;
 pub mod openocd;
 pub mod stream;
-pub mod templates;
-pub mod utils;
+pub mod template;
 
 use self::cli::{Cli, Cmd};
 use eyre::Result;
@@ -78,15 +77,15 @@ impl Cli {
             .init();
         trace!("Logger initialized");
         match cmd {
-            Cmd::Stream(cmd) => cmd::stream::run(cmd, color),
-            Cmd::Flash(cmd) => cmd::flash::run(cmd, color),
-            Cmd::Reset(cmd) => cmd::reset::run(cmd),
             Cmd::Debug(cmd) => cmd::debug::run(cmd, color),
-            Cmd::Probe(cmd) => cmd::probe::run(cmd),
+            Cmd::Flash(cmd) => cmd::flash::run(cmd, color),
             Cmd::Heap(cmd) => cmd::heap::run(cmd, color),
-            Cmd::New(cmd) => cmd::new::run(cmd, color),
+            Cmd::Init(cmd) => cmd::init::run(cmd, color),
             Cmd::ListSupported(cmd) => cmd::list_supported::run(cmd, color),
             Cmd::Openocd(cmd) => cmd::openocd::run(cmd),
+            Cmd::Probe(cmd) => cmd::probe::run(cmd),
+            Cmd::Reset(cmd) => cmd::reset::run(cmd),
+            Cmd::Stream(cmd) => cmd::stream::run(cmd, color),
         }
     }
 }

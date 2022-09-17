@@ -51,7 +51,7 @@ impl Config {
 
     /// Parses config from the `string`.
     pub fn parse(string: &str) -> Result<Self> {
-        let config = toml::from_str::<Self>(string)?;
+        let config = toml_edit::easy::from_str::<Self>(string)?;
         config.check_heaps()?;
         config.check_stream()?;
         Ok(config)

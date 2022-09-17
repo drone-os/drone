@@ -14,4 +14,4 @@ Configuration for Drone, an Embedded Operating System.
 [dependencies]
 eyre = "0.6"
 serde = { version = "1", features = ["derive"] }
-toml = "0.5"
+toml_edit = { version = "0.14.4", features = ["easy"] }

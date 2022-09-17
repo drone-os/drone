@@ -22,7 +22,9 @@ pub struct Device {
     /// Drone bindings crate configuration.
     pub bindings_crate: BindingsCrate,
     /// OpenOCD target config.
-    pub openocd_target: &'static str,
+    pub probe_target: &'static str,
+    /// OpenOCD script patches.
+    pub probe_patches: ProbePatches,
 }
 
 /// Drone platform crate configuration.
@@ -45,6 +47,12 @@ pub struct BindingsCrate {
     pub features: &'static [&'static str],
 }
 
+/// Set of scripted OpenOCD patches.
+pub struct ProbePatches {
+    /// AHB-AP fix for STM32.
+    pub stm32_ahb_ap_fix: bool,
+}
+
 /// Finds device configuration by `name`.
 pub fn find(name: &str) -> Result<&'static Device> {
     for device in REGISTRY {
@@ -62,5 +70,11 @@ impl PlatformCrate {
             crates::Platform::Cortexm => "arm",
             crates::Platform::Riscv => "riscv",
         }
+    }
+}
+
+impl ProbePatches {
+    const fn new() -> Self {
+        Self { stm32_ahb_ap_fix: false }
     }
 }
