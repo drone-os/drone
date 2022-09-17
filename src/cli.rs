@@ -36,8 +36,8 @@ pub enum Cmd {
     Heap(HeapCmd),
     /// Create a new Drone project
     New(NewCmd),
-    /// Print requested information to stdout
-    Print(PrintCmd),
+    /// Print the list of all supported microcontrollers
+    ListSupported(ListSupportedCmd),
     /// Run unmodified OpenOCD process
     Openocd(OpenocdCmd),
 }
@@ -137,20 +137,11 @@ pub struct HeapGenerateCmd {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct PrintCmd {
-    #[structopt(subcommand)]
-    pub print_sub_cmd: PrintSubCmd,
-}
+pub struct ListSupportedCmd {}
 
 #[derive(Debug, StructOpt)]
 pub struct OpenocdCmd {
     /// Arguments for OpenOCD
     #[structopt(parse(from_os_str), last(true))]
     pub args: Vec<OsString>,
-}
-
-#[derive(Debug, StructOpt)]
-pub enum PrintSubCmd {
-    /// Print a list of supported chips
-    Chips,
 }

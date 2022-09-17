@@ -85,7 +85,7 @@ impl Cli {
             Cmd::Probe(cmd) => cmd::probe::run(cmd),
             Cmd::Heap(cmd) => cmd::heap::run(cmd, color),
             Cmd::New(cmd) => cmd::new::run(cmd, color),
-            Cmd::Print(cmd) => cmd::print::run(cmd, color),
+            Cmd::ListSupported(cmd) => cmd::list_supported::run(cmd, color),
             Cmd::Openocd(cmd) => cmd::openocd::run(cmd),
         }
     }
