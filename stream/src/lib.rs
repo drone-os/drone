@@ -1,11 +1,10 @@
 //! Drone Stream definitions.
 
-#![feature(const_maybe_uninit_zeroed)]
 #![warn(missing_docs, unsafe_op_in_unsafe_fn)]
 #![warn(clippy::pedantic)]
 #![no_std]
 
-use core::mem::{size_of, MaybeUninit};
+use core::mem::size_of;
 
 /// Maximum number of streams.
 pub const STREAM_COUNT: u8 = 32;
@@ -56,6 +55,6 @@ impl Runtime {
     /// Creates a new zeroed Drone Stream runtime.
     #[must_use]
     pub const fn zeroed() -> Self {
-        unsafe { MaybeUninit::zeroed().assume_init() }
+        Self { enable_mask: 0, read_cursor: 0, write_cursor: 0 }
     }
 }

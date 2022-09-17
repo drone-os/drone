@@ -19,4 +19,5 @@ pub fn run(cmd: DebugCmd, color: crate::color::Color) -> Result<()> {
     commands.push("init");
     commands.push(echo_colored("*** GDB server started successfully", Green, color));
     exit_with_openocd(openocd_main, commands.into())?;
+    Ok(())
 }

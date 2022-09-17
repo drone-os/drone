@@ -29,7 +29,7 @@ pub const CONFIG_NAMES: &[&str] = &["probe.tcl", "probe/config.tcl"];
 pub fn exit_with_openocd(
     openocd_main: unsafe extern "C" fn(i32, *mut *mut i8) -> i32,
     args: Vec<OsString>,
-) -> Result<!> {
+) -> Result<()> {
     let args = iter::once("drone-openocd".into())
         .chain(args.into_iter())
         .map(|arg| Ok(CString::new(arg.as_bytes())?.into_raw()))

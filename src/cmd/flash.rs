@@ -32,6 +32,7 @@ pub fn run(cmd: FlashCmd, color: Color) -> Result<()> {
     commands.push("reset run");
     commands.push("shutdown");
     exit_with_openocd(openocd_main, commands.into())?;
+    Ok(())
 }
 
 fn locate_binary(

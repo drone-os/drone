@@ -46,7 +46,7 @@ impl Routes {
                 if path.is_empty() {
                     Ok(Output::Stdout(stdout()))
                 } else {
-                    OpenOptions::new().write(true).open(path).map(Output::File)
+                    OpenOptions::new().append(true).create(true).open(path).map(Output::File)
                 }
                 .map(|output| (streams, Rc::new(RefCell::new(output))))
             })

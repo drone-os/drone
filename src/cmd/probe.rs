@@ -17,4 +17,5 @@ pub fn run(cmd: ProbeCmd) -> Result<()> {
     args.push("--file".into());
     args.push(script.into());
     exit_with_openocd(openocd_main, args)?;
+    Ok(())
 }

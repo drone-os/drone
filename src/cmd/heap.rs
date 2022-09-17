@@ -18,25 +18,22 @@ use std::{
 /// Runs `drone heap` command.
 pub fn run(cmd: HeapCmd, color: Color) -> Result<()> {
     let HeapCmd { trace_file, config: heap_config, size, heap_sub_cmd } = cmd;
-    let size = size.map_or_else(
-        || {
-            config::locate_project_root().and_then(|project_root| {
-                config::Config::read_from_project_root(&project_root).and_then(|config| {
-                    if heap_config == "main" {
-                        Ok(config.heap.main.size)
-                    } else {
-                        config
-                            .heap
-                            .extra
-                            .get(&heap_config)
-                            .map(|heap| heap.block.size)
-                            .ok_or_else(|| eyre!("Unknown `{}` heap configuration", heap_config))
-                    }
-                })
-            })
-        },
-        Ok,
-    )?;
+    let size = if let Some(size) = size {
+        size
+    } else {
+        let project_root = config::locate_project_root()?;
+        let config = config::Config::read_from_project_root(&project_root)?;
+        if heap_config == "main" {
+            config.heap.main.size
+        } else {
+            config
+                .heap
+                .extra
+                .get(&heap_config)
+                .map(|heap| heap.block.size)
+                .ok_or_else(|| eyre!("Heap not exists: {}", heap_config))?
+        }
+    };
     let mut trace = TraceMap::new();
     if let Ok(file) = File::open(&trace_file) {
         heap::read_trace(&mut trace, file, size)?;

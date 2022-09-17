@@ -11,6 +11,7 @@ use eyre::Result;
 /// Runs `drone stream` command.
 pub fn run(cmd: StreamCmd, color: Color) -> Result<()> {
     let StreamCmd { streams, reset } = cmd;
+    let streams = streams.join(" ");
     let mut commands = Commands::new()?;
     commands.push("gdb_port disabled");
     commands.push("tcl_port disabled");
@@ -25,4 +26,5 @@ pub fn run(cmd: StreamCmd, color: Color) -> Result<()> {
     }
     commands.push(echo_colored("*** Drone Stream initialized successfully", Green, color));
     exit_with_openocd(openocd_main, commands.into())?;
+    Ok(())
 }

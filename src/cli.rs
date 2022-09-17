@@ -45,8 +45,8 @@ pub enum Cmd {
 #[derive(Debug, StructOpt)]
 pub struct StreamCmd {
     /// Stream routes specification. Leave `path` empty to route to STDOUT
-    #[structopt(name = "[path[:stream]...]...", default_value = ":0:1")]
-    pub streams: String,
+    #[structopt(name = "path[:stream]...", default_value = ":0:1")]
+    pub streams: Vec<String>,
     /// Reset target before streaming
     #[structopt(short, long)]
     pub reset: bool,
@@ -111,18 +111,12 @@ pub struct NewCmd {
 #[derive(Debug, StructOpt)]
 pub struct HeapCmd {
     /// Heap trace file obtained from the device
-    #[structopt(
-        short = "f",
-        long,
-        name = "heaptrace",
-        default_value = "heaptrace",
-        parse(from_os_str)
-    )]
+    #[structopt(short = "f", long, name = "heaptrace", parse(from_os_str))]
     pub trace_file: PathBuf,
     /// Heap configuration key.
     #[structopt(short, long, default_value = "main")]
     pub config: String,
-    /// Maximum size of the heap
+    /// Maximal size of the heap
     #[structopt(short, long, parse(try_from_str = parse_size))]
     pub size: Option<u32>,
     #[structopt(subcommand)]

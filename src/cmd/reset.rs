@@ -20,4 +20,5 @@ pub fn run(cmd: ResetCmd, color: Color) -> Result<()> {
     commands.push(echo_colored("*** Resetted successfully", Green, color));
     commands.push("shutdown");
     exit_with_openocd(openocd_main, commands.into())?;
+    Ok(())
 }

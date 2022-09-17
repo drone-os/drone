@@ -8,4 +8,5 @@ use eyre::Result;
 pub fn run(cmd: OpenocdCmd) -> Result<()> {
     let OpenocdCmd { args } = cmd;
     exit_with_openocd(openocd_main, args)?;
+    Ok(())
 }

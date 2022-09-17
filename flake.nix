@@ -26,6 +26,10 @@
   outputs = { self, utils, nixpkgs, naersk, fenix, openocd }:
     utils.lib.eachDefaultSystem (system:
       let
+        rustChannel = {
+          channel = "1.63";
+          sha256 = "KXx+ID0y4mg2B3LHp7IyaiMrdexF6octADnAtFIOjrY=";
+        };
         pkgs = nixpkgs.legacyPackages.${system};
         buildInputs = with pkgs; [
           hidapi
@@ -76,11 +80,6 @@
             rm -r $out/share/openocd/contrib $out/share/openocd/OpenULINK
           '';
         };
-        rustChannel = {
-          channel = "nightly";
-          date = "2022-06-18";
-          sha256 = "TX82NKIM6/V8rJ8CskbwizaDCvQeF0KvN3GkcY4XQzQ=";
-        };
         rustToolchain = with fenix.packages.${system};
           let toolchain = toolchainOf rustChannel; in
           combine [
@@ -104,33 +103,35 @@
             LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
             RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/library";
           };
+        package = pkgs.lib.makeOverridable
+          (libopenocdArgs: naersk-lib.buildPackage ({
+            src = ./.;
+            inherit buildInputs;
+            inherit nativeBuildInputs;
+            postInstall = ''
+              mkdir -p $out/share/openocd
+              ln -s $OPENOCD_SCRIPTS $out/share/openocd
+            '';
+          } // (env libopenocdArgs)))
+          { };
+        shell = pkgs.mkShell ({
+          name = "native";
+          inherit buildInputs;
+          nativeBuildInputs = nativeBuildInputs ++ [
+            rustToolchain
+            rustFmt
+            rustAnalyzer
+          ];
+        } // (env { }));
       in
       {
-        packages = rec {
-          drone = pkgs.lib.makeOverridable
-            (libopenocdArgs: naersk-lib.buildPackage ({
-              src = ./.;
-              inherit buildInputs;
-              inherit nativeBuildInputs;
-              postInstall = ''
-                mkdir -p $out/share/openocd
-                ln -s $OPENOCD_SCRIPTS $out/share/openocd
-              '';
-            } // (env libopenocdArgs)))
-            { };
-          default = drone;
+        packages = {
+          drone = package;
+          default = package;
         };
-        devShells = rec {
-          native = pkgs.mkShell ({
-            name = "native";
-            inherit buildInputs;
-            nativeBuildInputs = nativeBuildInputs ++ [
-              rustToolchain
-              rustFmt
-              rustAnalyzer
-            ];
-          } // (env { }));
-          default = native;
+        devShells = {
+          native = shell;
+          default = shell;
         };
       }
     );
