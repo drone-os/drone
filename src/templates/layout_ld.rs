@@ -2,7 +2,7 @@
 
 use drone_config::{addr, build_target, size, Layout};
 use eyre::{bail, Result};
-use inflector::Inflector;
+use heck::{AsShoutySnakeCase, ToShoutySnakeCase};
 use sailfish::TemplateOnce;
 use std::{collections::BTreeMap, fs, path::Path};
 
@@ -82,7 +82,7 @@ fn render_memories(layout: &Layout) -> Vec<Memory> {
     let mut memories = Vec::new();
     for (name, flash) in &layout.flash {
         memories.push(Memory {
-            name: format!("FLASH_{}", name.to_screaming_snake_case()),
+            name: format!("FLASH_{}", AsShoutySnakeCase(name)),
             mode: "rx",
             origin: addr::to_string(flash.origin),
             length: size::to_string(flash.size),
@@ -90,7 +90,7 @@ fn render_memories(layout: &Layout) -> Vec<Memory> {
     }
     for (name, ram) in &layout.ram {
         memories.push(Memory {
-            name: format!("RAM_{}", name.to_screaming_snake_case()),
+            name: format!("RAM_{}", AsShoutySnakeCase(name)),
             mode: "wx",
             origin: addr::to_string(ram.origin),
             length: size::to_string(ram.size),
@@ -103,7 +103,7 @@ fn render_stack_pointers(layout: &Layout) -> Vec<StackPointer> {
     let mut stack_pointers = Vec::new();
     for (name, stack) in &layout.stack {
         stack_pointers.push(StackPointer {
-            name: name.to_screaming_snake_case(),
+            name: name.to_shouty_snake_case(),
             address: addr::to_string(stack.origin + stack.fixed_size),
         });
     }
@@ -113,7 +113,7 @@ fn render_stack_pointers(layout: &Layout) -> Vec<StackPointer> {
 fn render_data_sections(sections: &mut BTreeMap<u32, String>, layout: &Layout) {
     let ctx = Data {
         origin: addr::to_string(layout.data.origin),
-        ram: layout.data.ram.to_screaming_snake_case(),
+        ram: layout.data.ram.to_shouty_snake_case(),
     };
     sections.insert(layout.data.origin, ctx.render_once().unwrap());
 }
@@ -133,10 +133,10 @@ fn render_heap_sections(sections: &mut BTreeMap<u32, String>, layout: &Layout) {
         }
         let ctx = Heap {
             name,
-            uppercase_name: name.to_screaming_snake_case(),
+            uppercase_name: name.to_shouty_snake_case(),
             origin: addr::to_string(heap.section.origin),
             size: size::to_string(heap.section.fixed_size),
-            ram: heap.section.ram.to_screaming_snake_case(),
+            ram: heap.section.ram.to_shouty_snake_case(),
             pools,
         };
         sections.insert(heap.section.origin, ctx.render_once().unwrap());
@@ -147,10 +147,10 @@ fn render_stream_sections(sections: &mut BTreeMap<u32, String>, layout: &Layout)
     for (name, stream) in &layout.stream {
         let ctx = Stream {
             name,
-            uppercase_name: name.to_screaming_snake_case(),
+            uppercase_name: name.to_shouty_snake_case(),
             origin: addr::to_string(stream.origin),
             size: size::to_string(stream.size),
-            ram: stream.ram.to_screaming_snake_case(),
+            ram: stream.ram.to_shouty_snake_case(),
         };
         sections.insert(stream.origin, ctx.render_once().unwrap());
     }

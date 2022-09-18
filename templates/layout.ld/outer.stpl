@@ -16,7 +16,7 @@ SECTIONS
 <% if platform == "arm" { %>
     .vtable ORIGIN(FLASH_PROGRAM) :
     {
-        LONG(STACK_POINTER_CORE_0);
+        LONG(STACK_POINTER_CORE0);
         KEEP(*(.rodata.VTABLE));
         . = ALIGN(4);
     } > FLASH_PROGRAM
