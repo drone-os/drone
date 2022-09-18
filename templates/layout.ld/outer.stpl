@@ -1,0 +1,54 @@
+MEMORY
+{
+<% for memory in memories { %>
+    <%- memory.name %> (<%- memory.mode %>) : ORIGIN = <%- memory.origin %>, LENGTH = <%- memory.length %>
+<% } %>
+}
+
+ENTRY(reset);
+
+SECTIONS
+{
+<% for stack_pointer in stack_pointers { %>
+    STACK_POINTER_<%- stack_pointer.name %> = <%- stack_pointer.address %>;
+<% } %>
+
+<% if platform == "arm" { %>
+    .vtable ORIGIN(FLASH_PROGRAM) :
+    {
+        LONG(STACK_POINTER_CORE_0);
+        KEEP(*(.rodata.VTABLE));
+        . = ALIGN(4);
+    } > FLASH_PROGRAM
+<% } %>
+
+    .text :
+    {
+        *(.text.reset);
+        *(.text.*);
+        . = ALIGN(4);
+    } > FLASH_PROGRAM
+
+    .rodata :
+    {
+        *(.rodata.*);
+        . = ALIGN(4);
+    } > FLASH_PROGRAM
+
+<% for section in sections.values() { %>
+<%- section %>
+<% } %>
+
+    /DISCARD/ :
+    {
+<% if platform == "arm" { %>
+        *(.ARM.*)
+<% } else if platform == "riscv" { %>
+        *(.eh_frame .eh_frame_hdr)
+<% } %>
+    }
+}
+
+<% for block in include { %>
+INCLUDE <%- block %>;
+<% } %>

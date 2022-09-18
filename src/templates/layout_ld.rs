@@ -4,18 +4,15 @@ use drone_config::{addr, build_target, size, Layout};
 use eyre::{bail, Result};
 use inflector::Inflector;
 use sailfish::TemplateOnce;
-use std::{fs, path::Path};
+use std::{collections::BTreeMap, fs, path::Path};
 
 #[derive(TemplateOnce)]
-#[template(path = "layout.ld.stpl")]
+#[template(path = "layout.ld/outer.stpl")]
 struct LayoutLd<'a> {
     memories: Vec<Memory>,
     stack_pointers: Vec<StackPointer>,
-    data_origin: String,
-    data_ram: String,
-    streams: Vec<Stream>,
-    heaps: Vec<Heap>,
-    platform: &'a str,
+    sections: BTreeMap<u32, String>,
+    platform: &'static str,
     include: &'a [String],
 }
 
@@ -31,21 +28,32 @@ struct StackPointer {
     address: String,
 }
 
-struct Stream {
-    name: String,
-    uppercase_name: String,
+#[derive(TemplateOnce)]
+#[template(path = "layout.ld/data.stpl")]
+struct Data {
     origin: String,
-    size: String,
     ram: String,
 }
 
-struct Heap {
-    name: String,
+#[derive(TemplateOnce)]
+#[template(path = "layout.ld/heap.stpl")]
+struct Heap<'a> {
+    name: &'a str,
     uppercase_name: String,
     origin: String,
     size: String,
     ram: String,
     pools: Vec<Pool>,
+}
+
+#[derive(TemplateOnce)]
+#[template(path = "layout.ld/stream.stpl")]
+struct Stream<'a> {
+    name: &'a str,
+    uppercase_name: String,
+    origin: String,
+    size: String,
+    ram: String,
 }
 
 struct Pool {
@@ -56,6 +64,21 @@ struct Pool {
 
 /// Creates a new linker script.
 pub fn render(path: &Path, layout: &Layout) -> Result<()> {
+    let mut sections = BTreeMap::new();
+    render_stream_sections(&mut sections, layout);
+    render_data_sections(&mut sections, layout);
+    render_heap_sections(&mut sections, layout);
+    let ctx = LayoutLd {
+        memories: render_memories(layout),
+        stack_pointers: render_stack_pointers(layout),
+        sections,
+        platform: get_platform()?,
+        include: &layout.linker.include,
+    };
+    Ok(fs::write(path, ctx.render_once().unwrap())?)
+}
+
+fn render_memories(layout: &Layout) -> Vec<Memory> {
     let mut memories = Vec::new();
     for (name, flash) in &layout.flash {
         memories.push(Memory {
@@ -73,6 +96,10 @@ pub fn render(path: &Path, layout: &Layout) -> Result<()> {
             length: size::to_string(ram.size),
         });
     }
+    memories
+}
+
+fn render_stack_pointers(layout: &Layout) -> Vec<StackPointer> {
     let mut stack_pointers = Vec::new();
     for (name, stack) in &layout.stack {
         stack_pointers.push(StackPointer {
@@ -80,17 +107,18 @@ pub fn render(path: &Path, layout: &Layout) -> Result<()> {
             address: addr::to_string(stack.origin + stack.fixed_size),
         });
     }
-    let mut streams = Vec::new();
-    for (name, stream) in &layout.stream {
-        streams.push(Stream {
-            name: name.clone(),
-            uppercase_name: name.to_screaming_snake_case(),
-            origin: addr::to_string(stream.origin),
-            size: size::to_string(stream.size),
-            ram: stream.ram.to_screaming_snake_case(),
-        });
-    }
-    let mut heaps = Vec::new();
+    stack_pointers
+}
+
+fn render_data_sections(sections: &mut BTreeMap<u32, String>, layout: &Layout) {
+    let ctx = Data {
+        origin: addr::to_string(layout.data.origin),
+        ram: layout.data.ram.to_screaming_snake_case(),
+    };
+    sections.insert(layout.data.origin, ctx.render_once().unwrap());
+}
+
+fn render_heap_sections(sections: &mut BTreeMap<u32, String>, layout: &Layout) {
     for (name, heap) in &layout.heap {
         let mut pointer = heap.section.origin + heap.section.prefix_size;
         let mut pools = Vec::new();
@@ -103,30 +131,36 @@ pub fn render(path: &Path, layout: &Layout) -> Result<()> {
             });
             pointer += size;
         }
-        heaps.push(Heap {
-            name: name.clone(),
+        let ctx = Heap {
+            name,
             uppercase_name: name.to_screaming_snake_case(),
             origin: addr::to_string(heap.section.origin),
             size: size::to_string(heap.section.fixed_size),
             ram: heap.section.ram.to_screaming_snake_case(),
             pools,
-        });
+        };
+        sections.insert(heap.section.origin, ctx.render_once().unwrap());
     }
+}
+
+fn render_stream_sections(sections: &mut BTreeMap<u32, String>, layout: &Layout) {
+    for (name, stream) in &layout.stream {
+        let ctx = Stream {
+            name,
+            uppercase_name: name.to_screaming_snake_case(),
+            origin: addr::to_string(stream.origin),
+            size: size::to_string(stream.size),
+            ram: stream.ram.to_screaming_snake_case(),
+        };
+        sections.insert(stream.origin, ctx.render_once().unwrap());
+    }
+}
+
+fn get_platform() -> Result<&'static str> {
     let build_target = build_target()?;
-    let platform = match build_target.split('-').next().unwrap() {
-        "thumbv7m" | "thumbv7em" | "thumbv8m.main" => "arm",
-        "riscv32imac" => "riscv",
+    match build_target.split('-').next().unwrap() {
+        "thumbv7m" | "thumbv7em" | "thumbv8m.main" => Ok("arm"),
+        "riscv32imac" => Ok("riscv"),
         _ => bail!("unsupported build target: {build_target}"),
-    };
-    let ctx = LayoutLd {
-        memories,
-        stack_pointers,
-        data_origin: addr::to_string(layout.data.origin),
-        data_ram: layout.data.ram.to_screaming_snake_case(),
-        streams,
-        heaps,
-        platform,
-        include: &layout.linker.include,
-    };
-    Ok(fs::write(path, ctx.render_once().unwrap())?)
+    }
 }

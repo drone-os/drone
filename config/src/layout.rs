@@ -3,8 +3,9 @@
 use crate::{addr, size, HEAP_POOL_SIZE, STREAM_RUNTIME_SIZE};
 use drone_stream::MIN_BUFFER_SIZE;
 use eyre::{bail, eyre, Result, WrapErr};
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, env, fs, mem, path::Path};
+use std::{env, fs, mem, path::Path};
 
 /// The name of the Drone configuration file.
 pub const LAYOUT_CONFIG: &str = "layout.toml";
@@ -18,21 +19,21 @@ const ALIGN: u32 = 4;
 pub struct Layout {
     /// Flash memory regions.
     #[serde(default)]
-    pub flash: BTreeMap<String, Memory>,
+    pub flash: IndexMap<String, Memory>,
     /// RAM memory regions.
     #[serde(default)]
-    pub ram: BTreeMap<String, Memory>,
+    pub ram: IndexMap<String, Memory>,
     /// Combined BSS and DATA section.
     pub data: Data,
     /// Stack memory sections.
     #[serde(default)]
-    pub stack: BTreeMap<String, Section>,
+    pub stack: IndexMap<String, Section>,
     /// Stream memory sections.
     #[serde(default)]
-    pub stream: BTreeMap<String, FixedSection>,
+    pub stream: IndexMap<String, FixedSection>,
     /// Heap memory sections.
     #[serde(default)]
-    pub heap: BTreeMap<String, Heap>,
+    pub heap: IndexMap<String, Heap>,
     /// Additional linker options.
     #[serde(default)]
     pub linker: Linker,
@@ -422,7 +423,7 @@ fn calculate_flexible_sections(
 }
 
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
-fn calculate_pools(heaps: &mut BTreeMap<String, Heap>) -> Result<()> {
+fn calculate_pools(heaps: &mut IndexMap<String, Heap>) -> Result<()> {
     for (key, heap) in heaps {
         heap.pools.sort_unstable_by_key(|p| p.block);
         let fixed_size = heap.pools.iter().filter_map(|p| p.count.fixed()).sum::<u32>();

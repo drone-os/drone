@@ -1,0 +1,22 @@
+    .heap_<%- name %>_rt_init :
+    {
+        <% for pool in &pools { %>
+            LONG(<%- pool.size %>);
+            LONG(<%- pool.edge %>);
+            LONG(0);
+            LONG(<%- pool.uninit %>);
+        <% } %>
+    } > FLASH_PROGRAM
+    .heap_<%- name %>_rt <%- origin %> (NOLOAD) :
+    {
+        *(.heap_<%- name %>_rt);
+    } > RAM_<%- ram %>
+    .heap_<%- name %>_buf ADDR(.heap_<%- name %>_rt) + SIZEOF(.heap_<%- name %>_rt) (NOLOAD) :
+    {
+        . += <%- size %>;
+    } > RAM_<%- ram %>
+    HEAP_<%- uppercase_name %>_RT_LOAD = LOADADDR(.heap_<%- name %>_rt_init);
+    HEAP_<%- uppercase_name %>_RT_BASE = ADDR(.heap_<%- name %>_rt);
+    HEAP_<%- uppercase_name %>_RT_END = ADDR(.heap_<%- name %>_rt) + SIZEOF(.heap_<%- name %>_rt);
+    HEAP_<%- uppercase_name %>_BUF_BASE = ADDR(.heap_<%- name %>_buf);
+    HEAP_<%- uppercase_name %>_BUF_END = ADDR(.heap_<%- name %>_buf) + SIZEOF(.heap_<%- name %>_buf);

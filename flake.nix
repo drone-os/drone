@@ -32,8 +32,8 @@
         };
         rustFmtChannel = {
           channel = "nightly";
-          date = "2022-07-28";
-          sha256 = "YNNAzlp1G1bBPg3Jf+FLeJ6oLbeAUMnX072HtlgFz8M=";
+          date = "2022-09-18";
+          sha256 = "eYFYpSF2PBUJVzZGZrdtDMpVfHkypzTMLWotdEVq7eM=";
         };
 
         pkgs = nixpkgs.legacyPackages.${system};

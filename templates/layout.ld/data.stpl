@@ -1,0 +1,18 @@
+    .data <%- origin %> :
+    {
+        *(.data.*);
+        . = ALIGN(4);
+    } > RAM_<%- ram %> AT > FLASH_PROGRAM
+    DATA_LOAD = LOADADDR(.data);
+    DATA_BASE = ADDR(.data);
+    DATA_END = ADDR(.data) + SIZEOF(.data);
+
+    .bss ADDR(.data) + SIZEOF(.data) (NOLOAD) :
+    {
+        *(.sbss);
+        *(.bss.*);
+        *(COMMON);
+        . = ALIGN(4);
+    } > RAM_<%- ram %>
+    BSS_BASE = ADDR(.bss);
+    BSS_END = ADDR(.bss) + SIZEOF(.bss);

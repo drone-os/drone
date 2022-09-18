@@ -1,0 +1,12 @@
+    .stream_<%- name %>_rt <%- origin %> (NOLOAD) :
+    {
+        *(.stream_<%- name %>_rt);
+    } > RAM_<%- ram %>
+    .stream_<%- name %>_buf ADDR(.stream_<%- name %>_rt) + SIZEOF(.stream_<%- name %>_rt) (NOLOAD) :
+    {
+        . += <%- size %>;
+    } > RAM_<%- ram %>
+    STREAM_<%- uppercase_name %>_RT_BASE = ADDR(.stream_<%- name %>_rt);
+    STREAM_<%- uppercase_name %>_RT_END = ADDR(.stream_<%- name %>_rt) + SIZEOF(.stream_<%- name %>_rt);
+    STREAM_<%- uppercase_name %>_BUF_BASE = ADDR(.stream_<%- name %>_buf);
+    STREAM_<%- uppercase_name %>_BUF_END = ADDR(.stream_<%- name %>_buf) + SIZEOF(.stream_<%- name %>_buf);
