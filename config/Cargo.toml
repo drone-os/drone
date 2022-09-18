@@ -11,7 +11,11 @@ description = """
 Configuration for Drone, an Embedded Operating System.
 """
 
+[dependencies.drone-stream]
+version = "=0.15.0"
+path = "../stream"
+
 [dependencies]
-eyre = "0.6"
-serde = { version = "1", features = ["derive"] }
-toml_edit = { version = "0.14.4", features = ["easy"] }
+eyre = "0.6.8"
+serde = { version = "1.0.144", features = ["derive"] }
+toml = "0.5.9"

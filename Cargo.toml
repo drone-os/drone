@@ -32,33 +32,32 @@ CLI utility for Drone, an Embedded Operating System.
 [badges]
 maintenance = { status = "actively-developed" }
 
-[dependencies.drone-config]
-version = "=0.15.0"
-path = "config"
-
 [dependencies.drone-stream]
 version = "=0.15.0"
 path = "stream"
+
+[dependencies.drone-config]
+version = "=0.15.0"
+path = "config"
 
 [dependencies.drone-openocd]
 version = "=0.15.0"
 path = "openocd"
 
 [dependencies]
-ansi_term = "0.12"
-color-eyre = "0.6"
-eyre = "0.6"
-Inflector = "0.11"
-libc = "0.2"
-prettytable-rs = "0.8"
-regex = "1"
+ansi_term = "0.12.1"
+color-eyre = "0.6.2"
+eyre = "0.6.8"
+Inflector = "0.11.4"
+libc = "0.2.132"
+prettytable-rs = "0.9.0"
+regex = "1.6.0"
 sailfish = "0.4.0"
-serde_json = "1"
-serde = { version = "1", features = ["derive"] }
-structopt = "0.3"
-thiserror = "1"
-time = { version = "0.3", features = ["macros"] }
-toml_edit = "0.14.4"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["local-time"] }
-walkdir = "2"
+serde_json = "1.0.85"
+serde = { version = "1.0.144", features = ["derive"] }
+structopt = "0.3.26"
+thiserror = "1.0.35"
+time = { version = "0.3.14", features = ["macros"] }
+tracing = "0.1.36"
+tracing-subscriber = { version = "0.3.15", features = ["local-time"] }
+walkdir = "2.3.2"

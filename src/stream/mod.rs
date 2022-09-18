@@ -4,14 +4,14 @@ pub mod route;
 pub mod runtime;
 
 use self::route::{RouteDesc, Routes};
-use drone_config::{locate_project_root, Config, CONFIG_NAME};
+use drone_config::{locate_project_root, Layout, LAYOUT_CONFIG};
 use drone_openocd::{
     command_context, command_invocation, command_mode_COMMAND_EXEC, command_registration,
     command_run_line, get_current_target, register_commands, target,
     target_register_timer_callback, target_timer_type_TARGET_TIMER_TYPE_PERIODIC,
     target_unregister_timer_callback, COMMAND_REGISTRATION_DONE, ERROR_FAIL, ERROR_OK,
 };
-use drone_stream::{Runtime, HEADER_LENGTH, MIN_BUFFER_SIZE, STREAM_COUNT};
+use drone_stream::{Runtime, HEADER_LENGTH, STREAM_COUNT};
 use libc::c_void;
 use runtime::RemoteRuntime;
 use std::{
@@ -50,15 +50,12 @@ impl Stream {
                 return None;
             }
         };
-        match Config::read_from_project_root(&project_root) {
-            Ok(ref config @ Config { stream: Some(ref stream), .. })
-                if stream.size >= MIN_BUFFER_SIZE =>
-            {
+        match Layout::read_from_project_root(&project_root) {
+            Ok(Layout { ref stream, .. }) if stream.contains_key("core0") => {
                 match Routes::open_all(&route_descs) {
                     Ok(routes) => {
-                        let address = config.memory.ram.origin + config.memory.ram.size
-                            - config.heap.main.size
-                            - stream.size;
+                        let stream = stream.get("core0").unwrap();
+                        let address = stream.origin + stream.prefix_size;
                         let runtime = Runtime::from_enable_mask(make_enable_mask(&route_descs));
                         let buffer = vec![0; stream.size as usize];
                         return Some(Self { target, address, routes, runtime, buffer });
@@ -68,17 +65,11 @@ impl Stream {
                     }
                 }
             }
-            Ok(Config { stream: Some(stream), .. }) => {
-                error!(
-                    "Drone Stream buffer size of {} is less than the minimal buffer size of {}",
-                    stream.size, MIN_BUFFER_SIZE
-                );
-            }
-            Ok(Config { stream: None, .. }) => {
-                error!("[stream] section is not set in {CONFIG_NAME}");
+            Ok(_) => {
+                error!("{LAYOUT_CONFIG}: stream.core0 is not set");
             }
             Err(err) => {
-                error!("Couldn't parse {CONFIG_NAME}: {err:#?}");
+                error!("{err:#?}");
             }
         }
         None

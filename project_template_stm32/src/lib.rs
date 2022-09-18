@@ -14,9 +14,9 @@ pub mod thr;
 use drone_core::prelude::*;
 
 use drone_core::heap;
-use drone_<%- bindings_name %>_map::<%- bindings_name %>_reg_tokens;
+use drone_stm32_map::stm32_reg_tokens;
 
-<%- bindings_name %>_reg_tokens! {
+stm32_reg_tokens! {
     /// A set of tokens for all memory-mapped registers.
     index => pub Regs;
 
@@ -27,16 +27,13 @@ use drone_<%- bindings_name %>_map::<%- bindings_name %>_reg_tokens;
 }
 
 heap! {
-    // Heap configuration key in `Drone.toml`.
-    config => main;
-    /// The main heap allocator generated from the `Drone.toml`.
+    // Heap configuration key in `layout.toml`.
+    layout => core0;
+    /// The main heap allocator generated from the `layout.toml`.
     metadata => pub Heap;
-    // Use this heap as the global allocator.
-    global => true;
-    // Uncomment the following line to enable heap tracing feature:
+    /// The global allocator.
+    #[cfg_attr(not(feature = "std"), global_allocator)]
+    instance => pub HEAP;
+    ////// Uncomment the following line to enable heap tracing feature:
     // enable_trace_stream => 31;
 }
-
-/// The global allocator.
-#[cfg_attr(not(feature = "std"), global_allocator)]
-pub static HEAP: Heap = Heap::new();

@@ -3,7 +3,7 @@
 #![allow(missing_docs)]
 
 use crate::color::Color;
-use drone_config::parse_size;
+use drone_config::size;
 use eyre::Result;
 use serde::de;
 use std::{ffi::OsString, path::PathBuf};
@@ -30,10 +30,6 @@ pub enum Cmd {
     Flash(FlashCmd),
     /// Analyze or modify the heap layout
     Heap(HeapCmd),
-    /// Create a new Drone project in an existing directory
-    Init(InitCmd),
-    /// Print the list of all supported microcontrollers
-    ListSupported(ListSupportedCmd),
     /// Run unmodified OpenOCD process
     Openocd(OpenocdCmd),
     /// Run an arbitrary TCL script inside Drone OpenOCD context
@@ -71,8 +67,8 @@ pub struct HeapCmd {
     /// Heap configuration key.
     #[structopt(short, long, default_value = "main")]
     pub config: String,
-    /// Maximal size of the heap
-    #[structopt(short, long, parse(try_from_str = parse_size))]
+    /// Maximum size of the heap
+    #[structopt(short, long, parse(try_from_str = size::from_str))]
     pub size: Option<u32>,
     #[structopt(subcommand)]
     pub heap_sub_cmd: Option<HeapSubCmd>,
@@ -87,31 +83,9 @@ pub enum HeapSubCmd {
 #[derive(Debug, StructOpt)]
 pub struct HeapGenerateCmd {
     /// Number of pools
-    #[structopt(short, long, parse(try_from_str = parse_size))]
+    #[structopt(short, long)]
     pub pools: u32,
 }
-
-#[derive(Debug, StructOpt)]
-pub struct InitCmd {
-    /// Existing directory with a cargo project
-    #[structopt(default_value = ".", parse(from_os_str))]
-    pub path: PathBuf,
-    /// Target microcontroller family (run `drone list-supported` for the list
-    /// of all options)
-    #[structopt(short, long)]
-    pub device: String,
-    /// Flash memory size in bytes (e.g. 1M for 1 megabyte, 512K for 512
-    /// kilobytes, or hexadecimal 0xffK for 256 kilobytes)
-    #[structopt(short, long, parse(try_from_str = parse_size))]
-    pub flash_size: u32,
-    /// RAM size in bytes (e.g. 1M for 1 megabyte, 512K for 512 kilobytes, or
-    /// hexadecimal 0xffK for 256 kilobytes)
-    #[structopt(short, long, parse(try_from_str = parse_size))]
-    pub ram_size: u32,
-}
-
-#[derive(Debug, StructOpt)]
-pub struct ListSupportedCmd {}
 
 #[derive(Debug, StructOpt)]
 pub struct OpenocdCmd {

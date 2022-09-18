@@ -1,7 +1,7 @@
 //! Heap layout generation.
 
 use super::TraceMap;
-use drone_config::format_size;
+use drone_config::size;
 use eyre::Result;
 use std::io::Write;
 
@@ -57,17 +57,17 @@ pub fn optimize(trace: &TraceMap, size: u32, mut pools: u32) -> Result<(Vec<(u32
     Ok((output, frag))
 }
 
-/// Renders `[heap.<key>]` section for `Drone.toml`.
+/// Renders `[heap.<key>]` section for `layout.toml`.
 pub fn render(w: &mut impl Write, key: &str, layout: &[(u32, u32)]) -> Result<()> {
     let size = layout.iter().map(|(size, count)| size * count).sum::<u32>();
     writeln!(w, "[heap.{}]", key)?;
-    writeln!(w, "size = \"{}\"", format_size(size))?;
+    writeln!(w, "size = \"{}\"", size::to_string(size))?;
     writeln!(w, "pools = [")?;
     for (block, capacity) in layout {
         if *capacity == 0 {
             continue;
         }
-        writeln!(w, "    {{ block = \"{}\", capacity = {} }},", format_size(*block), capacity)?;
+        writeln!(w, "    {{ block = \"{block}\", capacity = {capacity} }},")?;
     }
     writeln!(w, "]")?;
     Ok(())

@@ -3,11 +3,11 @@
 #![no_std]
 
 use drone_core::{mem, stream, token::Token};
-use drone_<%- platform_name %>::cpu;
-use <%- crate_name %>::{
+use drone_cortexm::cpu;
+use drone_template_stm32::{
     tasks,
     thr::{ThrsInit, Vtable},
-    Regs,
+    Heap, Regs,
 };
 
 /// The vector table.
@@ -26,13 +26,18 @@ pub unsafe extern "C" fn reset() -> ! {
     // been in use before this line.
     unsafe { mem::bss_init() };
     // Fill the memory region for other mutable static variables with initial
-    // values from flash memory. This is safe because none of these variables
-    // have been in use before this line.
+    // values from the flash memory. This is safe because none of these
+    // variables have been in use before this line.
     unsafe { mem::data_init() };
-<% if fpu_init { %>    // Initialize the Floating Point Unit. This is safe because the unit has not
-    // been in use before this line.
-    unsafe { cpu::fpu_init(true) };
-<% } %>    // Initialize Drone Streams.
+    // Initialize the main heap allocator runtime with initial values from the
+    // flash memory. This is safe because the heap hasn't been in use before
+    // this line.
+    unsafe { Heap::init() };
+    ////// Uncomment the block below if your microcontroller has FPU.
+    // // Initialize the Floating Point Unit. This is safe because the unit has not
+    // // been in use before this line.
+    // unsafe { cpu::fpu_init(true) };
+    // Initialize Drone Stream.
     stream::init();
     // Run the root task.
     tasks::root(

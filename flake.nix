@@ -24,7 +24,7 @@
   };
 
   outputs = { self, utils, nixpkgs, naersk, fenix, openocd }:
-    utils.lib.eachDefaultSystem (system:
+    (utils.lib.eachDefaultSystem (system:
       let
         rustChannel = {
           channel = "1.63";
@@ -45,14 +45,13 @@
         nativeBuildInputs = with pkgs; [
           clang
         ];
-        rustToolchain = with fenix.packages.${system};
-          let toolchain = toolchainOf rustChannel; in
-          combine [
-            toolchain.rustc
-            toolchain.cargo
-            toolchain.clippy
-            toolchain.rust-src
-          ];
+        rustToolchain = with fenix.packages.${system}; combine
+          (with toolchainOf rustChannel; [
+            rustc
+            cargo
+            clippy
+            rust-src
+          ]);
         rustFmt = (fenix.packages.${system}.toolchainOf rustFmtChannel).rustfmt;
         rustAnalyzer = fenix.packages.${system}.rust-analyzer;
         naersk-lib = naersk.lib.${system}.override {
@@ -155,13 +154,15 @@
             Cargo.toml config/Cargo.toml stream/Cargo.toml openocd/Cargo.toml
           sed -i "/\[.*\]/h;/version = \"=.*\"/{x;s/\[.*drone-.*\]/version = \"=$1\"/;t;x}" \
             Cargo.toml
-          sed -i "s/\(const DRONE_VERSION: &str = \"\).*\(\";\)/\1$1\2/" \
-            src/project/cargo_toml.rs
+          sed -i "s/\(drone-.* = { version = \"\).*\(\"\)/\1$1\2/" \
+            project_template_*/Cargo.toml
+          sed -i "s/\(drone-os\/drone\/v\).*\(\";\)/\1$1\2/" \
+            project_template_*/flake.nix
         '';
 
         publishCrates = pkgs.writeShellScriptBin "publish-crates" ''
-          cd config && cargo publish
           cd stream && cargo publish
+          cd config && cargo publish
           cd openocd && cargo publish
           sleep 30
           cargo publish
@@ -191,5 +192,37 @@
           default = shell;
         };
       }
-    );
+    )) // {
+      templates =
+        let
+          welcomeText = ''
+            # Initialized a new Drone project
+
+            ## Next steps
+
+            * Run **git init && git add -A** to initialize a git repository
+
+            * Edit **Cargo.toml** and **src/main.rs** to change the default project name
+
+            * Edit **flake.nix** to configure your cross-compilation toolchain
+
+            * Edit **probe.tcl** to configure your debug probe
+
+            * Edit **layout.toml** to configure your microcontroller memory layout
+
+            * Edit **Cargo.toml** to add specific Drone packages for your microcontroller
+
+            * Run **direnv allow** (if you have `direnv` installed on your host) or **nix
+              shell** to load the project's Nix shell
+          '';
+        in
+        rec {
+          stm32 = {
+            path = ./project_template_stm32;
+            description = "STM32 Drone project template";
+            inherit welcomeText;
+          };
+          default = stm32;
+        };
+    };
 }

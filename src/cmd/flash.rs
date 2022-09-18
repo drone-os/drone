@@ -6,7 +6,7 @@ use crate::{
     openocd::{echo_colored, exit_with_openocd, openocd_main, Commands},
 };
 use ansi_term::Color::{Blue, Green};
-use drone_config::locate_project_root;
+use drone_config::{build_target, locate_project_root};
 use eyre::{eyre, Result};
 use std::{env, os::unix::prelude::*};
 use tracing::error;
@@ -45,7 +45,7 @@ fn locate_binary(
         .or_else(|_| env::var("CARGO_TARGET_DIR"))
         .unwrap_or_else(|_| "target".into());
     let select_profile = profile.or_else(|| release.then(|| "release".into()));
-    let target = root.join(target_dir).join(env::var("CARGO_BUILD_TARGET")?);
+    let target = root.join(target_dir).join(build_target()?);
     let mut binaries = Vec::new();
     for entry in target.read_dir()? {
         let entry = entry?;
@@ -77,7 +77,7 @@ fn locate_binary(
                 .unwrap_or(&path)
                 .to_path_buf()
                 .to_str()
-                .ok_or_else(|| eyre!("Non-unicode path to binary"))?
+                .ok_or_else(|| eyre!("non-unicode path to binary"))?
                 .to_string();
             binaries.push(path);
         }

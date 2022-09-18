@@ -109,7 +109,7 @@ impl TryFrom<&[u8]> for RouteDesc {
                 let number = String::from_utf8(stream.to_vec())?.parse()?;
                 if number >= STREAM_COUNT.into() {
                     bail!(
-                        "Stream number {number} exceeds the maximum number of streams \
+                        "stream number {number} exceeds the maximum number of streams \
                          {STREAM_COUNT}"
                     );
                 }

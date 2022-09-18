@@ -1,0 +1,36 @@
+[package]
+name = "drone-template-stm32"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+test = false
+doc = false
+
+[features]
+default = []
+std = [
+    "futures/std",
+    ### When you add additional Drone crates, link their `std` features here:
+    "drone-core/std",
+    "drone-cortexm/std",
+    "drone-stm32-map/std",
+]
+
+[dependencies]
+futures = { version = "0.3.24", default-features = false }
+### Versions of these Drone crates must be kept in sync with the `drone` crate
+### in flake.nix
+drone-core = { version = "0.15.0" }
+### Add additional Drone crates specific to your microcontroller here. Some
+### crates may require setting additional Rust flags in flake.nix. Refer to
+### crates documentations for details.
+drone-cortexm = { version = "0.15.0", features = ["bit-band"] }
+drone-stm32-map = { version = "0.15.0", features = ["dma", "gpio", "spi", "tim"] }
+
+[profile.release]
+lto = true
+debug = true
+panic = "abort"

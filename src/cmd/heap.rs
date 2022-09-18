@@ -7,7 +7,8 @@ use crate::{
     heap::TraceMap,
 };
 use ansi_term::Color::{Cyan, Yellow};
-use drone_config::{self as config, format_size};
+use config::AbsoluteMemorySize;
+use drone_config::{self as config, LAYOUT_CONFIG};
 use eyre::{eyre, Result};
 use prettytable::{cell, format, row, Table};
 use std::{
@@ -18,20 +19,20 @@ use std::{
 /// Runs `drone heap` command.
 pub fn run(cmd: HeapCmd, color: Color) -> Result<()> {
     let HeapCmd { trace_file, config: heap_config, size, heap_sub_cmd } = cmd;
-    let size = if let Some(size) = size {
+    let size = if let Some(AbsoluteMemorySize(size)) = size {
         size
     } else {
         let project_root = config::locate_project_root()?;
-        let config = config::Config::read_from_project_root(&project_root)?;
+        let config = config::Layout::read_from_project_root(&project_root)?;
         if heap_config == "main" {
-            config.heap.main.size
+            config.heap.main.size.unwrap_absolute()
         } else {
             config
                 .heap
                 .extra
                 .get(&heap_config)
-                .map(|heap| heap.block.size)
-                .ok_or_else(|| eyre!("Heap not exists: {}", heap_config))?
+                .map(|heap| heap.block.size.unwrap_absolute())
+                .ok_or_else(|| eyre!("heap not exists: {}", heap_config))?
         }
     };
     let mut trace = TraceMap::new();
@@ -81,7 +82,7 @@ pub fn generate(
             color.bold(&format!("{} / {:.2}%", frag, f64::from(frag) / f64::from(size) * 100.0))
         );
         eprintln!(
-            "# {}: replace the existing [heap.{}] section in Drone.toml",
+            "# {}: replace the existing [heap.{}] section in {LAYOUT_CONFIG}",
             color.bold_fg("hint", Cyan),
             config
         );
@@ -100,7 +101,7 @@ fn print_table(trace: &TraceMap, size: u32, color: Color) -> Result<()> {
     let mut used = 0;
     for (size, entry) in trace {
         table.add_row(row![
-            r->format_size(*size),
+            r->AbsoluteMemorySize(*size).to_string(),
             r->entry.max,
             r->entry.total,
         ]);

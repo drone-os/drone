@@ -1,7 +1,7 @@
 MEMORY
 {
-<% for block in memory { %>
-    <%- block.name %> (<%- block.mode %>) : ORIGIN = <%- block.origin %>, LENGTH = <%- block.length %>
+<% for memory in memories { %>
+    <%- memory.name %> (<%- memory.mode %>) : ORIGIN = <%- memory.origin %>, LENGTH = <%- memory.length %>
 <% } %>
 }
 
@@ -9,24 +9,17 @@ ENTRY(reset);
 
 SECTIONS
 {
-<% if stage_one { %>
-    STACK_POINTER = ORIGIN(RAM);
-<% } else { %>
-    STACK_POINTER = ORIGIN(RAM) + LENGTH(RAM)
-        - _data_section_size
-        - _bss_section_size
-        - _stream_rt_section_size
-        - _stream_buffer_section_size
-        - _heap_section_size;
+<% for stack_pointer in stack_pointers { %>
+    STACK_POINTER_<%- stack_pointer.name %> = <%- stack_pointer.address %>;
 <% } %>
 
 <% if platform == "arm" { %>
-    .vtable ORIGIN(FLASH) :
+    .vtable ORIGIN(FLASH_PROGRAM) :
     {
-        LONG(STACK_POINTER);
+        LONG(STACK_POINTER_CORE_0);
         KEEP(*(.rodata.VTABLE));
         . = ALIGN(4);
-    } > FLASH
+    } > FLASH_PROGRAM
 <% } %>
 
     .text :
@@ -34,19 +27,37 @@ SECTIONS
         *(.text.reset);
         *(.text.*);
         . = ALIGN(4);
-    } > FLASH
+    } > FLASH_PROGRAM
 
     .rodata :
     {
         *(.rodata.*);
         . = ALIGN(4);
-    } > FLASH
+    } > FLASH_PROGRAM
 
-    .data STACK_POINTER :
+<% for stream in streams { %>
+    .stream_<%- stream.name %>_rt <%- stream.origin %> (NOLOAD) :
+    {
+        *(.stream_<%- stream.name %>_rt);
+    } > RAM_<%- stream.ram %>
+    .stream_<%- stream.name %>_buf ADDR(.stream_<%- stream.name %>_rt) + SIZEOF(.stream_<%- stream.name %>_rt) (NOLOAD) :
+    {
+        . += <%- stream.size %>;
+    } > RAM_<%- stream.ram %>
+    STREAM_<%- stream.uppercase_name %>_RT_BASE = ADDR(.stream_<%- stream.name %>_rt);
+    STREAM_<%- stream.uppercase_name %>_RT_END = ADDR(.stream_<%- stream.name %>_rt) + SIZEOF(.stream_<%- stream.name %>_rt);
+    STREAM_<%- stream.uppercase_name %>_BUF_BASE = ADDR(.stream_<%- stream.name %>_buf);
+    STREAM_<%- stream.uppercase_name %>_BUF_END = ADDR(.stream_<%- stream.name %>_buf) + SIZEOF(.stream_<%- stream.name %>_buf);
+<% } %>
+
+    .data <%- data_origin %> :
     {
         *(.data.*);
         . = ALIGN(4);
-    } > RAM AT > FLASH
+    } > RAM_<%- data_ram %> AT > FLASH_PROGRAM
+    DATA_LOAD = LOADADDR(.data);
+    DATA_BASE = ADDR(.data);
+    DATA_END = ADDR(.data) + SIZEOF(.data);
 
     .bss ADDR(.data) + SIZEOF(.data) (NOLOAD) :
     {
@@ -54,35 +65,34 @@ SECTIONS
         *(.bss.*);
         *(COMMON);
         . = ALIGN(4);
-    } > RAM
+    } > RAM_<%- data_ram %>
+    BSS_BASE = ADDR(.bss);
+    BSS_END = ADDR(.bss) + SIZEOF(.bss);
 
-    .stream_rt ADDR(.bss) + SIZEOF(.bss) (NOLOAD) :
+<% for heap in heaps { %>
+    .heap_<%- heap.name %>_rt_init :
     {
-        *(.stream_rt.*);
-        . = ALIGN(4);
-    } > RAM
-
-    .stream_buffer ADDR(.stream_rt) + SIZEOF(.stream_rt) (NOLOAD) :
+        <% for pool in &heap.pools { %>
+            LONG(<%- pool.size %>);
+            LONG(<%- pool.edge %>);
+            LONG(0);
+            LONG(<%- pool.uninit %>);
+        <% } %>
+    } > FLASH_PROGRAM
+    .heap_<%- heap.name %>_rt <%- heap.origin %> (NOLOAD) :
     {
-        . += <%- stream_size %>;
-        . = ALIGN(4);
-    } > RAM
-
-    .heap ADDR(.stream_buffer) + SIZEOF(.stream_buffer) (NOLOAD) :
+        *(.heap_<%- heap.name %>_rt);
+    } > RAM_<%- heap.ram %>
+    .heap_<%- heap.name %>_buf ADDR(.heap_<%- heap.name %>_rt) + SIZEOF(.heap_<%- heap.name %>_rt) (NOLOAD) :
     {
-        . += <%- main_heap_size %>;
-        . = ALIGN(4);
-    } > RAM
-
-    DATA_LOAD = LOADADDR(.data);
-    DATA_START = ADDR(.data);
-    DATA_END = ADDR(.data) + SIZEOF(.data);
-    BSS_START = ADDR(.bss);
-    BSS_END = ADDR(.bss) + SIZEOF(.bss) + SIZEOF(.stream_rt);
-    STREAM_START = ADDR(.stream_buffer);
-    STREAM_END = ADDR(.stream_buffer) + SIZEOF(.stream_buffer);
-    HEAP_START = ADDR(.heap);
-    HEAP_END = ADDR(.heap) + SIZEOF(.heap);
+        . += <%- heap.size %>;
+    } > RAM_<%- heap.ram %>
+    HEAP_<%- heap.uppercase_name %>_RT_LOAD = LOADADDR(.heap_<%- heap.name %>_rt_init);
+    HEAP_<%- heap.uppercase_name %>_RT_BASE = ADDR(.heap_<%- heap.name %>_rt);
+    HEAP_<%- heap.uppercase_name %>_RT_END = ADDR(.heap_<%- heap.name %>_rt) + SIZEOF(.heap_<%- heap.name %>_rt);
+    HEAP_<%- heap.uppercase_name %>_BUF_BASE = ADDR(.heap_<%- heap.name %>_buf);
+    HEAP_<%- heap.uppercase_name %>_BUF_END = ADDR(.heap_<%- heap.name %>_buf) + SIZEOF(.heap_<%- heap.name %>_buf);
+<% } %>
 
     /DISCARD/ :
     {

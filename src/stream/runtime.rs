@@ -1,7 +1,7 @@
 //! Drone Stream runtime.
 //!
 //! This module provides access to the special area in the application memory
-//! for storing the runtime state of Drone Streams.
+//! for storing the runtime state of Drone Stream.
 
 use drone_openocd::{
     target, target_read_buffer, target_read_u32, target_write_buffer, target_write_u32, ERROR_FAIL,

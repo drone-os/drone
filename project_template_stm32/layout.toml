@@ -1,0 +1,43 @@
+[flash]
+### Region of the flash memory where the program code is stored.
+program = { origin = 0x08000000, size = "128K" }
+
+[ram]
+### There can be multiple SRAM banks in a microcontroller. List them here and
+### then refer to them by name in the next sections.
+main = { origin = 0x20000000, size = "20K" }
+
+[data]
+### Section for program's global variables resides in "main" RAM region.
+ram = "main"
+
+[stack.core0]
+### Stack memory for core 0 resides in "main" RAM region and has a fixed size
+### of 2 kilobytes.
+ram = "main"
+size = "4K"
+
+[stream.core0]
+### Drone Stream buffer for core 0 resides in "main" RAM region and has a size
+### of 260 bytes.
+ram = "main"
+size = "260"
+
+[heap.core0]
+### Dynamic heap memory for core 0 resides in "main" RAM region and expands to
+### the rest of the region.
+ram = "main"
+size = "100%"
+### There are multiple pools of different block sizes. "count" can be an
+### absolute number of blocks in the pool, or a relative number, which
+### represents a portion of the whole heap.
+pools = [
+    { block = "4", count = "4.61%" },
+    { block = "8", count = "11.37%" },
+    { block = "20", count = "15.88%" },
+    { block = "56", count = "18.14%" },
+    { block = "116", count = "18.14%" },
+    { block = "208", count = "15.88%" },
+    { block = "336", count = "11.37%" },
+    { block = "512", count = "4.61%" },
+]

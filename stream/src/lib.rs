@@ -27,8 +27,9 @@ pub const MAX_TRANSACTION_LENGTH: u32 = 256;
 /// Minimal buffer size in bytes.
 #[allow(clippy::cast_possible_truncation)]
 pub const MIN_BUFFER_SIZE: u32 = {
-    let mut size = (BOOTSTRAP_SEQUENCE_LENGTH + size_of::<Runtime>()) as u32;
-    size += HEADER_LENGTH + MAX_TRANSACTION_LENGTH;
+    let bootstrap_size = (BOOTSTRAP_SEQUENCE_LENGTH + size_of::<Runtime>()) as u32;
+    let transaction_size = HEADER_LENGTH + MAX_TRANSACTION_LENGTH;
+    let size = if bootstrap_size > transaction_size { bootstrap_size } else { transaction_size };
     (size / 4 + (size % 4 != 0) as u32) * 4
 };
 

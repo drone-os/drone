@@ -1,7 +1,7 @@
 #![warn(clippy::pedantic)]
 
-use drone::template;
-use drone_config::{locate_project_root, locate_target_root, Config};
+use drone::templates;
+use drone_config::{locate_project_root, locate_target_root, Layout};
 use eyre::{bail, Result, WrapErr};
 use std::{
     collections::HashMap,
@@ -15,39 +15,39 @@ use walkdir::WalkDir;
 
 fn main() -> Result<()> {
     let args = env::args_os().skip(1).collect::<Vec<_>>();
-    let project_root = locate_project_root()?;
-    let config = Config::read_from_project_root(&project_root)?;
-    let target = locate_target_root(&project_root)?;
-    fs::create_dir_all(&target)?;
-
     if let Some(output_position) = args.iter().position(|arg| arg == "-o") {
-        let script = target.join("layout.ld.1");
-        template::layout_ld::render(&script, true, &config)
-            .wrap_err("Rendering stage one linker script")?;
-        run_linker(&script, &args, &[]).wrap_err("Running stage one linker")?;
+        let project_root = locate_project_root()?;
+        let mut layout = Layout::read_from_project_root(&project_root)?;
+        let target = locate_target_root(&project_root)?;
+        let script = target.join("layout.ld");
+        let toml = target.join("layout.toml");
+        fs::create_dir_all(&target)?;
 
-        let syms = run_size(&args[output_position + 1])
-            .wrap_err("Checking section sizes")?
-            .into_iter()
-            .map(|(name, size)| format!("--defsym=_{}_section_size={}", name, size))
-            .collect::<Vec<_>>();
+        templates::layout_ld::render(&script, &layout)
+            .wrap_err("rendering stage one linker script")?;
+        layout.write(&toml).wrap_err("serializing calculated layout")?;
+        run_linker(&script, &args).wrap_err("running stage one linker")?;
 
-        let script = target.join("layout.ld.2");
-        template::layout_ld::render(&script, false, &config)
-            .wrap_err("Rendering stage two linker script")?;
-        run_linker(&script, &args, &syms).wrap_err("Running stage two linker")?;
+        let sections = run_size(&args[output_position + 1]).wrap_err("checking section sizes")?;
+        let data_size = sections.get("data").unwrap_or(&0);
+        let bss_size = sections.get("bss").unwrap_or(&0);
+        layout.calculate(Some(data_size + bss_size))?;
+
+        templates::layout_ld::render(&script, &layout)
+            .wrap_err("rendering stage two linker script")?;
+        layout.write(&toml).wrap_err("serializing calculated layout")?;
+        run_linker(&script, &args).wrap_err("running stage two linker")?;
     }
 
     Ok(())
 }
 
-fn run_linker(script: &Path, args: &[OsString], syms: &[String]) -> Result<()> {
+fn run_linker(script: &Path, args: &[OsString]) -> Result<()> {
     let program = "rust-lld";
     let mut command = Command::new(search_rust_tool(program)?);
     command.arg("-flavor").arg("gnu");
     command.arg("-T").arg(script);
     command.args(args);
-    command.args(syms);
     let status = command.status()?;
     check_status(program, status)?;
     Ok(())
@@ -84,7 +84,7 @@ fn search_rust_tool(tool: &str) -> Result<PathBuf> {
             return Ok(entry.into_path());
         }
     }
-    bail!("Couldn't find `{}`", tool);
+    bail!("couldn't find `{}`", tool);
 }
 
 fn check_status(program: &str, status: ExitStatus) -> Result<()> {

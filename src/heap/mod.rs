@@ -44,7 +44,7 @@ pub fn read_trace(trace: &mut TraceMap, trace_file: File, max_size: u32) -> Resu
 
 fn alloc(trace: &mut TraceMap, size: u32, max_size: u32) -> Result<()> {
     if size > max_size {
-        bail!("Trace file is corrupted");
+        bail!("trace file is corrupted");
     }
     let entry = trace.entry(size).or_default();
     entry.cur += 1;
@@ -58,7 +58,7 @@ fn alloc(trace: &mut TraceMap, size: u32, max_size: u32) -> Result<()> {
 fn dealloc(trace: &mut TraceMap, size: u32) -> Result<()> {
     let entry = trace.entry(size).or_default();
     if entry.cur == 0 {
-        bail!("Trace file is corrupted");
+        bail!("trace file is corrupted");
     }
     entry.cur -= 1;
     Ok(())
