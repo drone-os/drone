@@ -14,7 +14,10 @@ use structopt::StructOpt;
 pub struct Cli {
     /// Pass many times for more log output
     #[structopt(long, short, parse(from_occurrences))]
-    pub verbosity: u64,
+    pub verbose: u64,
+    /// Pass many times for less log output
+    #[structopt(long, short, parse(from_occurrences))]
+    pub quiet: u64,
     /// Coloring: auto, always, never
     #[structopt(long, default_value = "auto", parse(try_from_str = de_from_str))]
     pub color: Color,

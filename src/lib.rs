@@ -52,26 +52,28 @@ pub mod templates;
 
 use self::cli::{Cli, Cmd};
 use eyre::Result;
-use time::macros::format_description;
+use time::{macros::format_description, UtcOffset};
 use tracing::{trace, Level};
-use tracing_subscriber::fmt::time::LocalTime;
+use tracing_subscriber::fmt::time::OffsetTime;
 
 impl Cli {
     /// Runs the program.
     pub fn run(self) -> Result<()> {
         color_eyre::install()?;
-        let Self { cmd, color, verbosity } = self;
+        let Self { cmd, color, verbose, quiet } = self;
         tracing_subscriber::fmt()
-            .with_max_level(match verbosity {
+            .with_max_level(match 2_u64.saturating_add(verbose).saturating_sub(quiet) {
                 0 => Level::ERROR,
                 1 => Level::WARN,
                 2 => Level::INFO,
                 3 => Level::DEBUG,
                 _ => Level::TRACE,
             })
-            .with_timer(LocalTime::new(format_description!(
-                "[hour]:[minute]:[second].[subsecond digits:3]"
-            )))
+            .with_timer(OffsetTime::new(
+                UtcOffset::current_local_offset()?,
+                format_description!("[hour]:[minute]:[second].[subsecond digits:3]"),
+            ))
+            .with_target(false)
             .init();
         trace!("Logger initialized");
         match cmd {

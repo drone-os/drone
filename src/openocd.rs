@@ -7,20 +7,24 @@ use drone_openocd::{
     command_mode_COMMAND_CONFIG, command_set_output_handler, configuration_output_handler,
     dap_cleanup_all, exit_on_signal, flash_free_all_banks, free_config, gdb_service_free,
     ioutil_init, openocd_thread, server_free, server_host_os_close, server_host_os_entry,
-    setup_command_handler, stderr, stdout, unregister_all_commands, util_init, ERROR_FAIL,
-    ERROR_OK, EXIT_FAILURE,
+    set_log_output, setup_command_handler, stderr, stdout, unregister_all_commands, util_init,
+    ERROR_FAIL, ERROR_OK, EXIT_FAILURE,
 };
 use eyre::{bail, Result};
-use libc::{setvbuf, _IONBF};
+use libc::{fdopen, pipe, setvbuf, FILE, _IONBF};
 use std::{
     convert::TryInto,
-    ffi::{CString, OsString},
+    ffi::{CStr, CString, OsString},
+    fs::File,
+    io,
+    io::{prelude::*, BufReader},
     iter,
     os::unix::prelude::*,
     path::PathBuf,
     process::exit,
-    ptr, str,
+    ptr, str, thread,
 };
+use tracing::{debug, error, info, warn};
 
 /// Possible names of the OpenOCD configuration file.
 pub const CONFIG_NAMES: &[&str] = &["probe.tcl", "probe/config.tcl"];
@@ -51,6 +55,8 @@ pub fn exit_with_openocd(
 #[allow(clippy::cast_possible_wrap)]
 pub unsafe extern "C" fn openocd_main(argc: i32, argv: *mut *mut i8) -> i32 {
     unsafe {
+        set_log_output(ptr::null_mut(), capture_log_output().cast());
+
         let cmd_ctx = setup_command_handler(ptr::null_mut());
 
         if util_init(cmd_ctx) != ERROR_OK as i32 {
@@ -97,6 +103,34 @@ pub unsafe extern "C" fn openocd_main(argc: i32, argv: *mut *mut i8) -> i32 {
 
         ret
     }
+}
+
+fn capture_log_output() -> *mut FILE {
+    let input;
+    let output;
+    unsafe {
+        let mut fds = [0, 0];
+        if pipe(fds.as_mut_ptr()) == 0 {
+            input = File::from_raw_fd(fds[0]);
+            output = fdopen(fds[1], CStr::from_bytes_with_nul(b"w\0").unwrap().as_ptr());
+        } else {
+            panic!("couldn't create a pipe: {}", io::Error::last_os_error());
+        }
+    }
+    thread::spawn(|| {
+        for line in BufReader::new(input).lines() {
+            let line = line.expect("error reading from log pipe");
+            match line.get(0..7).map(|level| (level, &line[7..])) {
+                Some(("User : ", line)) => info!("{line}"),
+                Some(("Error: ", line)) => error!("{line}"),
+                Some(("Warn : ", line)) => warn!("{line}"),
+                Some(("Info : ", line)) => info!("{line}"),
+                Some(("Debug: ", line)) => debug!("{line}"),
+                _ => info!("{line}"),
+            }
+        }
+    });
+    output
 }
 
 /// OpenOCD commands list.
