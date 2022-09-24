@@ -1,12 +1,11 @@
 //! `drone stream` command.
 
-use crate::{
-    cli::StreamCmd,
-    color::Color,
-    openocd::{echo_colored, exit_with_openocd, openocd_main, Commands},
-};
 use ansi_term::Color::Green;
 use eyre::Result;
+
+use crate::cli::StreamCmd;
+use crate::color::Color;
+use crate::openocd::{echo_colored, exit_with_openocd, openocd_main, Commands};
 
 /// Runs `drone stream` command.
 pub fn run(cmd: StreamCmd, color: Color) -> Result<()> {

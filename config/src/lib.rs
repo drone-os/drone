@@ -8,20 +8,19 @@ pub mod addr;
 pub mod layout;
 pub mod size;
 
-pub use crate::layout::{Layout, LAYOUT_CONFIG};
+use std::env;
+use std::env::VarError;
+use std::ffi::OsStr;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use std::mem::size_of;
+use std::os::unix::prelude::*;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+
 pub use eyre::{bail, eyre, Result, WrapErr};
 
-use std::{
-    env,
-    env::VarError,
-    ffi::OsStr,
-    fs::File,
-    io::{BufRead, BufReader},
-    mem::size_of,
-    os::unix::prelude::*,
-    path::{Path, PathBuf},
-    process::Command,
-};
+pub use crate::layout::{Layout, LAYOUT_CONFIG};
 
 /// Memory size of one heap pool metadata.
 pub const HEAP_POOL_SIZE: u32 = 16;

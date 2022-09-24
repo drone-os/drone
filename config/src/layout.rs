@@ -1,11 +1,14 @@
 //! `layout.toml` config file for project memory layout.
 
-use crate::{addr, size, HEAP_POOL_SIZE, STREAM_RUNTIME_SIZE};
+use std::path::Path;
+use std::{env, fs, mem};
+
 use drone_stream::MIN_BUFFER_SIZE;
 use eyre::{bail, eyre, Result, WrapErr};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use std::{env, fs, mem, path::Path};
+
+use crate::{addr, size, HEAP_POOL_SIZE, STREAM_RUNTIME_SIZE};
 
 /// The name of the Drone configuration file.
 pub const LAYOUT_CONFIG: &str = "layout.toml";

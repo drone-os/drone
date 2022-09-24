@@ -1,16 +1,14 @@
 #![warn(clippy::pedantic)]
 
+use std::collections::HashMap;
+use std::ffi::{OsStr, OsString};
+use std::path::{Path, PathBuf};
+use std::process::{Command, ExitStatus};
+use std::{env, fs};
+
 use drone::templates;
 use drone_config::{locate_project_root, locate_target_root, Layout};
 use eyre::{bail, Result, WrapErr};
-use std::{
-    collections::HashMap,
-    env,
-    ffi::{OsStr, OsString},
-    fs,
-    path::{Path, PathBuf},
-    process::{Command, ExitStatus},
-};
 use walkdir::WalkDir;
 
 fn main() -> Result<()> {

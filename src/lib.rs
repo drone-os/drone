@@ -50,11 +50,13 @@ pub mod openocd;
 pub mod stream;
 pub mod templates;
 
-use self::cli::{Cli, Cmd};
 use eyre::Result;
-use time::{macros::format_description, UtcOffset};
+use time::macros::format_description;
+use time::UtcOffset;
 use tracing::{trace, Level};
 use tracing_subscriber::fmt::time::OffsetTime;
+
+use self::cli::{Cli, Cmd};
 
 const DEFAULT_LOG_LEVEL: i8 = 2;
 

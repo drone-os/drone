@@ -1,8 +1,10 @@
 //! `drone openocd` command.
 
-use crate::{cli::OpenocdCmd, openocd::exit_with_openocd};
 use drone_openocd::openocd_main;
 use eyre::Result;
+
+use crate::cli::OpenocdCmd;
+use crate::openocd::exit_with_openocd;
 
 /// Runs `drone openocd` command.
 pub fn run(cmd: OpenocdCmd) -> Result<()> {

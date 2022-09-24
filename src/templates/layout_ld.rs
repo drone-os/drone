@@ -1,10 +1,13 @@
 //! Linker script.
 
+use std::collections::BTreeMap;
+use std::fs;
+use std::path::Path;
+
 use drone_config::{addr, build_target, size, Layout};
 use eyre::{bail, Result};
 use heck::{AsShoutySnakeCase, ToShoutySnakeCase};
 use sailfish::TemplateOnce;
-use std::{collections::BTreeMap, fs, path::Path};
 
 #[derive(TemplateOnce)]
 #[template(path = "layout.ld/outer.stpl")]

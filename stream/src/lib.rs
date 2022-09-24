@@ -14,7 +14,9 @@ pub const BOOTSTRAP_SEQUENCE_LENGTH: usize = 16;
 
 /// Sequence to bootstrap Drone Stream runtime immediately after reset.
 // Generated with the following command:
-// rust-script --dep rand -e 'use rand::Rng; let mut a = [0_u8; 16]; rand::thread_rng().fill(&mut a); println!("{:?}", a)'
+//
+// rust-script --dep rand -e 'use rand::Rng; let mut a = [0_u8; 16]; \
+// rand::thread_rng().fill(&mut a); println!("{:?}", a)'
 pub const BOOTSTRAP_SEQUENCE: [u8; BOOTSTRAP_SEQUENCE_LENGTH] =
     [41, 139, 234, 244, 56, 213, 238, 162, 226, 175, 62, 199, 229, 177, 168, 74];
 

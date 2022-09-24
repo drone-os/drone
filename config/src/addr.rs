@@ -1,7 +1,9 @@
 //! Memory address values.
 
+use std::num::ParseIntError;
+use std::str::FromStr;
+
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::{num::ParseIntError, str::FromStr};
 
 /// Serializes `u32` as a memory address string.
 pub fn serialize<S: Serializer>(size: &u32, serializer: S) -> Result<S::Ok, S::Error> {

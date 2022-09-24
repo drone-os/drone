@@ -1,9 +1,11 @@
 //! Heap layout generation.
 
-use super::TraceMap;
+use std::io::Write;
+
 use drone_config::size;
 use eyre::Result;
-use std::io::Write;
+
+use super::TraceMap;
 
 const WORD_SIZE: u32 = 4;
 

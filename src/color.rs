@@ -1,8 +1,9 @@
 //! ANSI colors.
 
+use std::env;
+
 use ansi_term::{Colour, Style};
 use serde::Deserialize;
-use std::env;
 
 /// Color preference of the user.
 #[derive(Clone, Copy, Deserialize, Debug)]

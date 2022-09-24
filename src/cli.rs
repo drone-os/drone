@@ -2,12 +2,15 @@
 
 #![allow(missing_docs)]
 
-use crate::color::Color;
+use std::ffi::OsString;
+use std::path::PathBuf;
+
 use drone_config::size;
 use eyre::Result;
 use serde::de;
-use std::{ffi::OsString, path::PathBuf};
 use structopt::StructOpt;
+
+use crate::color::Color;
 
 /// Drone OS command line utility.
 #[derive(Debug, StructOpt)]

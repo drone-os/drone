@@ -3,7 +3,13 @@
 pub mod route;
 pub mod runtime;
 
-use self::route::{RouteDesc, Routes};
+use std::ffi::{CStr, CString};
+use std::iter::FusedIterator;
+use std::os::raw::c_int;
+use std::sync::atomic::{AtomicPtr, Ordering};
+use std::time::Duration;
+use std::{ptr, slice};
+
 use drone_config::{locate_project_root, Layout};
 use drone_openocd::{
     command_context, command_invocation, command_mode_COMMAND_EXEC, command_registration,
@@ -14,15 +20,9 @@ use drone_openocd::{
 use drone_stream::{Runtime, HEADER_LENGTH, STREAM_COUNT};
 use libc::c_void;
 use runtime::RemoteRuntime;
-use std::{
-    ffi::{CStr, CString},
-    iter::FusedIterator,
-    os::raw::c_int,
-    ptr, slice,
-    sync::atomic::{AtomicPtr, Ordering},
-    time::Duration,
-};
 use tracing::{error, warn};
+
+use self::route::{RouteDesc, Routes};
 
 const POLLING_INTERVAL: Duration = Duration::from_millis(50);
 
