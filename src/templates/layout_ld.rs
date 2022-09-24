@@ -10,7 +10,6 @@ use std::{collections::BTreeMap, fs, path::Path};
 #[template(path = "layout.ld/outer.stpl")]
 struct LayoutLd<'a> {
     memories: Vec<Memory>,
-    stack_pointers: Vec<StackPointer>,
     sections: BTreeMap<u32, String>,
     platform: &'static str,
     include: &'a [String],
@@ -23,9 +22,14 @@ struct Memory {
     length: String,
 }
 
-struct StackPointer {
-    name: String,
-    address: String,
+#[derive(TemplateOnce)]
+#[template(path = "layout.ld/stack.stpl")]
+struct Stack<'a> {
+    name: &'a str,
+    uppercase_name: String,
+    origin: String,
+    size: String,
+    ram: String,
 }
 
 #[derive(TemplateOnce)]
@@ -46,6 +50,12 @@ struct Heap<'a> {
     pools: Vec<Pool>,
 }
 
+struct Pool {
+    size: String,
+    edge: String,
+    uninit: String,
+}
+
 #[derive(TemplateOnce)]
 #[template(path = "layout.ld/stream.stpl")]
 struct Stream<'a> {
@@ -56,21 +66,15 @@ struct Stream<'a> {
     ram: String,
 }
 
-struct Pool {
-    size: String,
-    edge: String,
-    uninit: String,
-}
-
 /// Creates a new linker script.
 pub fn render(path: &Path, layout: &Layout) -> Result<()> {
     let mut sections = BTreeMap::new();
     render_stream_sections(&mut sections, layout);
     render_data_sections(&mut sections, layout);
     render_heap_sections(&mut sections, layout);
+    render_stacks(&mut sections, layout);
     let ctx = LayoutLd {
         memories: render_memories(layout),
-        stack_pointers: render_stack_pointers(layout),
         sections,
         platform: get_platform()?,
         include: &layout.linker.include,
@@ -99,15 +103,17 @@ fn render_memories(layout: &Layout) -> Vec<Memory> {
     memories
 }
 
-fn render_stack_pointers(layout: &Layout) -> Vec<StackPointer> {
-    let mut stack_pointers = Vec::new();
+fn render_stacks(sections: &mut BTreeMap<u32, String>, layout: &Layout) {
     for (name, stack) in &layout.stack {
-        stack_pointers.push(StackPointer {
-            name: name.to_shouty_snake_case(),
-            address: addr::to_string(stack.origin + stack.fixed_size),
-        });
+        let ctx = Stack {
+            name,
+            uppercase_name: name.to_shouty_snake_case(),
+            origin: addr::to_string(stack.origin),
+            size: size::to_string(stack.fixed_size),
+            ram: stack.ram.to_shouty_snake_case(),
+        };
+        sections.insert(stack.origin, ctx.render_once().unwrap());
     }
-    stack_pointers
 }
 
 fn render_data_sections(sections: &mut BTreeMap<u32, String>, layout: &Layout) {

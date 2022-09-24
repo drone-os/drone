@@ -56,26 +56,14 @@ use time::{macros::format_description, UtcOffset};
 use tracing::{trace, Level};
 use tracing_subscriber::fmt::time::OffsetTime;
 
+const DEFAULT_LOG_LEVEL: i8 = 2;
+
 impl Cli {
     /// Runs the program.
     pub fn run(self) -> Result<()> {
-        color_eyre::install()?;
         let Self { cmd, color, verbose, quiet } = self;
-        tracing_subscriber::fmt()
-            .with_max_level(match 2_u64.saturating_add(verbose).saturating_sub(quiet) {
-                0 => Level::ERROR,
-                1 => Level::WARN,
-                2 => Level::INFO,
-                3 => Level::DEBUG,
-                _ => Level::TRACE,
-            })
-            .with_timer(OffsetTime::new(
-                UtcOffset::current_local_offset()?,
-                format_description!("[hour]:[minute]:[second].[subsecond digits:3]"),
-            ))
-            .with_target(false)
-            .init();
-        trace!("Logger initialized");
+        color_eyre::install()?;
+        log_init(verbose, quiet)?;
         match cmd {
             Cmd::Debug(cmd) => cmd::debug::run(cmd, color),
             Cmd::Flash(cmd) => cmd::flash::run(cmd, color),
@@ -87,4 +75,25 @@ impl Cli {
             Cmd::Stream(cmd) => cmd::stream::run(cmd, color),
         }
     }
+}
+
+fn log_init(verbose: i8, quiet: i8) -> Result<()> {
+    let level = match DEFAULT_LOG_LEVEL + verbose - quiet {
+        level if level < 0 => return Ok(()),
+        0 => Level::ERROR,
+        1 => Level::WARN,
+        2 => Level::INFO,
+        3 => Level::DEBUG,
+        _ => Level::TRACE,
+    };
+    tracing_subscriber::fmt()
+        .with_max_level(level)
+        .with_timer(OffsetTime::new(
+            UtcOffset::current_local_offset()?,
+            format_description!("[hour]:[minute]:[second].[subsecond digits:3]"),
+        ))
+        .with_target(false)
+        .init();
+    trace!("Logger initialized");
+    Ok(())
 }

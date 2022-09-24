@@ -110,12 +110,15 @@ fn capture_log_output() -> *mut FILE {
     let output;
     unsafe {
         let mut fds = [0, 0];
-        if pipe(fds.as_mut_ptr()) == 0 {
-            input = File::from_raw_fd(fds[0]);
-            output = fdopen(fds[1], CStr::from_bytes_with_nul(b"w\0").unwrap().as_ptr());
-        } else {
-            panic!("couldn't create a pipe: {}", io::Error::last_os_error());
-        }
+        let ret = pipe(fds.as_mut_ptr());
+        assert!(ret == 0, "couldn't create a pipe: {:#?}", io::Error::last_os_error());
+        input = File::from_raw_fd(fds[0]);
+        output = fdopen(fds[1], CStr::from_bytes_with_nul(b"w\0").unwrap().as_ptr());
+        assert!(
+            !output.is_null(),
+            "couldn't open a file descriptor: {:#?}",
+            io::Error::last_os_error()
+        );
     }
     thread::spawn(|| {
         for line in BufReader::new(input).lines() {

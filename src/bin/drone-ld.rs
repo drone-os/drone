@@ -31,7 +31,7 @@ fn main() -> Result<()> {
         let sections = run_size(&args[output_position + 1]).wrap_err("checking section sizes")?;
         let data_size = sections.get("data").unwrap_or(&0);
         let bss_size = sections.get("bss").unwrap_or(&0);
-        layout.calculate(Some(data_size + bss_size))?;
+        layout.calculate(Some(data_size + bss_size)).wrap_err("recalculating layout")?;
 
         templates::layout_ld::render(&script, &layout)
             .wrap_err("rendering stage two linker script")?;

@@ -1,0 +1,5 @@
+    .stack_<%- name %> <%- origin %> (NOLOAD) :
+    {
+        . += <%- size %>;
+    } > RAM_<%- ram %>
+    STACK_POINTER_<%- uppercase_name %> = ADDR(.stack_<%- name %>) + SIZEOF(.stack_<%- name %>);

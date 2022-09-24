@@ -4,7 +4,7 @@ pub mod route;
 pub mod runtime;
 
 use self::route::{RouteDesc, Routes};
-use drone_config::{locate_project_root, Layout, LAYOUT_CONFIG};
+use drone_config::{locate_project_root, Layout};
 use drone_openocd::{
     command_context, command_invocation, command_mode_COMMAND_EXEC, command_registration,
     command_run_line, get_current_target, register_commands, target,
@@ -66,7 +66,7 @@ impl Stream {
                 }
             }
             Ok(_) => {
-                error!("{LAYOUT_CONFIG}: stream.core0 is not set");
+                error!("stream.core0 is not set in the layout config");
             }
             Err(err) => {
                 error!("{err:#?}");

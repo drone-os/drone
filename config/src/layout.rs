@@ -143,10 +143,9 @@ pub struct Linker {
 }
 
 impl Layout {
-    /// Reads a memory layout configuration file from `$DRONE_LAYOUT_CONFIG`
-    /// environment variable, or if it's not set, searches `layout.toml` inside
-    /// `$CARGO_MANIFEST_DIR` directory.
-    pub fn read() -> Result<Self> {
+    /// Reads a memory layout configuration file from inside cargo environment,
+    /// e.g. when inside a proc macro.
+    pub fn read_from_cargo() -> Result<Self> {
         if let Ok(string) = env::var("DRONE_LAYOUT_CONFIG") {
             Self::parse(&string)
         } else {
@@ -162,13 +161,14 @@ impl Layout {
     pub fn read_from_project_root(project_root: &Path) -> Result<Self> {
         let path = project_root.join(LAYOUT_CONFIG);
         if !path.exists() {
-            bail!(
-                "`{}` configuration file not exists in `{}",
-                LAYOUT_CONFIG,
-                project_root.display()
-            );
+            bail!("{} configuration file not exists in {}", LAYOUT_CONFIG, project_root.display());
         }
         Self::parse(&fs::read_to_string(&path)?)
+    }
+
+    /// Reads a memory layout configuration file from the given `path`.
+    pub fn read(path: &Path) -> Result<Self> {
+        Self::parse(&fs::read_to_string(path)?)
     }
 
     /// Writes the memory layout to the file system.
@@ -180,8 +180,8 @@ impl Layout {
     /// Parses a memory layout configuration from the `string`.
     pub fn parse(string: &str) -> Result<Self> {
         let mut layout = toml::from_str::<Self>(string)?;
-        layout.validate().wrap_err_with(|| format!("{LAYOUT_CONFIG} validation error"))?;
-        layout.calculate(None)?;
+        layout.validate().wrap_err("layout config validation error")?;
+        layout.calculate(None).wrap_err("layout config calculation error")?;
         Ok(layout)
     }
 
@@ -215,7 +215,7 @@ impl Layout {
                 + heaps.iter().map(|s| s.prefix_size).sum::<u32>();
             let mut flexible_size = ram.size.checked_sub(fixed_size).ok_or_else(|| {
                 eyre!(
-                    "{LAYOUT_CONFIG}: ram.{key} size is not enough to store all sections ({} < {})",
+                    "ram.{key} size is not enough to store all sections ({} < {})",
                     ram.size,
                     fixed_size
                 )
@@ -430,7 +430,7 @@ fn calculate_pools(heaps: &mut IndexMap<String, Heap>) -> Result<()> {
         let mut flexible_size =
             heap.section.fixed_size.checked_sub(fixed_size).ok_or_else(|| {
                 eyre!(
-                    "{LAYOUT_CONFIG}: heap.{key} size is not enough to store all pools ({} < {})",
+                    "heap.{key} size is not enough to store all pools ({} < {})",
                     heap.section.fixed_size,
                     fixed_size
                 )

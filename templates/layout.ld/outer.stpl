@@ -9,10 +9,6 @@ ENTRY(reset);
 
 SECTIONS
 {
-<% for stack_pointer in stack_pointers { %>
-    STACK_POINTER_<%- stack_pointer.name %> = <%- stack_pointer.address %>;
-<% } %>
-
 <% if platform == "arm" { %>
     .vtable ORIGIN(FLASH_PROGRAM) :
     {
@@ -49,6 +45,6 @@ SECTIONS
     }
 }
 
-<% for block in include { %>
-INCLUDE <%- block %>;
+<% for file in include { %>
+INCLUDE <%- file %>;
 <% } %>

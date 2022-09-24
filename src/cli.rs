@@ -12,12 +12,13 @@ use structopt::StructOpt;
 /// Drone OS command line utility.
 #[derive(Debug, StructOpt)]
 pub struct Cli {
-    /// Pass many times for more log output
+    /// Pass many times for more log output. -vv for maximum log output
     #[structopt(long, short, parse(from_occurrences))]
-    pub verbose: u64,
-    /// Pass many times for less log output
+    pub verbose: i8,
+    /// Pass many times for less log output. -qqq for completely silent log
+    /// output
     #[structopt(long, short, parse(from_occurrences))]
-    pub quiet: u64,
+    pub quiet: i8,
     /// Coloring: auto, always, never
     #[structopt(long, default_value = "auto", parse(try_from_str = de_from_str))]
     pub color: Color,
