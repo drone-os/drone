@@ -1,9 +1,9 @@
 #![warn(clippy::pedantic)]
 
+use clap::Parser;
 use drone::cli::Cli;
 use eyre::Result;
-use structopt::StructOpt;
 
 fn main() -> Result<()> {
-    Cli::from_args().run()
+    Cli::parse().run()
 }

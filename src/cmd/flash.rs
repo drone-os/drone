@@ -3,9 +3,9 @@
 use std::env;
 use std::os::unix::prelude::*;
 
-use ansi_term::Color::{Blue, Green};
 use drone_config::{build_target, locate_project_root};
 use eyre::{eyre, Result};
+use termcolor::Color::{Blue, Green};
 use tracing::error;
 
 use crate::cli::FlashCmd;

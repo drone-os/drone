@@ -5,31 +5,31 @@
 use std::ffi::OsString;
 use std::path::PathBuf;
 
+use clap::Parser;
 use drone_config::size;
 use eyre::Result;
 use serde::de;
-use structopt::StructOpt;
 
 use crate::color::Color;
 
 /// Drone OS command line utility.
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct Cli {
     /// Pass many times for more log output. -vv for maximum log output
-    #[structopt(long, short, parse(from_occurrences))]
+    #[clap(long, short, parse(from_occurrences))]
     pub verbose: i8,
     /// Pass many times for less log output. -qqq for completely silent log
     /// output
-    #[structopt(long, short, parse(from_occurrences))]
+    #[clap(long, short, parse(from_occurrences))]
     pub quiet: i8,
     /// Coloring: auto, always, never
-    #[structopt(long, default_value = "auto", parse(try_from_str = de_from_str))]
+    #[clap(long, default_value = "auto", parse(try_from_str = de_from_str))]
     pub color: Color,
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     pub cmd: Cmd,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub enum Cmd {
     /// Run a GDB server attached to the target
     Debug(DebugCmd),
@@ -47,80 +47,80 @@ pub enum Cmd {
     Stream(StreamCmd),
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct DebugCmd {
     /// TCP/IP port for the GDB server
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub port: Option<u16>,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct FlashCmd {
     /// Binary name to flash
     pub binary: Option<String>,
     /// Select release profile
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub release: bool,
     /// Select the specified profile
-    #[structopt(long, name = "PROFILE-NAME")]
+    #[clap(long, name = "PROFILE-NAME")]
     pub profile: Option<String>,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct HeapCmd {
     /// Heap trace file obtained from the device
-    #[structopt(short = "f", long, name = "heaptrace", parse(from_os_str))]
+    #[clap(short = 'f', long, name = "heaptrace", parse(from_os_str))]
     pub trace_file: PathBuf,
     /// Heap configuration key.
-    #[structopt(short, long, default_value = "main")]
+    #[clap(short, long, default_value = "main")]
     pub config: String,
     /// Maximum size of the heap
-    #[structopt(short, long, parse(try_from_str = size::from_str))]
+    #[clap(short, long, parse(try_from_str = size::from_str))]
     pub size: Option<u32>,
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     pub heap_sub_cmd: Option<HeapSubCmd>,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub enum HeapSubCmd {
     /// Generate an optimized heap map from the given trace file
     Generate(HeapGenerateCmd),
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct HeapGenerateCmd {
     /// Number of pools
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub pools: u32,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct OpenocdCmd {
     /// Arguments for OpenOCD
-    #[structopt(parse(from_os_str), last(true))]
+    #[clap(parse(from_os_str), last(true))]
     pub args: Vec<OsString>,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct ProbeCmd {
     /// TCL script to execute
-    #[structopt(parse(from_os_str))]
+    #[clap(parse(from_os_str))]
     pub script: PathBuf,
     /// Additional commands to execute before the TCL script
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub command: Vec<OsString>,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct ResetCmd {}
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct StreamCmd {
     /// Stream routes specification. Leave `path` empty to route to STDOUT
-    #[structopt(name = "path[:stream]...", default_value = ":0:1")]
+    #[clap(name = "path[:stream]...", default_value = ":0:1")]
     pub streams: Vec<String>,
     /// Reset target before streaming
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub reset: bool,
 }
 

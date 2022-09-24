@@ -175,7 +175,7 @@ pub fn probe_config_path() -> Result<PathBuf> {
 }
 
 /// Creates a TCL command to print a colored message.
-pub fn echo_colored<T: AsRef<str>>(message: T, fg: ansi_term::Color, color: Color) -> String {
+pub fn echo_colored<T: AsRef<str>>(message: T, fg: termcolor::Color, color: Color) -> String {
     let command = format!(
         "echo \"{}\"",
         color

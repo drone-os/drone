@@ -1,7 +1,7 @@
 //! `drone reset` command.
 
-use ansi_term::Color::Green;
 use eyre::Result;
+use termcolor::Color::Green;
 
 use crate::cli::ResetCmd;
 use crate::color::Color;

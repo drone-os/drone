@@ -6,7 +6,7 @@ use crate::{
     heap,
     heap::TraceMap,
 };
-use ansi_term::Color::{Cyan, Yellow};
+use termcolor::Color::{Cyan, Yellow};
 use config::AbsoluteMemorySize;
 use drone_config::{self as config, LAYOUT_CONFIG};
 use eyre::{eyre, Result};
