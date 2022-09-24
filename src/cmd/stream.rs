@@ -24,7 +24,7 @@ pub fn run(cmd: StreamCmd, color: Color) -> Result<()> {
     } else {
         commands.push(format!("drone_stream run {streams}"));
     }
-    commands.push(echo_colored("*** Drone Stream initialized successfully", Green, color));
+    commands.push(echo_colored("*** Drone Stream has started capturing", Green, color));
     exit_with_openocd(openocd_main, commands.into())?;
     Ok(())
 }

@@ -3,7 +3,7 @@
 #![no_std]
 
 use drone_core::{mem, stream, token::Token};
-use drone_cortexm::cpu;
+use drone_cortexm::platform;
 use drone_template_stm32::{
     tasks,
     thr::{ThrsInit, Vtable},
@@ -36,7 +36,7 @@ pub unsafe extern "C" fn reset() -> ! {
     ////// Uncomment the block below if your microcontroller has FPU.
     // // Initialize the Floating Point Unit. This is safe because the unit has not
     // // been in use before this line.
-    // unsafe { cpu::fpu_init(true) };
+    // unsafe { platform::fpu_init(true) };
     // Initialize Drone Stream.
     stream::init();
     // Run the root task.
@@ -50,6 +50,6 @@ pub unsafe extern "C" fn reset() -> ! {
     );
     // If the root task returned, always sleep between interrupts.
     loop {
-        cpu::wait_for_int();
+        platform::wait_for_int();
     }
 }

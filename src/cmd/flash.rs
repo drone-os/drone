@@ -28,7 +28,7 @@ pub fn run(cmd: FlashCmd, color: Color) -> Result<()> {
     commands.push(format!("flash write_image erase {binary} 0"));
     commands.push(echo_colored("*** Verifying flashed image", Blue, color));
     commands.push(format!("verify_image {binary} 0"));
-    commands.push(echo_colored("*** Flashed successfully", Green, color));
+    commands.push(echo_colored("*** Flash complete", Green, color));
     commands.push("reset run");
     commands.push("shutdown");
     exit_with_openocd(openocd_main, commands.into())?;

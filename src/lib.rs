@@ -71,7 +71,7 @@ impl Cli {
             // Cmd::Heap(cmd) => cmd::heap::run(cmd, color),
             Cmd::Openocd(cmd) => cmd::openocd::run(cmd),
             Cmd::Probe(cmd) => cmd::probe::run(cmd),
-            Cmd::Reset(cmd) => cmd::reset::run(cmd),
+            Cmd::Reset(cmd) => cmd::reset::run(cmd, color),
             Cmd::Stream(cmd) => cmd::stream::run(cmd, color),
         }
     }

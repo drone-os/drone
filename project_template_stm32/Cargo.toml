@@ -27,7 +27,7 @@ drone-core = { version = "0.15.0" }
 ### Add additional Drone crates specific to your microcontroller here. Some
 ### crates may require setting additional Rust flags in flake.nix. Refer to
 ### crates documentations for details.
-drone-cortexm = { version = "0.15.0", features = ["bit-band"] }
+drone-cortexm = { version = "0.15.0", features = ["atomics", "bit-band"] }
 drone-stm32-map = { version = "0.15.0", features = ["dma", "gpio", "spi", "tim"] }
 
 [profile.release]
