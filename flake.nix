@@ -27,13 +27,13 @@
     (utils.lib.eachDefaultSystem (system:
       let
         rustChannel = {
-          channel = "1.63";
-          sha256 = "KXx+ID0y4mg2B3LHp7IyaiMrdexF6octADnAtFIOjrY=";
+          channel = "1.64";
+          sha256 = "8len3i8oTwJSOJZMosGGXHBL5BVuGQnWOT2St5YAUFU=";
         };
         rustFmtChannel = {
           channel = "nightly";
-          date = "2022-09-18";
-          sha256 = "eYFYpSF2PBUJVzZGZrdtDMpVfHkypzTMLWotdEVq7eM=";
+          date = "2022-09-23";
+          sha256 = "lv8DWMZm/vmAfC8RF8nwMXKp2xiMxtsthqTEs7bWyms=";
         };
 
         pkgs = nixpkgs.legacyPackages.${system};
@@ -148,10 +148,10 @@
         '';
 
         updateVersions = pkgs.writeShellScriptBin "update-versions" ''
-          sed -i "s/\(api\.drone-os\.com\/drone-core\/\)[0-9]\+\(\.[0-9]\+\)\+/\1$(echo $1 | sed 's/\(.*\)\.[0-9]\+/\1/')/" \
-            config/Cargo.toml
-          sed -i "/\[.*\]/h;/version = \".*\"/{x;s/\[package\]/version = \"$1\"/;t;x}" \
+          sed -i "s/\(api\.drone-os\.com\/drone\/\)[0-9]\+\(\.[0-9]\+\)\+/\1$(echo $1 | sed 's/\(.*\)\.[0-9]\+/\1/')/" \
             Cargo.toml config/Cargo.toml stream/Cargo.toml openocd/Cargo.toml
+          sed -i "/\[.*\]/h;/version = \".*\"/{x;s/\[workspace.package\]/version = \"$1\"/;t;x}" \
+            Cargo.toml
           sed -i "/\[.*\]/h;/version = \"=.*\"/{x;s/\[.*drone-.*\]/version = \"=$1\"/;t;x}" \
             Cargo.toml
           sed -i "s/\(drone-.* = { version = \"\).*\(\"\)/\1$1\2/" \
@@ -162,10 +162,19 @@
 
         publishCrates = pkgs.writeShellScriptBin "publish-crates" ''
           cd stream && cargo publish
+          sleep 30
           cd config && cargo publish
           cd openocd && cargo publish
           sleep 30
           cargo publish
+        '';
+
+        publishDocs = pkgs.writeShellScriptBin "publish-docs" ''
+          dir=$(sed -n 's/.*api\.drone-os\.com\/\(.*\/.*\)\/.*\/"/\1/;T;p' Cargo.toml) \
+            && rm -rf ../drone-api/$dir \
+            && cp -rT target/doc ../drone-api/$dir \
+            && echo '<!DOCTYPE html><meta http-equiv="refresh" content="0; URL=./drone">' > ../drone-api/$dir/index.html \
+            && cd ../drone-api && git add $dir && git commit -m "Docs for $dir"
         '';
 
         shell = pkgs.mkShell ({
@@ -179,6 +188,7 @@
             checkAll
             updateVersions
             publishCrates
+            publishDocs
           ];
         } // (env { }));
       in

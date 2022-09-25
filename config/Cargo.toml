@@ -1,22 +1,19 @@
 [package]
 name = "drone-config"
-version = "0.15.0"
-authors = ["Valentyn Valiaiev <valentine.valyaeff@gmail.com>"]
-edition = "2021"
-repository = "https://github.com/drone-os/drone"
-homepage = "https://www.drone-os.com/"
-documentation = "https://api.drone-os.com/drone-core/0.15/drone_config/"
-license = "MIT OR Apache-2.0"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+documentation = "https://api.drone-os.com/drone/0.15/drone_config/"
 description = """
 Configuration for Drone, an Embedded Operating System.
 """
 
-[dependencies.drone-stream]
-version = "=0.15.0"
-path = "../stream"
-
 [dependencies]
-eyre = "0.6.8"
+drone-stream.workspace = true
+eyre.workspace = true
 indexmap = { version = "1.9.1", features = ["serde"] }
-serde = { version = "1.0.144", features = ["derive"] }
+serde.workspace = true
 toml = "0.5.9"

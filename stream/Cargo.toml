@@ -1,12 +1,12 @@
 [package]
 name = "drone-stream"
-version = "0.15.0"
-authors = ["Valentyn Valiaiev <valentine.valyaeff@gmail.com>"]
-edition = "2021"
-repository = "https://github.com/drone-os/drone"
-homepage = "https://www.drone-os.com/"
-documentation = "https://api.drone-os.com/drone-core/0.15/drone_stream/"
-license = "MIT OR Apache-2.0"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+documentation = "https://api.drone-os.com/drone/0.15/drone_stream/"
 description = """
 Drone Stream definitions.
 """

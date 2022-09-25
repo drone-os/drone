@@ -239,7 +239,7 @@ unsafe extern "C" fn handle_drone_stream_stop_command(cmd: *mut command_invocati
             Some(drone_stream_timer_callback),
             stream_ptr.cast(),
         ))
-        .and_then(|()| (&mut *stream_ptr).stop())
+        .and_then(|()| (*stream_ptr).stop())
     })
 }
 
