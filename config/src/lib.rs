@@ -85,8 +85,19 @@ pub fn validate_drone_crate_config_flag(name: Option<&str>) -> Result<()> {
         Err(err) => bail!("invalid {quotted_name} Rust flag value: {err:?}"),
     };
     let mut column = None;
+    let mut inside_doc = false;
     for line in BufReader::new(File::open(path.join("src").join("lib.rs"))?).lines() {
-        if let Some(line) = line?.strip_prefix("//! |") {
+        let line = line?;
+        if inside_doc {
+            if line == r#""]"# {
+                break;
+            }
+        } else if line == r#"#![doc /* flags */ = ""# {
+            inside_doc = true;
+        } else {
+            continue;
+        }
+        if let Some(line) = line.strip_prefix("|") {
             for (i, cell) in line.split('|').enumerate() {
                 if cell.contains(&quotted_name) {
                     column = Some(i);
