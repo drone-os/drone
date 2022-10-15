@@ -1,9 +1,8 @@
 //! ANSI colors.
 
+use serde::Deserialize;
 use std::env;
 use std::io::prelude::*;
-
-use serde::Deserialize;
 use termcolor::{Buffer, ColorSpec, WriteColor};
 
 /// Color preference of the user.

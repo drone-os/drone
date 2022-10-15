@@ -1,11 +1,10 @@
 //! `drone reset` command.
 
-use eyre::Result;
-use termcolor::Color::Green;
-
 use crate::cli::ResetCmd;
 use crate::color::Color;
 use crate::openocd::{echo_colored, exit_with_openocd, openocd_main, Commands};
+use eyre::Result;
+use termcolor::Color::Green;
 
 /// Runs `drone reset` command.
 pub fn run(cmd: ResetCmd, color: Color) -> Result<()> {

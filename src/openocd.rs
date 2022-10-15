@@ -1,15 +1,7 @@
 //! OpenOCD integration.
 
-use std::convert::TryInto;
-use std::ffi::{CStr, CString, OsString};
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::BufReader;
-use std::os::unix::prelude::*;
-use std::path::PathBuf;
-use std::process::exit;
-use std::{io, iter, ptr, str, thread};
-
+use crate::color::Color;
+use crate::stream;
 use drone_config::locate_project_root;
 use drone_openocd::{
     adapter_quit, arm_cti_cleanup_all, command_context_mode, command_exit,
@@ -21,10 +13,16 @@ use drone_openocd::{
 };
 use eyre::{bail, Result};
 use libc::{fdopen, pipe, setvbuf, FILE, _IONBF};
+use std::convert::TryInto;
+use std::ffi::{CStr, CString, OsString};
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::BufReader;
+use std::os::unix::prelude::*;
+use std::path::PathBuf;
+use std::process::exit;
+use std::{io, iter, ptr, str, thread};
 use tracing::{debug, error, info, warn};
-
-use crate::color::Color;
-use crate::stream;
 
 /// Possible names of the OpenOCD configuration file.
 pub const CONFIG_NAMES: &[&str] = &["probe.tcl", "probe/config.tcl"];

@@ -1,10 +1,9 @@
 //! Memory size values.
 
-use std::num::ParseIntError;
-use std::str::FromStr;
-
 use eyre::{bail, Error};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use std::num::ParseIntError;
+use std::str::FromStr;
 
 /// Possibly flexible memory size.
 #[derive(Clone, Debug)]

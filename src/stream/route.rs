@@ -1,5 +1,7 @@
 //! Drone Stream routing.
 
+use drone_stream::STREAM_COUNT;
+use eyre::{bail, Error, Result};
 use std::cell::RefCell;
 use std::ffi::{OsStr, OsString};
 use std::fs::{File, OpenOptions};
@@ -8,9 +10,6 @@ use std::io::prelude::*;
 use std::io::{stdout, Stdout};
 use std::os::unix::prelude::*;
 use std::rc::Rc;
-
-use drone_stream::STREAM_COUNT;
-use eyre::{bail, Error, Result};
 use tracing::warn;
 
 /// Route description.

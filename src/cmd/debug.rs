@@ -1,10 +1,9 @@
 //! `drone debug` command.
 
-use eyre::Result;
-use termcolor::Color::{Cyan, Green};
-
 use crate::cli::DebugCmd;
 use crate::openocd::{echo_colored, exit_with_openocd, openocd_main, Commands};
+use eyre::Result;
+use termcolor::Color::{Cyan, Green};
 
 /// Runs `drone debug` command.
 pub fn run(cmd: DebugCmd, color: crate::color::Color) -> Result<()> {

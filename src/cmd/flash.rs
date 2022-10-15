@@ -1,16 +1,14 @@
 //! `drone flash` command.
 
-use std::env;
-use std::os::unix::prelude::*;
-
-use drone_config::{build_target, locate_project_root};
-use eyre::{eyre, Result};
-use termcolor::Color::{Blue, Green};
-use tracing::error;
-
 use crate::cli::FlashCmd;
 use crate::color::Color;
 use crate::openocd::{echo_colored, exit_with_openocd, openocd_main, Commands};
+use drone_config::{build_target, locate_project_root};
+use eyre::{eyre, Result};
+use std::env;
+use std::os::unix::prelude::*;
+use termcolor::Color::{Blue, Green};
+use tracing::error;
 
 /// Runs `drone flash` command.
 pub fn run(cmd: FlashCmd, color: Color) -> Result<()> {

@@ -1,10 +1,9 @@
 #![warn(clippy::pedantic)]
 
+use bindgen::callbacks::ParseCallbacks;
 use std::env;
 use std::path::PathBuf;
 use std::process::Command;
-
-use bindgen::callbacks::ParseCallbacks;
 
 #[derive(Debug)]
 pub struct UnprefixItems {}

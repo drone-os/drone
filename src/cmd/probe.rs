@@ -1,9 +1,8 @@
 //! `drone probe` command.
 
-use eyre::Result;
-
 use crate::cli::ProbeCmd;
 use crate::openocd::{exit_with_openocd, openocd_main};
+use eyre::Result;
 
 /// Runs `drone probe` command.
 pub fn run(cmd: ProbeCmd) -> Result<()> {

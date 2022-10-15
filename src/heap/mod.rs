@@ -3,12 +3,10 @@
 pub mod layout;
 pub mod trace;
 
+use self::trace::{Packet, Parser};
+use eyre::{bail, Result};
 use std::collections::BTreeMap;
 use std::fs::File;
-
-use eyre::{bail, Result};
-
-use self::trace::{Packet, Parser};
 
 /// Processed trace map.
 pub type TraceMap = BTreeMap<u32, TraceEntry>;

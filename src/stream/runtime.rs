@@ -3,15 +3,14 @@
 //! This module provides access to the special area in the application memory
 //! for storing the runtime state of Drone Stream.
 
-use std::mem::{size_of, transmute, MaybeUninit};
-use std::os::raw::c_int;
-use std::ptr;
-
 use drone_openocd::{
     target, target_read_buffer, target_read_u32, target_write_buffer, target_write_u32, ERROR_FAIL,
     ERROR_OK,
 };
 use drone_stream::{Runtime, BOOTSTRAP_SEQUENCE, BOOTSTRAP_SEQUENCE_LENGTH, HEADER_LENGTH};
+use std::mem::{size_of, transmute, MaybeUninit};
+use std::os::raw::c_int;
+use std::ptr;
 
 /// OpenOCD API error.
 #[derive(Debug)]

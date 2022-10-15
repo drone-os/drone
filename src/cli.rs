@@ -2,15 +2,13 @@
 
 #![allow(missing_docs)]
 
-use std::ffi::OsString;
-use std::path::PathBuf;
-
+use crate::color::Color;
 use clap::Parser;
 use drone_config::size;
 use eyre::Result;
 use serde::de;
-
-use crate::color::Color;
+use std::ffi::OsString;
+use std::path::PathBuf;
 
 /// Drone OS command line utility.
 #[derive(Debug, Parser)]
