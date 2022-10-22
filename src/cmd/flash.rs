@@ -3,10 +3,11 @@
 use crate::cli::FlashCmd;
 use crate::color::Color;
 use crate::openocd::{echo_colored, exit_with_openocd, openocd_main, Commands};
-use drone_config::{build_target, locate_project_root};
+use drone_config::locate_project_root;
 use eyre::{eyre, Result};
 use std::env;
 use std::os::unix::prelude::*;
+use std::path::Path;
 use termcolor::Color::{Blue, Green};
 use tracing::error;
 
@@ -39,12 +40,17 @@ fn locate_binary(
     release: bool,
     profile: Option<String>,
 ) -> Result<Option<String>> {
+    if let Some(path) = &binary {
+        if path.contains('/') && Path::new(&path).exists() {
+            return Ok(binary);
+        }
+    }
     let root = locate_project_root()?;
     let target_dir = env::var("CARGO_BUILD_TARGET_DIR")
         .or_else(|_| env::var("CARGO_TARGET_DIR"))
         .unwrap_or_else(|_| "target".into());
     let select_profile = profile.or_else(|| release.then(|| "release".into()));
-    let target = root.join(target_dir).join(build_target()?);
+    let target = root.join(target_dir).join(env::var("CARGO_BUILD_TARGET")?);
     let mut binaries = Vec::new();
     for entry in target.read_dir()? {
         let entry = entry?;

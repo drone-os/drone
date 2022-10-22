@@ -138,9 +138,13 @@ pub struct HeapPool {
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Linker {
-    /// Additional files to include into the resulting linker script.
+    /// Additional files to include at the beginning of the resulting linker
+    /// script.
     #[serde(default)]
-    pub include: Vec<String>,
+    pub include_before: Vec<String>,
+    /// Additional files to include at the end of the resulting linker script.
+    #[serde(default)]
+    pub include_after: Vec<String>,
 }
 
 impl Layout {

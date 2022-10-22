@@ -7,27 +7,22 @@ MEMORY
 
 ENTRY(reset);
 
-SECTIONS
-{
-<% if platform == "arm" { %>
-    .vtable ORIGIN(FLASH_PROGRAM) :
-    {
-        LONG(STACK_POINTER_CORE0);
-        KEEP(*(.rodata.VTABLE));
-        . = ALIGN(4);
-    } > FLASH_PROGRAM
+<% for file in include_before { %>
+INCLUDE <%- file %>;
 <% } %>
 
+SECTIONS
+{
     .text :
     {
         *(.text.reset);
-        *(.text.*);
+        *(.text*);
         . = ALIGN(4);
     } > FLASH_PROGRAM
 
     .rodata :
     {
-        *(.rodata.*);
+        *(.rodata*);
         . = ALIGN(4);
     } > FLASH_PROGRAM
 
@@ -37,14 +32,11 @@ SECTIONS
 
     /DISCARD/ :
     {
-<% if platform == "arm" { %>
-        *(.ARM.*)
-<% } else if platform == "riscv" { %>
-        *(.eh_frame .eh_frame_hdr)
-<% } %>
+        *(.ARM.*);
+        *(.eh_frame .eh_frame_hdr);
     }
 }
 
-<% for file in include { %>
+<% for file in include_after { %>
 INCLUDE <%- file %>;
 <% } %>

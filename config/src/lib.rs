@@ -55,11 +55,6 @@ pub fn locate_target_root(project_root: &Path) -> Result<PathBuf> {
     Ok(project_root.join(target_dir).join(target))
 }
 
-/// Returns the target triple for the project.
-pub fn build_target() -> Result<String> {
-    env::var("CARGO_BUILD_TARGET").wrap_err("reading $CARGO_BUILD_TARGET environment variable")
-}
-
 /// Validates that Rust flag config `name` is set to a supported value. The
 /// list of supported values is parsed from crate's `src/lib.rs`. If `name` is
 /// `None`, the crate name is set from `$CARGO_PKG_NAME` environment variable.
@@ -95,7 +90,7 @@ pub fn validate_drone_crate_config_flag(name: Option<&str>) -> Result<()> {
         } else {
             continue;
         }
-        if let Some(line) = line.strip_prefix("|") {
+        if let Some(line) = line.strip_prefix('|') {
             for (i, cell) in line.split('|').enumerate() {
                 if cell.contains(&quotted_name) {
                     column = Some(i);

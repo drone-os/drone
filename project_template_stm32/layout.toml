@@ -41,3 +41,8 @@ pools = [
     { block = "336", count = "11.37%" },
     { block = "512", count = "4.61%" },
 ]
+
+[linker]
+### Additional includes into the resulting linker script. When adding a new
+### include, don't forget to add it to the `build.rs`.
+include-before = ["vtable.ld"]

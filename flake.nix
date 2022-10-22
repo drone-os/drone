@@ -116,6 +116,7 @@
             src = ./.;
             inherit buildInputs;
             inherit nativeBuildInputs;
+            version = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).workspace.package.version;
             postInstall = ''
               mkdir -p $out/share/openocd
               ln -s $OPENOCD_SCRIPTS $out/share/openocd

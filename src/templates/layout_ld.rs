@@ -1,7 +1,7 @@
 //! Linker script.
 
-use drone_config::{addr, build_target, size, Layout};
-use eyre::{bail, Result};
+use drone_config::{addr, size, Layout};
+use eyre::Result;
 use heck::{AsShoutySnakeCase, ToShoutySnakeCase};
 use sailfish::TemplateOnce;
 use std::collections::BTreeMap;
@@ -13,8 +13,8 @@ use std::path::Path;
 struct LayoutLd<'a> {
     memories: Vec<Memory>,
     sections: BTreeMap<u32, String>,
-    platform: &'static str,
-    include: &'a [String],
+    include_before: &'a [String],
+    include_after: &'a [String],
 }
 
 struct Memory {
@@ -78,8 +78,8 @@ pub fn render(path: &Path, layout: &Layout) -> Result<()> {
     let ctx = LayoutLd {
         memories: render_memories(layout),
         sections,
-        platform: get_platform()?,
-        include: &layout.linker.include,
+        include_before: &layout.linker.include_before,
+        include_after: &layout.linker.include_after,
     };
     Ok(fs::write(path, ctx.render_once().unwrap())?)
 }
@@ -161,14 +161,5 @@ fn render_stream_sections(sections: &mut BTreeMap<u32, String>, layout: &Layout)
             ram: stream.ram.to_shouty_snake_case(),
         };
         sections.insert(stream.origin, ctx.render_once().unwrap());
-    }
-}
-
-fn get_platform() -> Result<&'static str> {
-    let build_target = build_target()?;
-    match build_target.split('-').next().unwrap() {
-        "thumbv7m" | "thumbv7em" | "thumbv8m.main" => Ok("arm"),
-        "riscv32imac" => Ok("riscv"),
-        _ => bail!("unsupported build target: {build_target}"),
     }
 }

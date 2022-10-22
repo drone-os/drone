@@ -54,7 +54,7 @@ pub struct DebugCmd {
 
 #[derive(Debug, Parser)]
 pub struct FlashCmd {
-    /// Binary name to flash
+    /// File path or cargo binary name to flash
     pub binary: Option<String>,
     /// Select release profile
     #[clap(short, long)]
