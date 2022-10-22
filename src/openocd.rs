@@ -135,6 +135,7 @@ fn capture_log_output() -> *mut FILE {
 }
 
 /// OpenOCD commands list.
+#[derive(Debug)]
 pub struct Commands {
     args: Vec<OsString>,
 }

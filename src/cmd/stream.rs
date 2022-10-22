@@ -11,7 +11,8 @@ pub fn run(cmd: StreamCmd, color: Color) -> Result<()> {
     let StreamCmd { streams, reset } = cmd;
     let streams = streams.join(" ");
     let mut commands = Commands::new()?;
-    commands.push("gdb_port disabled");
+    // Causes crashes for picoprobe
+    // commands.push("gdb_port disabled");
     commands.push("tcl_port disabled");
     commands.push("telnet_port disabled");
     commands.push("init");

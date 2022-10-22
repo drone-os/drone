@@ -19,7 +19,8 @@ pub fn run(cmd: FlashCmd, color: Color) -> Result<()> {
         None => return Ok(()),
     };
     let mut commands = Commands::new()?;
-    commands.push("gdb_port disabled");
+    // Causes crashes for picoprobe
+    // commands.push("gdb_port disabled");
     commands.push("tcl_port disabled");
     commands.push("telnet_port disabled");
     commands.push("init");
