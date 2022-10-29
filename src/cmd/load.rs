@@ -8,12 +8,12 @@ use eyre::{eyre, Result};
 use std::env;
 use std::os::unix::prelude::*;
 use std::path::Path;
-use termcolor::Color::{Blue, Green};
+use termcolor::Color::Blue;
 use tracing::error;
 
 /// Runs `drone load` command.
 pub fn run(cmd: LoadCmd, color: Color) -> Result<()> {
-    let LoadCmd { binary, release, profile } = cmd;
+    let LoadCmd { binary, release, profile, verify, verify_only } = cmd;
     let binary = match locate_binary(binary, release, profile)? {
         Some(binary) => binary,
         None => return Ok(()),
@@ -25,11 +25,14 @@ pub fn run(cmd: LoadCmd, color: Color) -> Result<()> {
     commands.push("telnet_port disabled");
     commands.push("init");
     commands.push("reset halt");
-    commands.push(echo_colored(format!("*** Flashing {binary}"), Blue, color));
-    commands.push(format!("load_image {binary} 0"));
-    commands.push(echo_colored("*** Verifying flashed image", Blue, color));
-    commands.push(format!("verify_image {binary} 0"));
-    commands.push(echo_colored("*** Flash complete", Green, color));
+    if !verify_only {
+        commands.push(echo_colored(format!("*** Loading {binary}"), Blue, color));
+        commands.push(format!("flash write_image erase {binary} 0"));
+    }
+    if verify || verify_only {
+        commands.push(echo_colored(format!("*** Verifying {binary}"), Blue, color));
+        commands.push(format!("verify_image {binary} 0"));
+    }
     commands.push("reset run");
     commands.push("shutdown");
     exit_with_openocd(openocd_main, commands.into())?;

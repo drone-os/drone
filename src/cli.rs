@@ -62,6 +62,12 @@ pub struct LoadCmd {
     /// Select the specified profile
     #[clap(long, name = "PROFILE-NAME")]
     pub profile: Option<String>,
+    /// Verify image against target memory
+    #[clap(short = 'c', long)]
+    pub verify: bool,
+    /// Only verify image against target memory, not load
+    #[clap(short = 'C', long)]
+    pub verify_only: bool,
 }
 
 #[derive(Debug, Parser)]
