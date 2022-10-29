@@ -1,6 +1,6 @@
-//! `drone flash` command.
+//! `drone load` command.
 
-use crate::cli::FlashCmd;
+use crate::cli::LoadCmd;
 use crate::color::Color;
 use crate::openocd::{echo_colored, exit_with_openocd, openocd_main, Commands};
 use drone_config::locate_project_root;
@@ -11,9 +11,9 @@ use std::path::Path;
 use termcolor::Color::{Blue, Green};
 use tracing::error;
 
-/// Runs `drone flash` command.
-pub fn run(cmd: FlashCmd, color: Color) -> Result<()> {
-    let FlashCmd { binary, release, profile } = cmd;
+/// Runs `drone load` command.
+pub fn run(cmd: LoadCmd, color: Color) -> Result<()> {
+    let LoadCmd { binary, release, profile } = cmd;
     let binary = match locate_binary(binary, release, profile)? {
         Some(binary) => binary,
         None => return Ok(()),
@@ -26,7 +26,7 @@ pub fn run(cmd: FlashCmd, color: Color) -> Result<()> {
     commands.push("init");
     commands.push("reset halt");
     commands.push(echo_colored(format!("*** Flashing {binary}"), Blue, color));
-    commands.push(format!("flash write_image erase {binary} 0"));
+    commands.push(format!("load_image {binary} 0"));
     commands.push(echo_colored("*** Verifying flashed image", Blue, color));
     commands.push(format!("verify_image {binary} 0"));
     commands.push(echo_colored("*** Flash complete", Green, color));

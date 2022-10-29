@@ -29,17 +29,17 @@ pub struct Cli {
 
 #[derive(Debug, Parser)]
 pub enum Cmd {
-    /// Run a GDB server attached to the target
+    /// Run a GDB server attached to target
     Debug(DebugCmd),
-    /// Flash a binary to the connected target
-    Flash(FlashCmd),
     /// Analyze or modify the heap layout
     Heap(HeapCmd),
+    /// Load image to target memory
+    Load(LoadCmd),
     /// Run unmodified OpenOCD process
     Openocd(OpenocdCmd),
     /// Run an arbitrary TCL script inside Drone OpenOCD context
     Probe(ProbeCmd),
-    /// Reset the connected target
+    /// Perform a reset on target
     Reset(ResetCmd),
     /// Listen to Drone Stream at the connected target
     Stream(StreamCmd),
@@ -53,8 +53,8 @@ pub struct DebugCmd {
 }
 
 #[derive(Debug, Parser)]
-pub struct FlashCmd {
-    /// File path or cargo binary name to flash
+pub struct LoadCmd {
+    /// File path or cargo binary name to load
     pub binary: Option<String>,
     /// Select release profile
     #[clap(short, long)]

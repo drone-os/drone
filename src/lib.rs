@@ -67,8 +67,8 @@ impl Cli {
         log_init(verbose, quiet)?;
         match cmd {
             Cmd::Debug(cmd) => cmd::debug::run(cmd, color),
-            Cmd::Flash(cmd) => cmd::flash::run(cmd, color),
             Cmd::Heap(_) => todo!(),
+            Cmd::Load(cmd) => cmd::load::run(cmd, color),
             // Cmd::Heap(cmd) => cmd::heap::run(cmd, color),
             Cmd::Openocd(cmd) => cmd::openocd::run(cmd),
             Cmd::Probe(cmd) => cmd::probe::run(cmd),
