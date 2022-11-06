@@ -27,7 +27,8 @@ fn main() -> Result<()> {
         run_linker(&script, &args).wrap_err("running stage one linker")?;
 
         let sections = run_size(&args[output_position + 1]).wrap_err("checking section sizes")?;
-        let data_size = DATA_SECTIONS.iter().filter_map(|section| sections.get(*section)).sum();
+        let mut data_size = layout.data.padding.unwrap_or(0);
+        data_size += DATA_SECTIONS.iter().filter_map(|section| sections.get(*section)).sum::<u32>();
         layout.calculate(Some(data_size)).wrap_err("recalculating layout")?;
 
         templates::layout_ld::render(&script, &layout)

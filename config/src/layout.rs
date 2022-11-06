@@ -60,6 +60,9 @@ pub struct Memory {
 pub struct Data {
     /// RAM memory region this section belongs to.
     pub ram: String,
+    /// Extra padding to compensate alignment.
+    #[serde(default, with = "size::opt")]
+    pub padding: Option<u32>,
     /// Auto-calculated origin of this section.
     #[serde(skip_deserializing, with = "addr")]
     pub origin: u32,

@@ -95,6 +95,25 @@ pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<u32, D:
     from_str(&String::deserialize(deserializer)?).map_err(de::Error::custom)
 }
 
+/// Optional size.
+pub mod opt {
+    #[allow(clippy::wildcard_imports)]
+    use super::*;
+
+    /// Serializes `Option<u32>` as a memory size string.
+    pub fn serialize<S: Serializer>(size: &Option<u32>, serializer: S) -> Result<S::Ok, S::Error> {
+        size.map(to_string).serialize(serializer)
+    }
+
+    /// Deserializes `Option<u32>` from a memory size string.
+    pub fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Option<u32>, D::Error> {
+        let str = Option::<String>::deserialize(deserializer).map_err(de::Error::custom)?;
+        str.map(|str| from_str(&str)).transpose().map_err(de::Error::custom)
+    }
+}
+
 /// Parses a fixed size value from the given string.
 pub fn from_str(s: &str) -> Result<u32, ParseIntError> {
     let mut range = 0..s.len();
