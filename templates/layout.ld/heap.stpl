@@ -11,7 +11,7 @@
     {
         *(.heap_<%- name %>_rt);
     } > RAM_<%- ram %>
-    .heap_<%- name %>_buf ADDR(.heap_<%- name %>_rt) + SIZEOF(.heap_<%- name %>_rt) (NOLOAD) :
+    .heap_<%- name %>_buf (NOLOAD) :
     {
         . += <%- size %>;
     } > RAM_<%- ram %>

@@ -8,6 +8,9 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
+/// All types of data sections.
+pub const DATA_SECTIONS: &[&str] = &["data", "bss", "uninitialized"];
+
 #[derive(TemplateOnce)]
 #[template(path = "layout.ld/outer.stpl")]
 struct LayoutLd<'a> {

@@ -2,7 +2,7 @@
     {
         *(.stream_<%- name %>_rt);
     } > RAM_<%- ram %>
-    .stream_<%- name %>_buf ADDR(.stream_<%- name %>_rt) + SIZEOF(.stream_<%- name %>_rt) (NOLOAD) :
+    .stream_<%- name %>_buf (NOLOAD) :
     {
         . += <%- size %>;
     } > RAM_<%- ram %>

@@ -8,7 +8,7 @@
     DATA_BASE = ADDR(.data);
     DATA_END = ADDR(.data) + SIZEOF(.data);
 
-    .bss ADDR(.data) + SIZEOF(.data) (NOLOAD) :
+    .bss (NOLOAD) :
     {
         *(.sbss);
         *(.bss*);
@@ -17,3 +17,11 @@
     } > RAM_<%- ram %>
     BSS_BASE = ADDR(.bss);
     BSS_END = ADDR(.bss) + SIZEOF(.bss);
+
+    .uninitialized (NOLOAD) :
+    {
+        . = ALIGN(4);
+        *(.uninitialized*)
+    } > RAM_<%- ram %>
+    UNINITIALIZED_BASE = ADDR(.uninitialized);
+    UNINITIALIZED_END = ADDR(.uninitialized) + SIZEOF(.uninitialized);

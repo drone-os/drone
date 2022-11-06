@@ -63,6 +63,7 @@ pub fn locate_target_root(project_root: &Path) -> Result<PathBuf> {
 ///
 /// If `name` is `None`, and `$CARGO_PKG_NAME` environment variable is not set.
 pub fn validate_drone_crate_config_flag(name: Option<&str>) -> Result<()> {
+    rerun_if_rustflags_changed();
     let mut path = Path::new(".").canonicalize()?;
     if let Some(name) = name {
         while path.file_name().map_or(false, |n| n != name) {
@@ -111,4 +112,14 @@ pub fn validate_drone_crate_config_flag(name: Option<&str>) -> Result<()> {
         }
     }
     bail!("unsupported {quotted_name} Rust flag value: `{value}`");
+}
+
+fn rerun_if_rustflags_changed() {
+    for (var, _) in env::vars_os() {
+        if let Some(var) = var.to_str() {
+            if var.ends_with("RUSTFLAGS") {
+                println!("cargo:rerun-if-env-changed={var}");
+            }
+        }
+    }
 }

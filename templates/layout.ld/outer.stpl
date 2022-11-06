@@ -18,6 +18,24 @@ SECTIONS
         *(.text.reset);
         *(.text*);
         . = ALIGN(4);
+
+        PREINIT_ARRAY_BASE = .;
+        KEEP(*(SORT(.preinit_array.*)))
+        KEEP(*(.preinit_array))
+        PREINIT_ARRAY_END = .;
+        . = ALIGN(4);
+
+        INIT_ARRAY_BASE = .;
+        KEEP(*(SORT(.init_array.*)))
+        KEEP(*(.init_array))
+        INIT_ARRAY_END = .;
+        . = ALIGN(4);
+
+        FINI_ARRAY_BASE = .;
+        *(SORT(.fini_array.*))
+        *(.fini_array)
+        FINI_ARRAY_END = .;
+        . = ALIGN(4);
     } > FLASH_PROGRAM
 
     .rodata :
