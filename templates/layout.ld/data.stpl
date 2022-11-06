@@ -1,7 +1,7 @@
     .data <%- origin %> :
     {
-        *(.time_critical*);
-        *(.data*);
+        *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.time_critical*)));
+        *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.data*)));
         . = ALIGN(4);
     } > RAM_<%- ram %> AT > FLASH_PROGRAM
     DATA_LOAD = LOADADDR(.data);
@@ -11,7 +11,7 @@
     .bss (NOLOAD) :
     {
         *(.sbss);
-        *(.bss*);
+        *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.bss*)));
         *(COMMON);
         . = ALIGN(4);
     } > RAM_<%- ram %>
@@ -21,7 +21,7 @@
     .uninitialized (NOLOAD) :
     {
         . = ALIGN(4);
-        *(.uninitialized*)
+        *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.uninitialized*)));
     } > RAM_<%- ram %>
     UNINITIALIZED_BASE = ADDR(.uninitialized);
     UNINITIALIZED_END = ADDR(.uninitialized) + SIZEOF(.uninitialized);
