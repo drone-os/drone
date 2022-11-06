@@ -1,6 +1,6 @@
 //! `layout.toml` config file for project memory layout.
 
-use crate::{addr, size, HEAP_POOL_SIZE, STREAM_RUNTIME_SIZE};
+use crate::{addr, size, HEAP_POOL_SIZE, HEAP_PREFIX_SIZE, STREAM_RUNTIME_SIZE};
 use drone_stream::MIN_BUFFER_SIZE;
 use eyre::{bail, eyre, Result, WrapErr};
 use indexmap::IndexMap;
@@ -276,7 +276,7 @@ impl Layout {
             stream.prefix_size = STREAM_RUNTIME_SIZE;
         }
         for heap in self.heap.values_mut() {
-            heap.section.prefix_size = HEAP_POOL_SIZE * heap.pools.len() as u32;
+            heap.section.prefix_size = HEAP_PREFIX_SIZE + HEAP_POOL_SIZE * heap.pools.len() as u32;
         }
     }
 

@@ -1,5 +1,6 @@
     .heap_<%- name %>_rt_init :
     {
+        LONG(<%- origin %>);
         <% for pool in &pools { %>
             LONG(<%- pool.size %>);
             LONG(<%- pool.edge %>);
