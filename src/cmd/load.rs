@@ -33,7 +33,8 @@ pub fn run(cmd: LoadCmd, color: Color) -> Result<()> {
         commands.push(echo_colored(format!("*** Verifying {binary}"), Blue, color));
         commands.push(format!("verify_image {binary} 0"));
     }
-    commands.push("reset run");
+    commands.push("reset halt");
+    commands.push("resume");
     commands.push("shutdown");
     exit_with_openocd(openocd_main, commands.into())?;
     Ok(())

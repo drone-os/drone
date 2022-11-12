@@ -1,0 +1,6 @@
+    .stream_rt <%- origin %> (NOLOAD) :
+    {
+        *(.stream_rt);
+    } > RAM_<%- ram %>
+    STREAM_RT_BASE = ADDR(.stream_rt);
+    STREAM_RT_END = ADDR(.stream_rt) + SIZEOF(.stream_rt);

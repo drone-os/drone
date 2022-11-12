@@ -7,7 +7,9 @@ use drone_openocd::{
     target, target_read_buffer, target_read_u32, target_write_buffer, target_write_u32, ERROR_FAIL,
     ERROR_OK,
 };
-use drone_stream::{Runtime, BOOTSTRAP_SEQUENCE, BOOTSTRAP_SEQUENCE_LENGTH, HEADER_LENGTH};
+use drone_stream::{
+    GlobalRuntime, Runtime, BOOTSTRAP_SEQUENCE, BOOTSTRAP_SEQUENCE_LENGTH, HEADER_LENGTH,
+};
 use std::mem::{size_of, transmute, MaybeUninit};
 use std::os::raw::c_int;
 use std::ptr;
@@ -26,26 +28,43 @@ pub enum Error {
 /// OpenOCD API result.
 pub type Result<T> = std::result::Result<T, Error>;
 
-/// Methods for working with the runtime instance that resides in the
+/// Methods for working with the global runtime instance that resides in the
 /// application memory.
-pub trait RemoteRuntime {
-    /// Creates a new `Runtime` value with the given `enable_mask` field, and
-    /// all other fields zeroed.
+pub trait RemoteGlobalRuntime {
+    /// Creates a new `GlobalRuntime` value with the given `enable_mask` field,
+    /// and all other fields zeroed.
     fn from_enable_mask(enable_mask: u32) -> Self;
-
-    /// Writes the runtime to the target as a bootstrap sequence.
-    ///
-    /// # Safety
-    ///
-    /// `target` must be a valid pointer to the OpencOCD target.
-    unsafe fn target_write_bootstrap(&self, target: *mut target, address: u32) -> Result<()>;
 
     /// Writes the `enable_mask` field to the target.
     ///
     /// # Safety
     ///
     /// `target` must be a valid pointer to the OpencOCD target.
-    unsafe fn target_write_enable_mask(&self, target: *mut target, address: u32) -> Result<()>;
+    unsafe fn target_write_enable_mask(
+        &self,
+        target: *mut target,
+        global_address: u32,
+    ) -> Result<()>;
+}
+
+/// Methods for working with the runtime instance that resides in the
+/// application memory.
+pub trait RemoteRuntime {
+    /// Creates a new `Runtime` value with the given `buffer_size` field, and
+    /// all other fields zeroed.
+    fn from_buffer_size(buffer_size: u32) -> Self;
+
+    /// Writes the runtime to the target as a bootstrap sequence.
+    ///
+    /// # Safety
+    ///
+    /// `target` must be a valid pointer to the OpencOCD target.
+    unsafe fn target_write_bootstrap(
+        &self,
+        target: *mut target,
+        address: u32,
+        global_runtime: Option<&GlobalRuntime>,
+    ) -> Result<()>;
 
     /// Writes the `read_cursor` field to the target.
     ///
@@ -83,7 +102,7 @@ pub trait RemoteRuntime {
 
 macro_rules! offset_of {
     ($field:ident) => {{
-        let uninit = MaybeUninit::<Runtime>::uninit();
+        let uninit = MaybeUninit::<Self>::uninit();
         let base_ptr = uninit.as_ptr();
         let field_ptr = ptr::addr_of!((*base_ptr).$field);
         (field_ptr.cast::<u8>()).offset_from(base_ptr.cast())
@@ -95,7 +114,7 @@ macro_rules! read_field {
         result_from(unsafe {
             target_read_u32(
                 $target,
-                ($address - size_of::<Runtime>() as u32 + offset_of!($field) as u32).into(),
+                ($address - size_of::<Self>() as u32 + offset_of!($field) as u32).into(),
                 &mut $self.$field,
             )
         })
@@ -107,43 +126,85 @@ macro_rules! write_field {
         result_from(unsafe {
             target_write_u32(
                 $target,
-                ($address - size_of::<Runtime>() as u32 + offset_of!($field) as u32).into(),
+                ($address - size_of::<Self>() as u32 + offset_of!($field) as u32).into(),
                 $self.$field,
             )
         })
     }};
 }
 
-impl RemoteRuntime for Runtime {
+macro_rules! write_global_field {
+    ($self:ident, $target:expr, $global_address:expr, $field:ident) => {{
+        result_from(unsafe {
+            target_write_u32(
+                $target,
+                ($global_address + offset_of!($field) as u32).into(),
+                $self.$field,
+            )
+        })
+    }};
+}
+
+impl RemoteGlobalRuntime for GlobalRuntime {
     fn from_enable_mask(enable_mask: u32) -> Self {
-        let mut runtime = Runtime::zeroed();
+        let mut runtime = Self::zeroed();
         runtime.enable_mask = enable_mask;
         runtime
     }
 
-    unsafe fn target_write_bootstrap(&self, target: *mut target, address: u32) -> Result<()> {
+    unsafe fn target_write_enable_mask(
+        &self,
+        target: *mut target,
+        global_address: u32,
+    ) -> Result<()> {
+        write_global_field!(self, target, global_address, enable_mask)
+    }
+}
+
+impl RemoteRuntime for Runtime {
+    fn from_buffer_size(buffer_size: u32) -> Self {
+        let mut runtime = Self::zeroed();
+        runtime.buffer_size = buffer_size;
+        runtime
+    }
+
+    unsafe fn target_write_bootstrap(
+        &self,
+        target: *mut target,
+        address: u32,
+        global_runtime: Option<&GlobalRuntime>,
+    ) -> Result<()> {
         unsafe {
+            let mut bootstrap_address = address.into();
             result_from(target_write_buffer(
                 target,
-                address.into(),
+                bootstrap_address,
                 BOOTSTRAP_SEQUENCE_LENGTH as u32,
                 BOOTSTRAP_SEQUENCE.as_ptr(),
             ))?;
+            bootstrap_address += BOOTSTRAP_SEQUENCE_LENGTH as u64;
             let runtime: [u8; size_of::<Runtime>()] = transmute(self.clone());
             result_from(target_write_buffer(
                 target,
-                (address + BOOTSTRAP_SEQUENCE_LENGTH as u32).into(),
+                bootstrap_address,
                 size_of::<Runtime>() as u32,
                 runtime.as_ptr(),
             ))?;
+            bootstrap_address += size_of::<Runtime>() as u64;
+            if let Some(global_runtime) = global_runtime {
+                let global_runtime: [u8; size_of::<GlobalRuntime>()] =
+                    transmute(global_runtime.clone());
+                result_from(target_write_buffer(
+                    target,
+                    bootstrap_address,
+                    size_of::<GlobalRuntime>() as u32,
+                    global_runtime.as_ptr(),
+                ))?;
+            }
             self.target_write_read_cursor(target, address)?;
             self.target_write_write_cursor(target, address)?;
         }
         Ok(())
-    }
-
-    unsafe fn target_write_enable_mask(&self, target: *mut target, address: u32) -> Result<()> {
-        write_field!(self, target, address, enable_mask)
     }
 
     unsafe fn target_write_read_cursor(&self, target: *mut target, address: u32) -> Result<()> {

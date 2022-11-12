@@ -10,11 +10,13 @@ use termcolor::Color::Green;
 pub fn run(cmd: ResetCmd, color: Color) -> Result<()> {
     let ResetCmd {} = cmd;
     let mut commands = Commands::new()?;
-    commands.push("gdb_port disabled");
+    // Causes crashes for picoprobe
+    // commands.push("gdb_port disabled");
     commands.push("tcl_port disabled");
     commands.push("telnet_port disabled");
     commands.push("init");
-    commands.push("reset run");
+    commands.push("reset halt");
+    commands.push("resume");
     commands.push(echo_colored("*** Reset complete", Green, color));
     commands.push("shutdown");
     exit_with_openocd(openocd_main, commands.into())?;

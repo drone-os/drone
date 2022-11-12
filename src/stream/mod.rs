@@ -4,6 +4,7 @@ pub mod route;
 pub mod runtime;
 
 use self::route::{RouteDesc, Routes};
+use self::runtime::{RemoteGlobalRuntime, RemoteRuntime};
 use drone_config::{locate_project_root, Layout};
 use drone_openocd::{
     command_context, command_invocation, command_mode_COMMAND_EXEC, command_registration,
@@ -11,35 +12,42 @@ use drone_openocd::{
     target_register_timer_callback, target_timer_type_TARGET_TIMER_TYPE_PERIODIC,
     target_unregister_timer_callback, COMMAND_REGISTRATION_DONE, ERROR_FAIL, ERROR_OK,
 };
-use drone_stream::{Runtime, HEADER_LENGTH, STREAM_COUNT};
+use drone_stream::{GlobalRuntime, Runtime, HEADER_LENGTH, STREAM_COUNT};
 use libc::c_void;
-use runtime::RemoteRuntime;
 use std::ffi::{CStr, CString};
 use std::iter::FusedIterator;
 use std::os::raw::c_int;
 use std::sync::atomic::{AtomicPtr, Ordering};
 use std::time::Duration;
 use std::{ptr, slice};
-use tracing::{error, warn};
+use tracing::{error, trace, warn};
 
 const POLLING_INTERVAL: Duration = Duration::from_millis(50);
 
 const OVERRIDABLE_PROCS: &[&str] =
     &["before_drone_stream", "before_drone_stream_reset", "before_drone_stream_run"];
 
-static STREAM_PTR: AtomicPtr<Stream> = AtomicPtr::new(ptr::null_mut());
+static CONTEXT_PTR: AtomicPtr<Context> = AtomicPtr::new(ptr::null_mut());
+
+struct Context {
+    target: *mut target,
+    global_address: u32,
+    global_runtime: GlobalRuntime,
+    streams: Vec<Stream>,
+    routes: Routes,
+}
 
 struct Stream {
-    target: *mut target,
+    name: String,
+    init_primary: bool,
     address: u32,
-    routes: Routes,
     runtime: Runtime,
     buffer: Vec<u8>,
 }
 
-unsafe impl Send for Stream {}
+unsafe impl Send for Context {}
 
-impl Stream {
+impl Context {
     fn new(target: *mut target, route_descs: Vec<RouteDesc>) -> Option<Self> {
         let project_root = match locate_project_root() {
             Ok(project_root) => project_root,
@@ -49,14 +57,34 @@ impl Stream {
             }
         };
         match Layout::read_from_project_root(&project_root) {
-            Ok(Layout { ref stream, .. }) if stream.contains_key("core0") => {
+            Ok(Layout { ref stream, .. })
+                if !stream.as_ref().map_or(true, |stream| stream.sections.is_empty()) =>
+            {
                 match Routes::open_all(&route_descs) {
                     Ok(routes) => {
-                        let stream = stream.get("core0").unwrap();
-                        let address = stream.origin + stream.prefix_size;
-                        let runtime = Runtime::from_enable_mask(make_enable_mask(&route_descs));
-                        let buffer = vec![0; stream.size as usize];
-                        return Some(Self { target, address, routes, runtime, buffer });
+                        let global_address = stream.as_ref().unwrap().origin;
+                        let global_runtime =
+                            GlobalRuntime::from_enable_mask(make_enable_mask(&route_descs));
+                        let streams = stream
+                            .as_ref()
+                            .unwrap()
+                            .sections
+                            .iter()
+                            .map(|(name, stream)| Stream {
+                                name: name.clone(),
+                                init_primary: stream.init_primary.unwrap_or(false),
+                                address: stream.origin + stream.prefix_size,
+                                runtime: Runtime::from_buffer_size(stream.size),
+                                buffer: vec![0; stream.size as usize],
+                            })
+                            .collect();
+                        return Some(Self {
+                            target,
+                            global_address,
+                            global_runtime,
+                            streams,
+                            routes,
+                        });
                     }
                     Err(err) => {
                         error!("Couldn't open Drone Stream output: {err:#?}");
@@ -64,7 +92,7 @@ impl Stream {
                 }
             }
             Ok(_) => {
-                error!("stream.core0 is not set in the layout config");
+                error!("no streams are defined in the layout config");
             }
             Err(err) => {
                 error!("{err:#?}");
@@ -77,7 +105,13 @@ impl Stream {
         unsafe {
             let line = CString::new("before_drone_stream_reset").unwrap().into_raw();
             runtime::result_from(command_run_line(ctx, line))?;
-            self.runtime.target_write_bootstrap(self.target, self.address)?;
+            for stream in &self.streams {
+                stream.runtime.target_write_bootstrap(
+                    self.target,
+                    stream.address,
+                    stream.init_primary.then_some(&self.global_runtime),
+                )?;
+            }
         }
         Ok(())
     }
@@ -86,52 +120,61 @@ impl Stream {
         unsafe {
             let line = CString::new("before_drone_stream_run").unwrap().into_raw();
             runtime::result_from(command_run_line(ctx, line))?;
-            self.runtime.target_read_write_cursor(self.target, self.address)?;
-            self.runtime.read_cursor = self.runtime.write_cursor;
-            self.runtime.target_write_read_cursor(self.target, self.address)?;
-            self.runtime.target_write_enable_mask(self.target, self.address)?;
+            for stream in &mut self.streams {
+                stream.runtime.target_read_write_cursor(self.target, stream.address)?;
+                stream.runtime.read_cursor = stream.runtime.write_cursor;
+                stream.runtime.target_write_read_cursor(self.target, stream.address)?;
+            }
+            self.global_runtime.target_write_enable_mask(self.target, self.global_address)?;
         }
         Ok(())
     }
 
     fn stop(&mut self) -> runtime::Result<()> {
         unsafe {
-            self.runtime.enable_mask = 0;
-            self.runtime.target_write_enable_mask(self.target, self.address)?;
+            self.global_runtime.enable_mask = 0;
+            self.global_runtime.target_write_enable_mask(self.target, self.global_address)?;
         }
         Ok(())
     }
 
     fn poll(&mut self) -> runtime::Result<()> {
-        let mut buffer = unsafe {
-            self.runtime.target_consume_buffer(self.target, self.address, &mut self.buffer)?
-        };
-        while !buffer.is_empty() {
-            // Read the header.
-            if buffer.len() < HEADER_LENGTH as usize {
-                warn!("Drone Stream encoding error");
-                break;
-            }
-            let stream = buffer[0];
-            let length = buffer[1];
-            if stream >= STREAM_COUNT {
-                warn!("Drone Stream encoding error");
-                break;
-            }
-
-            // Read the data bytes.
-            let range = HEADER_LENGTH as usize..usize::from(length) + HEADER_LENGTH as usize;
-            let data = if let Some(data) = buffer.get(range) {
-                data
-            } else {
-                warn!("Drone Stream encoding error");
-                break;
+        for stream_context in &mut self.streams {
+            let mut buffer = unsafe {
+                stream_context.runtime.target_consume_buffer(
+                    self.target,
+                    stream_context.address,
+                    &mut stream_context.buffer,
+                )?
             };
+            while !buffer.is_empty() {
+                // Read the header.
+                if buffer.len() < HEADER_LENGTH as usize {
+                    warn!("Drone Stream encoding error: chunk is too short");
+                    break;
+                }
+                let stream = buffer[0];
+                let length = buffer[1];
+                if stream >= STREAM_COUNT {
+                    warn!("Drone Stream encoding error: invalid stream number");
+                    break;
+                }
 
-            if let Err(err) = self.routes.write(stream, data) {
-                error!("Couldn't write to Drone Stream output: {err:#?}");
+                // Read the data bytes.
+                let range = HEADER_LENGTH as usize..usize::from(length) + HEADER_LENGTH as usize;
+                let data = if let Some(data) = buffer.get(range) {
+                    data
+                } else {
+                    warn!("Drone Stream encoding error: invalid length");
+                    break;
+                };
+
+                trace!("Transaction {}:{} -> {:?}", stream_context.name, stream, data);
+                if let Err(err) = self.routes.write(stream, data) {
+                    error!("Couldn't write to Drone Stream output: {err:#?}");
+                }
+                buffer = &mut buffer[usize::from(length) + HEADER_LENGTH as usize..];
             }
-            buffer = &mut buffer[usize::from(length) + HEADER_LENGTH as usize..];
         }
         Ok(())
     }
@@ -201,11 +244,11 @@ pub unsafe fn init(ctx: *mut command_context) -> c_int {
 }
 
 unsafe extern "C" fn handle_drone_stream_reset_command(cmd: *mut command_invocation) -> c_int {
-    unsafe { start_streaming(cmd, Stream::start_reset) }
+    unsafe { start_streaming(cmd, Context::start_reset) }
 }
 
 unsafe extern "C" fn handle_drone_stream_run_command(cmd: *mut command_invocation) -> c_int {
-    unsafe { start_streaming(cmd, Stream::start_run) }
+    unsafe { start_streaming(cmd, Context::start_run) }
 }
 
 unsafe extern "C" fn handle_drone_stream_stop_command(cmd: *mut command_invocation) -> c_int {
@@ -222,8 +265,8 @@ unsafe extern "C" fn handle_drone_stream_stop_command(cmd: *mut command_invocati
         error!("`drone_stream stop` takes up to 1 argument");
         return ERROR_FAIL;
     }
-    let stream_ptr = STREAM_PTR.swap(ptr::null_mut(), Ordering::SeqCst);
-    if stream_ptr.is_null() {
+    let context_ptr = CONTEXT_PTR.swap(ptr::null_mut(), Ordering::SeqCst);
+    if context_ptr.is_null() {
         #[allow(clippy::cast_possible_wrap)]
         return if nofail {
             ERROR_OK as i32
@@ -235,18 +278,18 @@ unsafe extern "C" fn handle_drone_stream_stop_command(cmd: *mut command_invocati
     runtime::result_into(unsafe {
         runtime::result_from(target_unregister_timer_callback(
             Some(drone_stream_timer_callback),
-            stream_ptr.cast(),
+            context_ptr.cast(),
         ))
-        .and_then(|()| (*stream_ptr).stop())
+        .and_then(|()| (*context_ptr).stop())
     })
 }
 
-unsafe extern "C" fn drone_stream_timer_callback(stream: *mut c_void) -> c_int {
-    let stream = unsafe { &mut *stream.cast::<Stream>() };
-    runtime::result_into(stream.poll())
+unsafe extern "C" fn drone_stream_timer_callback(context: *mut c_void) -> c_int {
+    let context = unsafe { &mut *context.cast::<Context>() };
+    runtime::result_into(context.poll())
 }
 
-unsafe fn start_streaming<F: FnOnce(&mut Stream, *mut command_context) -> runtime::Result<()>>(
+unsafe fn start_streaming<F: FnOnce(&mut Context, *mut command_context) -> runtime::Result<()>>(
     cmd: *mut command_invocation,
     f: F,
 ) -> c_int {
@@ -254,27 +297,27 @@ unsafe fn start_streaming<F: FnOnce(&mut Stream, *mut command_context) -> runtim
     match route_descs {
         Ok(route_descs) => {
             let target = unsafe { get_current_target((*cmd).ctx) };
-            if let Some(stream) = Stream::new(target, route_descs) {
-                let stream_ptr = Box::into_raw(Box::new(stream));
-                let atomic_result = STREAM_PTR.compare_exchange(
+            if let Some(context) = Context::new(target, route_descs) {
+                let context_ptr = Box::into_raw(Box::new(context));
+                let atomic_result = CONTEXT_PTR.compare_exchange(
                     ptr::null_mut(),
-                    stream_ptr,
+                    context_ptr,
                     Ordering::SeqCst,
                     Ordering::SeqCst,
                 );
                 if atomic_result.is_err() {
                     error!("drone_stream has already started");
-                    drop(unsafe { Box::from_raw(stream_ptr) });
+                    drop(unsafe { Box::from_raw(context_ptr) });
                 } else {
                     return runtime::result_into((|| unsafe {
                         let line = CString::new("before_drone_stream").unwrap().into_raw();
                         runtime::result_from(command_run_line((*cmd).ctx, line))?;
-                        f(&mut *stream_ptr, (*cmd).ctx)?;
+                        f(&mut *context_ptr, (*cmd).ctx)?;
                         runtime::result_from(target_register_timer_callback(
                             Some(drone_stream_timer_callback),
                             POLLING_INTERVAL.as_millis() as u32,
                             target_timer_type_TARGET_TIMER_TYPE_PERIODIC,
-                            stream_ptr.cast(),
+                            context_ptr.cast(),
                         ))?;
                         Ok(())
                     })());

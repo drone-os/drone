@@ -62,6 +62,13 @@ struct Pool {
 }
 
 #[derive(TemplateOnce)]
+#[template(path = "layout.ld/global_stream.stpl")]
+struct GlobalStream {
+    origin: String,
+    ram: String,
+}
+
+#[derive(TemplateOnce)]
 #[template(path = "layout.ld/stream.stpl")]
 struct Stream<'a> {
     name: &'a str,
@@ -74,6 +81,7 @@ struct Stream<'a> {
 /// Creates a new linker script.
 pub fn render(path: &Path, layout: &Layout) -> Result<()> {
     let mut sections = BTreeMap::new();
+    render_global_stream_sections(&mut sections, layout);
     render_stream_sections(&mut sections, layout);
     render_data_sections(&mut sections, layout);
     render_heap_sections(&mut sections, layout);
@@ -154,15 +162,27 @@ fn render_heap_sections(sections: &mut BTreeMap<u32, String>, layout: &Layout) {
     }
 }
 
-fn render_stream_sections(sections: &mut BTreeMap<u32, String>, layout: &Layout) {
-    for (name, stream) in &layout.stream {
-        let ctx = Stream {
-            name,
-            uppercase_name: name.to_shouty_snake_case(),
+fn render_global_stream_sections(sections: &mut BTreeMap<u32, String>, layout: &Layout) {
+    if let Some(stream) = &layout.stream {
+        let ctx = GlobalStream {
             origin: addr::to_string(stream.origin),
-            size: size::to_string(stream.size),
             ram: stream.ram.to_shouty_snake_case(),
         };
         sections.insert(stream.origin, ctx.render_once().unwrap());
+    }
+}
+
+fn render_stream_sections(sections: &mut BTreeMap<u32, String>, layout: &Layout) {
+    if let Some(stream) = &layout.stream {
+        for (name, stream) in &stream.sections {
+            let ctx = Stream {
+                name,
+                uppercase_name: name.to_shouty_snake_case(),
+                origin: addr::to_string(stream.origin),
+                size: size::to_string(stream.size),
+                ram: stream.ram.to_shouty_snake_case(),
+            };
+            sections.insert(stream.origin, ctx.render_once().unwrap());
+        }
     }
 }

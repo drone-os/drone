@@ -26,8 +26,13 @@ pub const HEAP_POOL_SIZE: u32 = 16;
 /// Memory size of the heap metadata without pools.
 pub const HEAP_PREFIX_SIZE: u32 = 4;
 
+/// Memory size of Drone Stream global runtime.
 #[allow(clippy::cast_possible_truncation)]
-const STREAM_RUNTIME_SIZE: u32 = size_of::<drone_stream::Runtime>() as u32;
+pub const STREAM_GLOBAL_RUNTIME_SIZE: u32 = size_of::<drone_stream::GlobalRuntime>() as u32;
+
+/// Memory size of Drone Stream runtime.
+#[allow(clippy::cast_possible_truncation)]
+pub const STREAM_RUNTIME_SIZE: u32 = size_of::<drone_stream::Runtime>() as u32;
 
 /// Locates cargo project root starting from the current directory.
 pub fn locate_project_root() -> Result<PathBuf> {

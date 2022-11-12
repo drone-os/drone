@@ -1,6 +1,8 @@
 //! `layout.toml` config file for project memory layout.
 
-use crate::{addr, size, HEAP_POOL_SIZE, HEAP_PREFIX_SIZE, STREAM_RUNTIME_SIZE};
+use crate::{
+    addr, size, HEAP_POOL_SIZE, HEAP_PREFIX_SIZE, STREAM_GLOBAL_RUNTIME_SIZE, STREAM_RUNTIME_SIZE,
+};
 use drone_stream::MIN_BUFFER_SIZE;
 use eyre::{bail, eyre, Result, WrapErr};
 use indexmap::IndexMap;
@@ -29,9 +31,8 @@ pub struct Layout {
     /// Stack memory sections.
     #[serde(default)]
     pub stack: IndexMap<String, Section>,
-    /// Stream memory sections.
-    #[serde(default)]
-    pub stream: IndexMap<String, FixedSection>,
+    /// Drone Stream configuration.
+    pub stream: Option<Stream>,
     /// Heap memory sections.
     #[serde(default)]
     pub heap: IndexMap<String, Heap>,
@@ -71,6 +72,24 @@ pub struct Data {
     pub size: u32,
 }
 
+/// Drone Stream configuration.
+#[non_exhaustive]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct Stream {
+    /// RAM memory region for Drone Stream global runtime data.
+    pub ram: String,
+    /// Auto-calculated origin of this section.
+    #[serde(skip_deserializing, with = "addr")]
+    pub origin: u32,
+    /// Auto-calculated fixed size of this section.
+    #[serde(skip_deserializing, with = "size")]
+    pub fixed_size: u32,
+    /// Stream memory sections.
+    #[serde(flatten)]
+    pub sections: IndexMap<String, FixedSection>,
+}
+
 /// Memory section inside some RAM memory region.
 #[non_exhaustive]
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -101,6 +120,8 @@ pub struct FixedSection {
     /// Length of the memory section.
     #[serde(with = "size")]
     pub size: u32,
+    /// Whether this section is the primary initializer.
+    pub init_primary: Option<bool>,
     /// Auto-calculated origin of this section.
     #[serde(skip_deserializing, with = "addr")]
     pub origin: u32,
@@ -197,6 +218,7 @@ impl Layout {
     pub fn validate(&self) -> Result<()> {
         self.validate_coherence()?;
         self.validate_stream_sizes()?;
+        self.validate_stream_init_primary()?;
         self.validate_addresses()?;
         Ok(())
     }
@@ -205,11 +227,17 @@ impl Layout {
     /// sections combined.
     #[allow(clippy::cast_precision_loss)]
     pub fn calculate(&mut self, data_size: Option<u32>) -> Result<()> {
-        self.calculate_prefixes();
+        self.calculate_fixed_blocks();
         for (key, ram) in &self.ram {
             let mut stacks = self.stack.values_mut().filter(|s| &s.ram == key).collect::<Vec<_>>();
-            let mut streams =
-                self.stream.values_mut().filter(|s| &s.ram == key).collect::<Vec<_>>();
+            let (global_stream, mut streams) = unzip_option(self.stream.as_mut().map(|stream| {
+                ((&stream.ram, stream.fixed_size, &mut stream.origin), &mut stream.sections)
+            }));
+            let mut global_stream = global_stream.filter(|&(ram, _, _)| ram == key);
+            let mut streams = streams
+                .iter_mut()
+                .flat_map(|sections| sections.values_mut().filter(|s| &s.ram == key))
+                .collect::<Vec<_>>();
             let mut heaps = self
                 .heap
                 .values_mut()
@@ -218,6 +246,7 @@ impl Layout {
                 .collect::<Vec<_>>();
             let fixed_first = stacks.first().map_or(false, |s| s.size.is_fixed());
             let fixed_size = stacks.iter().filter_map(|s| s.size.fixed()).sum::<u32>()
+                + global_stream.as_ref().map_or(0, |&(_, fixed_size, _)| fixed_size)
                 + streams.iter().map(|s| s.size + s.prefix_size).sum::<u32>()
                 + heaps.iter().filter_map(|s| s.size.fixed()).sum::<u32>()
                 + heaps.iter().map(|s| s.prefix_size).sum::<u32>();
@@ -250,8 +279,13 @@ impl Layout {
                 &mut flexible_pointer,
                 &mut correction,
             );
-            let data_origin =
-                calculate_fixed_sections(&mut streams, data_size, fixed_first, &mut fixed_pointer);
+            let data_origin = calculate_fixed_sections(
+                &mut global_stream,
+                &mut streams,
+                data_size,
+                fixed_first,
+                &mut fixed_pointer,
+            );
             if let Some((data_origin, data_size)) = data_origin.zip(data_size) {
                 self.data.origin = data_origin;
                 self.data.size = data_size;
@@ -271,9 +305,12 @@ impl Layout {
     }
 
     #[allow(clippy::cast_possible_truncation)]
-    fn calculate_prefixes(&mut self) {
-        for stream in self.stream.values_mut() {
-            stream.prefix_size = STREAM_RUNTIME_SIZE;
+    fn calculate_fixed_blocks(&mut self) {
+        if let Some(stream) = &mut self.stream {
+            stream.fixed_size = STREAM_GLOBAL_RUNTIME_SIZE;
+            for stream in stream.sections.values_mut() {
+                stream.prefix_size = STREAM_RUNTIME_SIZE;
+            }
         }
         for heap in self.heap.values_mut() {
             heap.section.prefix_size = HEAP_PREFIX_SIZE + HEAP_POOL_SIZE * heap.pools.len() as u32;
@@ -281,36 +318,52 @@ impl Layout {
     }
 
     fn validate_coherence(&self) -> Result<()> {
-        for (name, stack) in &self.stack {
-            let ram = &stack.ram;
-            if !self.ram.contains_key(ram) {
-                bail!("stack.{name}.ram points to an unknown RAM region {ram}");
+        fn validate_ram(layout: &Layout, path: &str, key: &str) -> Result<()> {
+            if !layout.ram.contains_key(key) {
+                bail!("{path} points to an unknown RAM region {key}");
             }
+            Ok(())
         }
-        for (name, stream) in &self.stream {
-            let ram = &stream.ram;
-            if !self.ram.contains_key(ram) {
-                bail!("stream.{name}.ram points to an unknown RAM region {ram}");
+        validate_ram(self, "data.ram", &self.data.ram)?;
+        for (name, stack) in &self.stack {
+            validate_ram(self, &format!("stack.{name}.ram"), &stack.ram)?;
+        }
+        if let Some(stream) = &self.stream {
+            validate_ram(self, "stream.ram", &stream.ram)?;
+            for (name, stream) in &stream.sections {
+                validate_ram(self, &format!("stream.{name}.ram"), &stream.ram)?;
             }
         }
         for (name, heap) in &self.heap {
-            let ram = &heap.section.ram;
-            if !self.ram.contains_key(ram) {
-                bail!("heap.{name}.ram points to an unknown RAM region {ram}");
-            }
+            validate_ram(self, &format!("heap.{name}.ram"), &heap.section.ram)?;
         }
         Ok(())
     }
 
     fn validate_stream_sizes(&self) -> Result<()> {
-        for (name, stream) in &self.stream {
-            if stream.size < MIN_BUFFER_SIZE {
-                bail!(
-                    "stream.{name}.size is set to {}, which is less than the minimum possible \
-                     size {}",
-                    size::to_string(stream.size),
-                    size::to_string(MIN_BUFFER_SIZE)
-                );
+        if let Some(stream) = &self.stream {
+            for (name, stream) in &stream.sections {
+                if stream.size < MIN_BUFFER_SIZE {
+                    bail!(
+                        "stream.{name}.size is set to {}, which is less than the minimum possible \
+                         size {}",
+                        size::to_string(stream.size),
+                        size::to_string(MIN_BUFFER_SIZE)
+                    );
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn validate_stream_init_primary(&self) -> Result<()> {
+        if let Some(stream) = &self.stream {
+            let count =
+                stream.sections.values().filter(|s| s.init_primary.unwrap_or(false)).count();
+            match count {
+                0 => bail!("a stream with `init-primary = true` must be defined"),
+                1 => {}
+                _ => bail!("found multiple streams with `init-primary = true`"),
             }
         }
         Ok(())
@@ -330,8 +383,10 @@ impl Layout {
                 validate_address(size, true, || format!("stack.{key}.size"))?;
             }
         }
-        for (key, stream) in &self.stream {
-            validate_address(stream.size, true, || format!("stream.{key}.size"))?;
+        if let Some(stream) = &self.stream {
+            for (key, stream) in &stream.sections {
+                validate_address(stream.size, true, || format!("stream.{key}.size"))?;
+            }
         }
         for (key, heap) in &self.heap {
             if let Some(size) = heap.section.size.fixed() {
@@ -357,11 +412,21 @@ fn validate_address(value: u32, non_zero: bool, name: impl FnOnce() -> String) -
 }
 
 fn calculate_fixed_sections(
+    global_stream: &mut Option<(&String, u32, &mut u32)>,
     streams: &mut [&mut FixedSection],
     data_size: Option<u32>,
     fixed_first: bool,
     fixed_pointer: &mut u32,
 ) -> Option<u32> {
+    if let Some((_, ref fixed_size, &mut ref mut origin)) = global_stream {
+        if fixed_first {
+            *origin = *fixed_pointer;
+            *fixed_pointer += fixed_size;
+        } else {
+            *fixed_pointer -= fixed_size;
+            *origin = *fixed_pointer;
+        }
+    }
     for stream in streams {
         if fixed_first {
             stream.origin = *fixed_pointer;
@@ -477,6 +542,14 @@ fn calculate_pools(heaps: &mut IndexMap<String, Heap>) -> Result<()> {
     Ok(())
 }
 
+// TODO use `Option::unzip()` when `#![feature(unzip_option)]` is stabilized.
+fn unzip_option<T, U>(option: Option<(T, U)>) -> (Option<T>, Option<U>) {
+    match option {
+        Some((a, b)) => (Some(a), Some(b)),
+        None => (None, None),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -533,30 +606,40 @@ ram = "main"
 [stack]
 core0 = { ram = "main", size = "4K" }
 [stream]
-core0 = { ram = "main", size = "260" }
+ram = "main"
+core0 = { ram = "main", size = "260", init-primary = true }
 [heap]
 core0 = { ram = "main", size = "100%", pools = [{ block = "4", count = "100%" }] }
 "#;
         let mut layout = Layout::parse(layout).unwrap();
         layout.calculate(Some(400)).unwrap();
         let stack = layout.stack.values().collect::<Vec<_>>();
-        let stream = layout.stream.values().collect::<Vec<_>>();
+        let stream =
+            layout.stream.iter().flat_map(|stream| stream.sections.values()).collect::<Vec<_>>();
         let heap = layout.heap.values().collect::<Vec<_>>();
         assert_eq!(stack[0].origin, 0x20000000);
         assert_eq!(stack[0].fixed_size, 4 * 1024);
-        assert_eq!(stream[0].origin, 0x20000000 + 4 * 1024);
+        assert_eq!(layout.stream.as_ref().unwrap().origin, 0x20000000 + 4 * 1024);
+        assert_eq!(stream[0].origin, 0x20000000 + 4 * 1024 + STREAM_GLOBAL_RUNTIME_SIZE);
         assert_eq!(stream[0].prefix_size, STREAM_RUNTIME_SIZE);
         assert_eq!(stream[0].size, 260);
-        assert_eq!(layout.data.origin, 0x20000000 + 4 * 1024 + STREAM_RUNTIME_SIZE + 260);
+        assert_eq!(
+            layout.data.origin,
+            0x20000000 + 4 * 1024 + STREAM_RUNTIME_SIZE + STREAM_GLOBAL_RUNTIME_SIZE + 260
+        );
         assert_eq!(layout.data.size, 400);
-        assert_eq!(heap[0].section.origin, 0x20000000 + 4 * 1024 + STREAM_RUNTIME_SIZE + 260 + 400);
-        assert_eq!(heap[0].section.prefix_size, HEAP_POOL_SIZE);
-        assert_eq!(heap[0].section.fixed_size, 15696);
+        assert_eq!(
+            heap[0].section.origin,
+            0x20000000 + 4 * 1024 + STREAM_RUNTIME_SIZE + STREAM_GLOBAL_RUNTIME_SIZE + 260 + 400
+        );
+        assert_eq!(heap[0].section.prefix_size, HEAP_POOL_SIZE + HEAP_PREFIX_SIZE);
+        assert_eq!(heap[0].section.fixed_size, 15688);
         assert_eq!(
             stack[0].fixed_size
                 + stream[0].prefix_size
                 + stream[0].size
                 + layout.data.size
+                + layout.stream.as_ref().unwrap().fixed_size
                 + heap[0].section.prefix_size
                 + heap[0].section.fixed_size,
             20 * 1024
@@ -573,33 +656,53 @@ ram = "main"
 [stack]
 core0 = { ram = "main", size = "25%" }
 [stream]
-core0 = { ram = "main", size = "260" }
+ram = "main"
+core0 = { ram = "main", size = "260", init-primary = true }
 [heap]
 core0 = { ram = "main", size = "75%", pools = [{ block = "4", count = "100%" }] }
 "#;
         let mut layout = Layout::parse(layout).unwrap();
         layout.calculate(Some(400)).unwrap();
         let stack = layout.stack.values().collect::<Vec<_>>();
-        let stream = layout.stream.values().collect::<Vec<_>>();
+        let stream =
+            layout.stream.iter().flat_map(|stream| stream.sections.values()).collect::<Vec<_>>();
         let heap = layout.heap.values().collect::<Vec<_>>();
         assert_eq!(stack[0].origin, 0x20000000);
-        assert_eq!(stack[0].fixed_size, 4948);
-        assert_eq!(heap[0].section.origin, 0x20000000 + 4948);
-        assert_eq!(heap[0].section.prefix_size, HEAP_POOL_SIZE);
-        assert_eq!(heap[0].section.fixed_size, 14844);
-        assert_eq!(layout.data.origin, 0x20000000 + 4948 + HEAP_POOL_SIZE + 14844);
+        assert_eq!(stack[0].fixed_size, 4944);
+        assert_eq!(heap[0].section.origin, 0x20000000 + 4944);
+        assert_eq!(heap[0].section.prefix_size, HEAP_POOL_SIZE + HEAP_PREFIX_SIZE);
+        assert_eq!(heap[0].section.fixed_size, 14840);
+        assert_eq!(
+            layout.data.origin,
+            0x20000000 + 4944 + HEAP_POOL_SIZE + HEAP_PREFIX_SIZE + 14840
+        );
         assert_eq!(layout.data.size, 400);
-        assert_eq!(stream[0].origin, 0x20000000 + 4948 + HEAP_POOL_SIZE + 14844 + 400);
+        assert_eq!(
+            stream[0].origin,
+            0x20000000 + 4944 + HEAP_POOL_SIZE + HEAP_PREFIX_SIZE + 14840 + 400
+        );
         assert_eq!(stream[0].prefix_size, STREAM_RUNTIME_SIZE);
         assert_eq!(stream[0].size, 260);
-        assert_eq!(heap[0].pools[0].fixed_count, 3711);
+        assert_eq!(
+            layout.stream.as_ref().unwrap().origin,
+            0x20000000
+                + 4944
+                + HEAP_POOL_SIZE
+                + HEAP_PREFIX_SIZE
+                + 14840
+                + 400
+                + STREAM_RUNTIME_SIZE
+                + 260
+        );
+        assert_eq!(heap[0].pools[0].fixed_count, 3710);
         assert_eq!(
             stack[0].fixed_size
                 + heap[0].section.prefix_size
                 + heap[0].section.fixed_size
                 + layout.data.size
                 + stream[0].prefix_size
-                + stream[0].size,
+                + stream[0].size
+                + layout.stream.as_ref().unwrap().fixed_size,
             20 * 1024
         );
     }
@@ -629,7 +732,7 @@ b = { ram = "main", size = "87.5%" }
     fn test_pools_rounding_errors() {
         let layout = r#"
 [ram]
-main = { origin = 0, size = "68" }
+main = { origin = 0, size = "72" }
 [data]
 ram = "main"
 [heap.main]
@@ -645,12 +748,12 @@ pools = [
         let heap = layout.heap.values().collect::<Vec<_>>();
         assert_eq!(heap[0].pools[0].fixed_count, 3);
         assert_eq!(heap[0].pools[1].fixed_count, 2);
-        assert_eq!(heap[0].section.prefix_size, 2 * HEAP_POOL_SIZE);
+        assert_eq!(heap[0].section.prefix_size, 2 * HEAP_POOL_SIZE + HEAP_PREFIX_SIZE);
         assert_eq!(
             heap[0].pools[0].fixed_count * heap[0].pools[0].block
                 + heap[0].pools[1].fixed_count * heap[0].pools[1].block
                 + heap[0].section.prefix_size,
-            68
+            72
         );
     }
 
@@ -672,10 +775,13 @@ core0 = { ram = "main", size = "100%", pools = [{ block = "4", count = "100%" }]
         assert_eq!(stack[0].origin, 0x20000000);
         assert_eq!(stack[0].fixed_size, 4 * 1024);
         assert_eq!(layout.data.origin, 0x20000000 + 4 * 1024);
-        assert_eq!(layout.data.size, 16 * 1024 - HEAP_POOL_SIZE);
-        assert_eq!(heap[0].section.origin, 0x20000000 + 20 * 1024 - HEAP_POOL_SIZE);
+        assert_eq!(layout.data.size, 16 * 1024 - HEAP_POOL_SIZE - HEAP_PREFIX_SIZE);
+        assert_eq!(
+            heap[0].section.origin,
+            0x20000000 + 20 * 1024 - HEAP_POOL_SIZE - HEAP_PREFIX_SIZE
+        );
         assert_eq!(heap[0].section.fixed_size, 0);
-        assert_eq!(heap[0].section.prefix_size, HEAP_POOL_SIZE);
+        assert_eq!(heap[0].section.prefix_size, HEAP_POOL_SIZE + HEAP_PREFIX_SIZE);
         assert_eq!(
             stack[0].fixed_size
                 + layout.data.size
