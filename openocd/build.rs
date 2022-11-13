@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 #[derive(Debug)]
-pub struct UnprefixItems {}
+pub struct UnprefixItems;
 
 impl ParseCallbacks for UnprefixItems {
     fn item_name(&self, original_item_name: &str) -> Option<String> {
@@ -63,7 +63,7 @@ fn main() {
         .clang_arg("-DDRONE_BINDGEN")
         .clang_args(&clang_args)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-        .parse_callbacks(Box::new(UnprefixItems {}))
+        .parse_callbacks(Box::new(UnprefixItems))
         .generate()
         .expect("failed to generate bindings")
         .write_to_file(out_path.join("bindings.rs"))

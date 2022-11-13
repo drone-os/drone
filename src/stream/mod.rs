@@ -332,7 +332,7 @@ unsafe fn start_streaming<F: FnOnce(&mut Context, *mut command_context) -> runti
 }
 
 unsafe fn args_iter(cmd: &mut command_invocation) -> impl FusedIterator<Item = &[u8]> {
-    unsafe { slice::from_raw_parts((*cmd).argv, (*cmd).argc as _) }
+    unsafe { slice::from_raw_parts(cmd.argv, cmd.argc as _) }
         .iter()
         .map(|arg| unsafe { CStr::from_ptr(*arg).to_bytes() })
 }
