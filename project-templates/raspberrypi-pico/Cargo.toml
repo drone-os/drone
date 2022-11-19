@@ -1,0 +1,40 @@
+[package]
+name = "drone-template-raspberrypi-pico"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "drone-template-raspberrypi-pico"
+test = false
+doc = false
+
+[features]
+default = []
+host = [
+    "futures/std",
+    ### When you add additional Drone crates, link their `host` features here:
+    "drone-core/host",
+    "drone-cortexm/host",
+    "drone-raspberrypi-pico/host",
+]
+
+[dependencies]
+futures = { version = "0.3.24", default-features = false }
+### Versions of these Drone crates must be kept in sync with the `drone` crate
+### in flake.nix
+drone-core = { version = "0.15.0" }
+### Add additional Drone crates specific to your microcontroller here. Some
+### crates may require setting additional Rust flags in flake.nix. Refer to
+### crates documentations for details.
+drone-cortexm = { version = "0.15.0" }
+drone-raspberrypi-pico = { version = "0.15.0" }
+
+[build-dependencies]
+drone-raspberrypi-pico-gen = { version = "0.15.0" }
+
+[profile.release]
+lto = true
+debug = true
+panic = "abort"

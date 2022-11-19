@@ -1,0 +1,87 @@
+[flash]
+### Region of the flash memory where the program code is stored.
+program = { origin = 0x10000000, size = "2048K" }
+
+[ram]
+### There can be multiple SRAM banks in a microcontroller. List them here and
+### then refer to them by name in next sections.
+main = { origin = 0x20000000, size = "256K" }
+stack0 = { origin = 0x20040000, size = "4K" }
+stack1 = { origin = 0x20041000, size = "4K" }
+
+[data]
+### Section for program's global variables resides in "main" RAM region.
+ram = "main"
+### Insert additional bytes to compensate changes to alignment paddings during
+### the second stage linking.
+padding = "240"
+
+[stack.core0]
+### Stack memory for core 0 resides in the dedicated "stack0" SRAM bank.
+ram = "stack0"
+size = "100%"
+
+[stack.core1]
+### Stack memory for core 1 resides in the dedicated "stack1" SRAM bank.
+ram = "stack1"
+size = "100%"
+
+[stream]
+### Drone Stream global runtime data resides in "main" RAM region.
+ram = "main"
+
+[stream.core0]
+### Drone Stream buffer for core 0 resides in "main" RAM region and has a size
+### of 260 bytes.
+ram = "main"
+size = "260"
+init-primary = true
+
+[stream.core1]
+### Drone Stream buffer for core 1 resides in "main" RAM region and has a size
+### of 260 bytes.
+ram = "main"
+size = "260"
+
+[heap.core0]
+### Dynamic heap memory for core 0 resides in "main" RAM region and takes a
+### half of the remaining region space.
+ram = "main"
+size = "50%"
+### There are multiple pools of different block sizes. "count" can be an
+### absolute number of blocks in the pool, or a relative number, which
+### represents a portion of the whole heap.
+pools = [
+    { block = "4", count = "4.61%" },
+    { block = "8", count = "11.37%" },
+    { block = "20", count = "15.88%" },
+    { block = "56", count = "18.14%" },
+    { block = "116", count = "18.14%" },
+    { block = "208", count = "15.88%" },
+    { block = "336", count = "11.37%" },
+    { block = "512", count = "4.61%" },
+]
+
+[heap.core1]
+### Dynamic heap memory for core 1 resides in "main" RAM region and takes a
+### half of the remaining region space.
+ram = "main"
+size = "50%"
+### There are multiple pools of different block sizes. "count" can be an
+### absolute number of blocks in the pool, or a relative number, which
+### represents a portion of the whole heap.
+pools = [
+    { block = "4", count = "4.61%" },
+    { block = "8", count = "11.37%" },
+    { block = "20", count = "15.88%" },
+    { block = "56", count = "18.14%" },
+    { block = "116", count = "18.14%" },
+    { block = "208", count = "15.88%" },
+    { block = "336", count = "11.37%" },
+    { block = "512", count = "4.61%" },
+]
+
+[linker]
+### Additional includes into the resulting linker script. When adding a new
+### include, don't forget to add it to the `build.rs`.
+include-before = ["boot2.ld", "vectors.ld"]

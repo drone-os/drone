@@ -221,19 +221,24 @@
 
             * Edit **layout.toml** to configure your microcontroller memory layout
 
-            * Edit **Cargo.toml** to add specific Drone packages for your microcontroller
+            * Edit **Cargo.toml** to add more Drone packages for your microcontroller
 
             * Run **direnv allow** (if you have `direnv` installed on your host) or **nix
-              shell** to load the project's Nix shell
+              develop** to load the project's Nix shell
           '';
         in
         rec {
           stm32 = {
-            path = ./project_template_stm32;
+            path = ./project-templates/stm32;
             description = "STM32 Drone project template";
             inherit welcomeText;
           };
-          default = stm32;
+          raspberrypi-pico = {
+            path = ./project-templates/raspberrypi-pico;
+            description = "Raspberry Pi Pico Drone project template";
+            inherit welcomeText;
+          };
+          default = raspberrypi-pico;
         };
     };
 }

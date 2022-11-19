@@ -1,25 +1,24 @@
-//! The threads.
+//! Threads for core 1.
 
-pub use drone_cortexm::thr::{init, init_extended};
-pub use drone_stm32_map::thr::*;
-
-use drone_cortexm::thr;
-
-thr::nvic! {
+drone_raspberrypi_pico::thr::nvic! {
     /// Thread-safe storage.
     thread => pub Thr {};
 
     /// Thread-local storage.
-    local => pub ThrLocal {};
+    local => pub Local {};
 
-    /// Vector table.
+    /// Collection of exception vectors.
+    vectors => pub Vectors;
+
+    /// Vector table type.
+    #[repr(align(256))] // VTOR register implements the top 24 bits
     vtable => pub Vtable;
 
     /// Thread token set.
-    index => pub Thrs;
+    index => pub Index;
 
     /// Threads initialization token.
-    init => pub ThrsInit;
+    init => pub Init;
 
     threads => {
         exceptions => {

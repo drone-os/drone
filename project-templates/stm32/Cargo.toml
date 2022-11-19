@@ -12,12 +12,12 @@ doc = false
 
 [features]
 default = []
-std = [
+host = [
     "futures/std",
-    ### When you add additional Drone crates, link their `std` features here:
-    "drone-core/std",
-    "drone-cortexm/std",
-    "drone-stm32-map/std",
+    ### When you add additional Drone crates, link their `host` features here:
+    "drone-core/host",
+    "drone-cortexm/host",
+    "drone-stm32-map/host",
 ]
 
 [dependencies]

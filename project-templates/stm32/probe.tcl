@@ -17,8 +17,8 @@ proc shutdown {} {
     original_shutdown
 }
 
-### If you experience problems with your STM32 microcontroller to read Drone
-### Stream, try uncommenting this fix.
+### If you experience problems with your STM32 microcontroller when reading
+### Drone Stream, try uncommenting this fix.
 # # AHB-AP doesn't work in low-power modes even with DBG_STANDBY/DBG_STOP/
 # # DBG_SLEEP set. Enabling a DMA clock fixes it.
 # proc ahb_ap_fix {} {
