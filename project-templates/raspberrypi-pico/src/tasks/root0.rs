@@ -1,7 +1,7 @@
 //! The root task for core 0.
 
 use crate::{thr0, CoreRegs, Regs};
-use drone_cortexm::map::periph::thr::periph_thr;
+use drone_cortexm::periph_thr;
 use drone_raspberrypi_pico::reg::prelude::*;
 use drone_raspberrypi_pico::thr::prelude::*;
 

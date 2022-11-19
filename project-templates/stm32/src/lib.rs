@@ -41,11 +41,11 @@ heap! {
 }
 
 stm32_reg_tokens! {
-    /// A set of tokens for all memory-mapped registers of the MCU.
+    /// All tokens for the MCU-level memory-mapped registers.
     index => pub Regs;
 }
 
 cortexm_reg_tokens! {
-    /// A set of tokens for all memory-mapped registers of a Cortex-M core.
+    /// All tokens for the core-level memory-mapped registers.
     index => pub CoreRegs;
 }

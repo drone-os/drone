@@ -15,8 +15,7 @@ pub mod thr1;
 use drone_core::prelude::*;
 
 use drone_core::{heap, stream};
-use drone_cortexm::map::cortexm_reg_tokens;
-use drone_raspberrypi_pico::map::rp2040_reg_tokens;
+use drone_raspberrypi_pico::map::{rp2040_core_reg_tokens, rp2040_reg_tokens};
 use drone_raspberrypi_pico::{global_heap, global_stream};
 
 global_stream!(STREAM0, STREAM1);
@@ -63,11 +62,11 @@ heap! {
 }
 
 rp2040_reg_tokens! {
-    /// A set of tokens for all memory-mapped registers of the MCU.
+    /// All tokens for the MCU-level memory-mapped registers.
     index => pub Regs;
 }
 
-cortexm_reg_tokens! {
-    /// A set of tokens for all memory-mapped registers of a Cortex-M core.
+rp2040_core_reg_tokens! {
+    /// All tokens for the core-level memory-mapped registers.
     index => pub CoreRegs;
 }

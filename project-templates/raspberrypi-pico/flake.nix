@@ -82,6 +82,12 @@
           CARGO_BUILD_RUSTFLAGS = rustFlags;
         };
 
+        picoSdkScripts = pkgs.linkFarm "pico-sdk-scripts" [{
+          # Make scripts from Raspberry Pi Pico SDK available in the shell
+          name = "bin";
+          path = "${pico-sdk}/src/rp2_common/hardware_clocks/scripts";
+        }];
+
         # While in the shell, run `check-all` command to perform all available
         # checks. Useful to run on CI or as a git pre-commit hook.
         checkAll = pkgs.writeShellScriptBin "check-all" ''
@@ -101,6 +107,7 @@
             rustToolchain
             rustAnalyzer
             rustlibBin
+            picoSdkScripts
             dronePkg
             checkAll
           ] ++ (with pkgs; [

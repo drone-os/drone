@@ -1,7 +1,7 @@
 //! The root task.
 
 use crate::{thr, CoreRegs, Regs};
-use drone_cortexm::map::periph::thr::periph_thr;
+use drone_cortexm::periph_thr;
 use drone_cortexm::reg::prelude::*;
 use drone_cortexm::thr::prelude::*;
 
