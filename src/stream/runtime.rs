@@ -7,9 +7,8 @@ use drone_openocd::{
     target, target_read_buffer, target_read_u32, target_write_buffer, target_write_u32, ERROR_FAIL,
     ERROR_OK,
 };
-use drone_stream::{
-    GlobalRuntime, Runtime, BOOTSTRAP_SEQUENCE, BOOTSTRAP_SEQUENCE_LENGTH, HEADER_LENGTH,
-};
+use drone_stream::{GlobalRuntime, Runtime, BOOTSTRAP_SEQUENCE, BOOTSTRAP_SEQUENCE_LENGTH};
+use std::cmp::Ordering;
 use std::mem::{size_of, transmute, MaybeUninit};
 use std::os::raw::c_int;
 use std::ptr;
@@ -97,7 +96,7 @@ pub trait RemoteRuntime {
         target: *mut target,
         address: u32,
         buffer: &'b mut [u8],
-    ) -> Result<&'b mut [u8]>;
+    ) -> Result<(&'b mut [u8], Option<usize>)>;
 }
 
 macro_rules! offset_of {
@@ -224,34 +223,54 @@ impl RemoteRuntime for Runtime {
         target: *mut target,
         address: u32,
         buffer: &'b mut [u8],
-    ) -> Result<&'b mut [u8]> {
+    ) -> Result<(&'b mut [u8], Option<usize>)> {
         let mut count;
+        let mut wrap_point = None;
         unsafe { self.target_read_write_cursor(target, address)? };
-        let start = (address + self.read_cursor).into();
-        if self.write_cursor >= self.read_cursor {
-            count = self.write_cursor - self.read_cursor;
-            unsafe {
+        match self.write_cursor.cmp(&self.read_cursor) {
+            Ordering::Equal => return Ok((&mut buffer[0..0], wrap_point)),
+            Ordering::Greater => {
+                count = self.write_cursor - self.read_cursor;
                 assert!(count as usize <= buffer.len());
-                result_from(target_read_buffer(target, start, count, buffer.as_mut_ptr()))?;
-            }
-        } else {
-            count = buffer.len() as u32 - self.read_cursor;
-            unsafe {
-                if count > HEADER_LENGTH {
-                    assert!(count as usize <= buffer.len());
-                    result_from(target_read_buffer(target, start, count, buffer.as_mut_ptr()))?;
-                } else {
-                    count = 0;
+                unsafe {
+                    result_from(target_read_buffer(
+                        target,
+                        (address + self.read_cursor).into(),
+                        count,
+                        buffer.as_mut_ptr(),
+                    ))?;
                 }
-                let ptr = buffer.as_mut_ptr().add(count as usize);
-                count += self.write_cursor;
+            }
+            Ordering::Less => {
+                count = buffer.len() as u32 - self.read_cursor;
                 assert!(count as usize <= buffer.len());
-                result_from(target_read_buffer(target, address.into(), self.write_cursor, ptr))?;
+                unsafe {
+                    result_from(target_read_buffer(
+                        target,
+                        (address + self.read_cursor).into(),
+                        count,
+                        buffer.as_mut_ptr(),
+                    ))?;
+                }
+                wrap_point = Some(count as usize);
+                if self.write_cursor > 0 {
+                    let ptr = unsafe { buffer.as_mut_ptr().add(count as usize) };
+                    count += self.write_cursor;
+                    assert!(count as usize <= buffer.len());
+                    unsafe {
+                        result_from(target_read_buffer(
+                            target,
+                            address.into(),
+                            self.write_cursor,
+                            ptr,
+                        ))?;
+                    }
+                }
             }
         }
         self.read_cursor = self.write_cursor;
         unsafe { self.target_write_read_cursor(target, address)? };
-        Ok(&mut buffer[0..count as usize])
+        Ok((&mut buffer[0..count as usize], wrap_point))
     }
 }
 

@@ -140,7 +140,7 @@ impl Context {
 
     fn poll(&mut self) -> runtime::Result<()> {
         for stream_context in &mut self.streams {
-            let mut buffer = unsafe {
+            let (mut buffer, mut wrap_point) = unsafe {
                 stream_context.runtime.target_consume_buffer(
                     self.target,
                     stream_context.address,
@@ -148,19 +148,24 @@ impl Context {
                 )?
             };
             while !buffer.is_empty() {
-                // Read the header.
+                let stream = buffer[0];
+                if stream == 0xFF {
+                    if let Some(wrap_point) = wrap_point.take() {
+                        buffer = &mut buffer[wrap_point..];
+                        continue;
+                    }
+                    warn!("Drone Stream encoding error: invalid header format");
+                    break;
+                }
                 if buffer.len() < HEADER_LENGTH as usize {
                     warn!("Drone Stream encoding error: chunk is too short");
                     break;
                 }
-                let stream = buffer[0];
-                let length = buffer[1];
                 if stream >= STREAM_COUNT {
                     warn!("Drone Stream encoding error: invalid stream number");
                     break;
                 }
-
-                // Read the data bytes.
+                let length = buffer[1];
                 let range = HEADER_LENGTH as usize..usize::from(length) + HEADER_LENGTH as usize;
                 let data = if let Some(data) = buffer.get(range) {
                     data
@@ -168,12 +173,15 @@ impl Context {
                     warn!("Drone Stream encoding error: invalid length");
                     break;
                 };
-
                 trace!("Transaction {}:{} -> {:?}", stream_context.name, stream, data);
                 if let Err(err) = self.routes.write(stream, data) {
                     error!("Couldn't write to Drone Stream output: {err:#?}");
                 }
-                buffer = &mut buffer[usize::from(length) + HEADER_LENGTH as usize..];
+                let shift = usize::from(length) + HEADER_LENGTH as usize;
+                buffer = &mut buffer[shift..];
+                if let Some(wrap_point) = &mut wrap_point {
+                    *wrap_point -= shift;
+                }
             }
         }
         Ok(())
