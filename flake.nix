@@ -14,7 +14,7 @@
     };
     openocd = {
       type = "git";
-      url = "git://git.code.sf.net/p/openocd/code";
+      url = "https://github.com/openocd-org/openocd.git";
       shallow = true;
       submodules = true;
       ref = "v0.11.0";
