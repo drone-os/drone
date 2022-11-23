@@ -66,7 +66,7 @@
         "shallow": true,
         "submodules": true,
         "type": "git",
-        "url": "git://git.code.sf.net/p/openocd/code"
+        "url": "https://github.com/openocd-org/openocd.git"
       },
       "original": {
         "ref": "v0.11.0",
@@ -74,7 +74,7 @@
         "shallow": true,
         "submodules": true,
         "type": "git",
-        "url": "git://git.code.sf.net/p/openocd/code"
+        "url": "https://github.com/openocd-org/openocd.git"
       }
     },
     "root": {
